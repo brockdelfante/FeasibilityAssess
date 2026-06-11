@@ -1,0 +1,253 @@
+import { addMonths } from 'date-fns'
+
+export interface DealProduct {
+  numLots: number
+  description: string
+  areaSqm: number
+  grossAICValuation: number
+  qualifyingPresaleValue: number
+  nonQualifyingPresaleValue: number
+}
+
+export interface DealInputs {
+  dealType: 'construction' | 'subdivision'
+  products: DealProduct[]
+  loanTermMonths: number
+  buildTermMonths: number
+  startDate: Date
+  interestRate: number
+  lineFeeRate: number
+  lafRate: number
+  gstMethod: 'standard' | 'margin_scheme'
+  salesCommissionRate: number
+  presaleCommissionRate: number
+  landAcquisitionCost: number
+  siteValue: number
+  preliminaries: number
+  construction: number
+  constructionContingency: number
+  professionalFees: number
+  councilContributions: number
+  authorityFees: number
+  establishmentFees: number
+  legalFees: number
+  developmentContingency: number
+  customerCashEquity: number
+  mezzAmount: number
+  mezzEnabled: boolean
+  mezzInterestRate: number
+  mezzAppFeeRate: number
+  mezzBrokerFeeRate: number
+  mezzLegalFees: number
+  targetRoc?: number
+}
+
+export interface MonthlyRow {
+  month: number
+  date: Date
+  draws: number
+  interestCharge: number
+  repayment: number
+  openingBalance: number
+  closingBalance: number
+}
+
+export interface CalculationResults {
+  grv: number
+  totalLots: number
+  totalGFA: number
+  gst: number
+  nrv: number
+  sellingCosts: number
+  totalSellingCosts: number
+  netRealisations: number
+  peakDebt: number
+  totalInterest: number
+  averagePDFBalance: number
+  totalDirectCosts: number
+  seniorFunding: number
+  ltc: number
+  lvrGross: number
+  lvrNet: number
+  roc: number
+  profitAmount: number
+  profitMargin: number
+  residualANZDebt: number
+  grossResidualValue: number
+  netResidualValue: number
+  residualLVR: number
+  salesToRepay: number
+  qualifyingPresalesCover: number
+  allPresalesCover: number
+  constructionCostPerSqm: number
+  rlv: number
+  mezzTotalInterest?: number
+  mezzTotalRepayment?: number
+  blendedTotalDebt?: number
+  mezzLVR?: number
+  cashflow: MonthlyRow[]
+}
+
+const S_CURVE_TABLE: [number, number][] = [
+  [0.00, 0.000], [0.02, 0.010], [0.04, 0.020], [0.06, 0.030],
+  [0.08, 0.040], [0.10, 0.050], [0.12, 0.061], [0.14, 0.073],
+  [0.16, 0.085], [0.18, 0.098], [0.20, 0.110], [0.22, 0.123],
+  [0.24, 0.135], [0.26, 0.148], [0.28, 0.160], [0.30, 0.175],
+  [0.32, 0.190], [0.34, 0.205], [0.36, 0.225], [0.38, 0.248],
+  [0.40, 0.275], [0.42, 0.305], [0.44, 0.340], [0.46, 0.378],
+  [0.48, 0.418], [0.50, 0.460], [0.52, 0.502], [0.54, 0.543],
+  [0.56, 0.582], [0.58, 0.620], [0.60, 0.656], [0.62, 0.690],
+  [0.64, 0.722], [0.66, 0.752], [0.68, 0.780], [0.70, 0.806],
+  [0.72, 0.830], [0.74, 0.852], [0.76, 0.872], [0.78, 0.890],
+  [0.80, 0.906], [0.82, 0.921], [0.84, 0.934], [0.86, 0.946],
+  [0.88, 0.957], [0.90, 0.967], [0.92, 0.976], [0.94, 0.984],
+  [0.96, 0.991], [0.98, 0.996], [1.00, 1.000]
+]
+
+function sCurveCumulative(progress: number): number {
+  const clamped = Math.max(0, Math.min(1, progress))
+  for (let i = 0; i < S_CURVE_TABLE.length - 1; i++) {
+    const [t0, v0] = S_CURVE_TABLE[i]
+    const [t1, v1] = S_CURVE_TABLE[i + 1]
+    if (clamped >= t0 && clamped <= t1) {
+      return v0 + (v1 - v0) * ((clamped - t0) / (t1 - t0))
+    }
+  }
+  return 1
+}
+
+function monthlyDraw(month: number, buildTerm: number, totalCost: number): number {
+  if (month > buildTerm) return 0
+  const progressEnd = month / buildTerm
+  const progressStart = (month - 1) / buildTerm
+  return totalCost * (sCurveCumulative(progressEnd) - sCurveCumulative(progressStart))
+}
+
+export function calculateAll(inputs: DealInputs): CalculationResults {
+  const grv = inputs.products.reduce((sum, p) => sum + p.numLots * p.grossAICValuation, 0)
+  const totalLots = inputs.products.reduce((sum, p) => sum + p.numLots, 0)
+  const totalGFA = inputs.products.reduce((sum, p) => sum + p.numLots * p.areaSqm, 0)
+
+  let gst = 0
+  if (inputs.gstMethod === 'standard') {
+    gst = grv / 11
+  } else {
+    gst = Math.max(0, (grv - inputs.landAcquisitionCost) / 11)
+  }
+  const nrv = grv - gst
+
+  const sellingCosts = nrv * inputs.salesCommissionRate
+  const totalPresales = inputs.products.reduce((sum, p) => sum + p.qualifyingPresaleValue + p.nonQualifyingPresaleValue, 0)
+  const presaleSellingCosts = totalPresales * inputs.presaleCommissionRate
+  const totalSellingCosts = sellingCosts + presaleSellingCosts
+  const netRealisations = nrv - totalSellingCosts
+
+  const cashflow: MonthlyRow[] = []
+  let balance = 0
+  const monthlyRate = inputs.interestRate / 12
+  let totalInterest = 0
+
+  for (let m = 1; m <= inputs.loanTermMonths; m++) {
+    const opening = balance
+    let draws = 0
+
+    draws += m === 1 ? inputs.siteValue : 0
+    draws += m === 1 ? inputs.preliminaries : 0
+    draws += monthlyDraw(m, inputs.buildTermMonths, inputs.construction)
+    draws += monthlyDraw(m, inputs.buildTermMonths, inputs.constructionContingency)
+
+    if (m === 1) {
+      draws += inputs.professionalFees * 0.5
+      if (inputs.buildTermMonths > 0) {
+        draws += (inputs.professionalFees * 0.5) / inputs.buildTermMonths
+      }
+    } else if (m <= inputs.buildTermMonths) {
+      draws += (inputs.professionalFees * 0.5) / inputs.buildTermMonths
+    }
+
+    draws += m === 1 ? inputs.councilContributions : 0
+    draws += m === 1 ? inputs.authorityFees : 0
+    draws += m === 1 ? inputs.establishmentFees : 0
+    draws += m === 1 ? inputs.legalFees : 0
+    draws += inputs.developmentContingency / inputs.loanTermMonths
+
+    const interest = opening * monthlyRate
+    totalInterest += interest
+    balance = opening + draws + interest
+
+    cashflow.push({
+      month: m,
+      date: addMonths(inputs.startDate, m - 1),
+      draws,
+      interestCharge: interest,
+      repayment: m === inputs.loanTermMonths ? -balance : 0,
+      openingBalance: opening,
+      closingBalance: balance
+    })
+  }
+
+  const peakDebt = Math.max(...cashflow.map(r => r.closingBalance))
+  const averagePDFBalance = cashflow.reduce((sum, r) => sum + r.closingBalance, 0) / cashflow.length
+
+  const totalDirectCosts = inputs.siteValue + inputs.preliminaries + inputs.construction +
+    inputs.constructionContingency + inputs.professionalFees + inputs.councilContributions +
+    inputs.authorityFees + inputs.establishmentFees + inputs.legalFees +
+    inputs.developmentContingency + totalInterest
+
+  const seniorFunding = totalDirectCosts - inputs.customerCashEquity - (inputs.mezzEnabled ? inputs.mezzAmount : 0)
+
+  const ltc = totalDirectCosts > 0 ? seniorFunding / totalDirectCosts : 0
+  const lvrGross = grv > 0 ? seniorFunding / grv : 0
+  const lvrNet = nrv > 0 ? seniorFunding / nrv : 0
+
+  const roc = totalDirectCosts > 0 ? (netRealisations - totalDirectCosts) / totalDirectCosts : 0
+  const profitAmount = netRealisations - totalDirectCosts
+  const profitMargin = netRealisations > 0 ? profitAmount / netRealisations : 0
+
+  const residualANZDebt = seniorFunding
+  const grossResidualValue = grv
+  const netResidualValue = netRealisations
+  const residualLVR = netRealisations > 0 ? residualANZDebt / netRealisations : 0
+
+  const avgSalePriceNetOfCosts = totalLots > 0 ? (netRealisations / totalLots) : 0
+  const salesToRepay = avgSalePriceNetOfCosts > 0 ? Math.ceil(residualANZDebt / avgSalePriceNetOfCosts) : 0
+
+  const qualifyingPresales = inputs.products.reduce((sum, p) => sum + p.qualifyingPresaleValue, 0)
+  const nonQualifyingPresales = inputs.products.reduce((sum, p) => sum + p.nonQualifyingPresaleValue, 0)
+  const qualifyingPresalesCover = seniorFunding > 0 ? qualifyingPresales / seniorFunding : 0
+  const allPresalesCover = seniorFunding > 0 ? (qualifyingPresales + nonQualifyingPresales) / seniorFunding : 0
+
+  const constructionCostPerSqm = totalGFA > 0 ? inputs.construction / totalGFA : 0
+
+  const targetROC = inputs.targetRoc ?? 0.20
+  const totalCostsExLand = totalDirectCosts - inputs.siteValue
+  const rlv = (netRealisations - totalCostsExLand * (1 + targetROC)) / (1 + targetROC)
+
+  const results: CalculationResults = {
+    grv, totalLots, totalGFA, gst, nrv, sellingCosts, totalSellingCosts, netRealisations,
+    peakDebt, totalInterest, averagePDFBalance, totalDirectCosts, seniorFunding,
+    ltc, lvrGross, lvrNet, roc, profitAmount, profitMargin,
+    residualANZDebt, grossResidualValue, netResidualValue, residualLVR, salesToRepay,
+    qualifyingPresalesCover, allPresalesCover, constructionCostPerSqm, rlv,
+    cashflow
+  }
+
+  if (inputs.mezzEnabled && inputs.mezzAmount > 0) {
+    const mezzMonthlyRate = inputs.mezzInterestRate / 12
+    let mezzBalance = inputs.mezzAmount
+    let mezzTotalInterest = 0
+    for (let m = 1; m <= inputs.loanTermMonths; m++) {
+      const interest = mezzBalance * mezzMonthlyRate
+      mezzBalance += interest
+      mezzTotalInterest += interest
+    }
+    const mezzAppFee = inputs.mezzAmount * inputs.mezzAppFeeRate
+    const mezzBrokerFee = inputs.mezzAmount * inputs.mezzBrokerFeeRate
+    results.mezzTotalInterest = mezzTotalInterest
+    results.mezzTotalRepayment = inputs.mezzAmount + mezzTotalInterest + mezzAppFee + mezzBrokerFee + inputs.mezzLegalFees
+    results.blendedTotalDebt = seniorFunding + results.mezzTotalRepayment
+    results.mezzLVR = grv > 0 ? (seniorFunding + inputs.mezzAmount) / grv : 0
+  }
+
+  return results
+}
