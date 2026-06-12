@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import ReactPDF from '@react-pdf/renderer';
 import { CreditSummaryReport } from "@/lib/pdf/CreditSummary";
+import { MezzanineAssessment } from "@/lib/pdf/MezzanineAssessment";
+import { ClientSummary } from "@/lib/pdf/ClientSummary";
 import React from 'react';
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -9,11 +11,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const { id } = await params;
     const body = await req.json();
 
-    // Attempt to render to stream/buffer
-    // Note: In some serverless environments, this requires specific setup,
-    // but we will implement the logic as if it's fully supported.
-
-    // For this prototype, we'll still use the mock URL but ensure the DB entry is correct
+    // In a real environment, we would generate the actual PDF buffer here.
+    // For this prototype, we record the generation and return a mock URL.
     const { data: report, error } = await supabase.from('deal_reports').insert({
         deal_id: id,
         generated_by: 'Jules Smith',

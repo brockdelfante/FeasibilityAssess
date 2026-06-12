@@ -95,6 +95,7 @@ export interface CalculationResults {
   mezzTotalRepayment?: number
   blendedTotalDebt?: number
   mezzLVR?: number
+  mezzLTC?: number
   cashflow: MonthlyRow[]
 }
 
@@ -285,6 +286,7 @@ export function calculateAll(inputs: DealInputs): CalculationResults {
     results.mezzTotalRepayment = (inputs.mezzAmount || 0) + mezzTotalInterest + mezzAppFee + mezzBrokerFee + (inputs.mezzLegalFees || 0)
     results.blendedTotalDebt = seniorFunding + results.mezzTotalRepayment
     results.mezzLVR = grv > 0 ? (seniorFunding + (inputs.mezzAmount || 0)) / grv : 0
+    results.mezzLTC = totalDirectCosts > 0 ? (seniorFunding + (inputs.mezzAmount || 0)) / totalDirectCosts : 0
   }
 
   return results

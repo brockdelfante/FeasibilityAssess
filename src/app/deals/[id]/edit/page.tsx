@@ -16,15 +16,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { AlertCircle, CheckCircle2, TrendingUp, Save, Share2, Calculator, FileText, History, Wallet, Banknote, Loader2, ArrowLeft, Plus, Trash2, Calendar, User, ExternalLink, MapPin, Info, ArrowUpRight, Download, FileSpreadsheet, ShieldCheck } from "lucide-react";
+import { AlertCircle, CheckCircle2, TrendingUp, Save, Share2, Calculator, FileText, History, Wallet, Banknote, Loader2, ArrowLeft, Plus, Trash2, Calendar, User, ExternalLink, MapPin, Info, ArrowUpRight, Download, FileSpreadsheet, ShieldCheck, Scale } from "lucide-react";
 import { BreachAlerts } from "@/components/OutputPanel/BreachAlerts";
 import { CashflowChart } from "@/components/OutputPanel/CashflowChart";
 import { SensitivityMatrix } from "@/components/OutputPanel/SensitivityMatrix";
 import { ScenarioComparison } from "@/components/OutputPanel/ScenarioComparison";
 import { CapitalStackChart } from "@/components/OutputPanel/CapitalStackChart";
 import { CalculationAudit } from "@/components/OutputPanel/CalculationAudit";
-import { ExitPosition } from "@/components/OutputPanel/ExitPosition";
 import { ReportButton } from "@/components/Reports/ReportButton";
+import { MezzanineAnalysis } from "@/components/OutputPanel/MezzanineAnalysis";
+import { ExitPosition } from "@/components/OutputPanel/ExitPosition";
 
 export default function DealEditPage() {
   const params = useParams();
@@ -130,7 +131,7 @@ export default function DealEditPage() {
   return (
     <div className="flex flex-col h-full bg-gray-50 min-h-screen relative">
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Column: Comprehensive Inputs */}
+        {/* Left Column */}
         <div className="flex-1 overflow-auto p-6 space-y-6 text-sm pb-32">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-4">
@@ -167,8 +168,8 @@ export default function DealEditPage() {
             </div>
           </div>
 
-          <Accordion type="multiple" defaultValue={["products", "costs", "programme"]} className="w-full space-y-4">
-             {/* 1. Developer Profile */}
+          <Accordion type="multiple" defaultValue={["products", "costs", "programme", "finance"]} className="w-full space-y-4">
+             {/* Developer Profile */}
              <AccordionItem value="developer" className="bg-white border rounded-xl px-6 shadow-sm overflow-hidden">
                 <AccordionTrigger className="hover:no-underline py-4 font-bold uppercase tracking-widest text-[11px] text-gray-500 font-sans">Developer Profile</AccordionTrigger>
                 <AccordionContent className="pb-6">
@@ -182,26 +183,26 @@ export default function DealEditPage() {
                 </AccordionContent>
             </AccordionItem>
 
-            {/* 2. Product Table */}
+            {/* Product Mix */}
             <AccordionItem value="products" className="bg-white border rounded-xl px-6 shadow-sm overflow-hidden">
-                <AccordionTrigger className="hover:no-underline py-4 font-bold uppercase tracking-widest text-[11px] text-gray-500">{isSubdivision ? "Lot Mix" : "Unit Mix"}</AccordionTrigger>
+                <AccordionTrigger className="hover:no-underline py-4 font-bold uppercase tracking-widest text-[11px] text-gray-500">{isSubdivision ? "Lot Mix Table" : "Unit Mix Table"}</AccordionTrigger>
                 <AccordionContent className="pb-6">
                     <div className="space-y-4">
                         {inputs.products.map((product, idx) => (
                             <div key={idx} className="grid grid-cols-6 gap-4 items-center bg-gray-50/50 p-3 rounded-lg border border-gray-100">
                                 <div className="col-span-2 space-y-1"><Label className="text-[9px] uppercase text-gray-400 font-bold">Desc</Label><Input value={product.description} onChange={(e) => updateProduct(idx, { description: e.target.value })} className="bg-white h-9" /></div>
-                                <div className="space-y-1"><Label className="text-[9px] uppercase text-gray-400 font-bold">Lots</Label><Input type="number" value={product.numLots} onChange={(e) => updateProduct(idx, { numLots: parseInt(e.target.value) || 0 })} className="bg-white h-9" /></div>
-                                <div className="space-y-1"><Label className="text-[9px] uppercase text-gray-400 font-bold">Size</Label><Input type="number" value={product.areaSqm} onChange={(e) => updateProduct(idx, { areaSqm: parseFloat(e.target.value) || 0 })} className="bg-white h-9" /></div>
-                                <div className="space-y-1"><Label className="text-[9px] uppercase text-gray-400 font-bold">Value</Label><Input type="number" value={product.grossAICValuation} onChange={(e) => updateProduct(idx, { grossAICValuation: parseFloat(e.target.value) || 0 })} className="bg-white h-9" /></div>
+                                <div><Label className="text-[9px] uppercase text-gray-400 font-bold">Lots</Label><Input type="number" value={product.numLots} onChange={(e) => updateProduct(idx, { numLots: parseInt(e.target.value) || 0 })} className="bg-white h-9" /></div>
+                                <div><Label className="text-[9px] uppercase text-gray-400 font-bold">Size</Label><Input type="number" value={product.areaSqm} onChange={(e) => updateProduct(idx, { areaSqm: parseFloat(e.target.value) || 0 })} className="bg-white h-9" /></div>
+                                <div><Label className="text-[9px] uppercase text-gray-400 font-bold">Value</Label><Input type="number" value={product.grossAICValuation} onChange={(e) => updateProduct(idx, { grossAICValuation: parseFloat(e.target.value) || 0 })} className="bg-white h-9" /></div>
                                 <div className="flex justify-end pt-5"><Button variant="ghost" size="icon" className="text-gray-300 hover:text-red-600" onClick={() => removeProduct(idx)}><Trash2 className="h-4 w-4" /></Button></div>
                             </div>
                         ))}
-                        <Button variant="outline" size="sm" onClick={addProduct} className="w-full border-dashed"><Plus className="h-4 w-4 mr-2" /> Add Line</Button>
+                        <Button variant="outline" size="sm" onClick={addProduct} className="w-full border-dashed bg-white text-gray-500 hover:text-blue-600"><Plus className="h-4 w-4 mr-2" /> Add Line</Button>
                     </div>
                 </AccordionContent>
             </AccordionItem>
 
-            {/* 3. Programme */}
+            {/* Programme */}
             <AccordionItem value="programme" className="bg-white border rounded-xl px-6 shadow-sm overflow-hidden">
                 <AccordionTrigger className="hover:no-underline py-4 font-bold uppercase tracking-widest text-[11px] text-gray-500">Programme</AccordionTrigger>
                 <AccordionContent className="pb-6">
@@ -214,7 +215,7 @@ export default function DealEditPage() {
                 </AccordionContent>
             </AccordionItem>
 
-            {/* 4. Costs */}
+            {/* Project Costs */}
             <AccordionItem value="costs" className="bg-white border rounded-xl px-6 shadow-sm overflow-hidden">
                 <AccordionTrigger className="hover:no-underline py-4 font-bold uppercase tracking-widest text-[11px] text-gray-500">Direct Project Costs</AccordionTrigger>
                 <AccordionContent className="pb-6">
@@ -231,7 +232,7 @@ export default function DealEditPage() {
                 </AccordionContent>
             </AccordionItem>
 
-            {/* 5. Indirect Costs */}
+            {/* Indirect Costs */}
             <AccordionItem value="indirect" className="bg-white border rounded-xl px-6 shadow-sm overflow-hidden">
                 <AccordionTrigger className="hover:no-underline py-4 font-bold uppercase tracking-widest text-[11px] text-gray-500">Indirect Costs</AccordionTrigger>
                 <AccordionContent className="pb-6">
@@ -248,41 +249,37 @@ export default function DealEditPage() {
                 </AccordionContent>
             </AccordionItem>
 
-            {/* 6. Pricing & GST */}
-            <AccordionItem value="pricing" className="bg-white border rounded-xl px-6 shadow-sm overflow-hidden">
-                <AccordionTrigger className="hover:no-underline py-4 font-bold uppercase tracking-widest text-[11px] text-gray-500">Pricing & GST</AccordionTrigger>
+            {/* Finance & Capital Structure */}
+            <AccordionItem value="finance" className="bg-white border rounded-xl px-6 shadow-sm overflow-hidden">
+                <AccordionTrigger className="hover:no-underline py-4 font-bold uppercase tracking-widest text-[11px] text-gray-500">Finance & Mezzanine</AccordionTrigger>
                 <AccordionContent className="pb-6">
-                    <div className="grid grid-cols-3 gap-8">
-                        <div className="space-y-2"><Label>Interest Rate (%)</Label><Input type="number" step="0.01" value={inputs.interestRate * 100} onChange={e => setInputs({ interestRate: (parseFloat(e.target.value) || 0) / 100 })} /></div>
-                        <div className="space-y-2"><Label>LAF (%)</Label><Input type="number" step="0.01" value={inputs.lafRate * 100} onChange={e => setInputs({ lafRate: (parseFloat(e.target.value) || 0) / 100 })} /></div>
-                        <div className="space-y-2"><Label>GST Method</Label>
-                            <Select value={inputs.gstMethod} onValueChange={v => setInputs({ gstMethod: v as any })}>
-                                <SelectTrigger><SelectValue /></SelectTrigger>
-                                <SelectContent><SelectItem value="standard">Standard</SelectItem><SelectItem value="margin_scheme">Margin Scheme</SelectItem></SelectContent>
-                            </Select>
+                    <div className="space-y-8">
+                        <div className="grid grid-cols-3 gap-8">
+                            <div className="space-y-2"><Label>Senior Interest (%)</Label><Input type="number" step="0.01" value={inputs.interestRate * 100} onChange={e => setInputs({ interestRate: (parseFloat(e.target.value) || 0) / 100 })} /></div>
+                            <div className="space-y-2"><Label>LAF (%)</Label><Input type="number" step="0.01" value={inputs.lafRate * 100} onChange={e => setInputs({ lafRate: (parseFloat(e.target.value) || 0) / 100 })} /></div>
+                            <div className="space-y-2"><Label>Equity (Cash)</Label><Input type="number" value={inputs.customerCashEquity} onChange={e => setInputs({ customerCashEquity: parseFloat(e.target.value) || 0 })} /></div>
                         </div>
-                    </div>
-                </AccordionContent>
-            </AccordionItem>
 
-            {/* 7. Additional Security */}
-            <AccordionItem value="security" className="bg-white border rounded-xl px-6 shadow-sm overflow-hidden">
-                <AccordionTrigger className="hover:no-underline py-4 font-bold uppercase tracking-widest text-[11px] text-gray-500">Additional Security</AccordionTrigger>
-                <AccordionContent className="pb-6">
-                    <div className="grid grid-cols-2 gap-12 pt-2">
+                        <Separator />
+
                         <div className="space-y-4">
-                            <div className="space-y-2"><Label>Free Market Value (Net)</Label><Input type="number" value={inputs.additionalSecurityFmv} onChange={e => setInputs({ additionalSecurityFmv: parseFloat(e.target.value) || 0 })} /></div>
-                            <div className="space-y-2"><Label>Extended Value (Net)</Label><Input type="number" value={inputs.additionalSecurityExtended} onChange={e => setInputs({ additionalSecurityExtended: parseFloat(e.target.value) || 0 })} /></div>
-                        </div>
-                        <div className="space-y-4 bg-gray-50 p-4 rounded-lg">
-                            <div className="flex items-center justify-between"><Label>Sponsor Recourse</Label><Switch checked={inputs.sponsorRecourse} onCheckedChange={v => setInputs({ sponsorRecourse: v })} /></div>
-                            <div className="space-y-2 pt-2"><Label>Tangible Net Worth</Label><Input type="number" disabled={!inputs.sponsorRecourse} value={inputs.tangibleNetWorth} onChange={e => setInputs({ tangibleNetWorth: parseFloat(e.target.value) || 0 })} /></div>
+                            <div className="flex items-center justify-between"><div className="flex items-center space-x-2"><TrendingUp className="h-4 w-4 text-amber-600" /><Label className="font-bold text-amber-900 uppercase tracking-widest text-[10px]">Mezzanine Financing</Label></div><Switch checked={inputs.mezzEnabled} onCheckedChange={v => setInputs({ mezzEnabled: v })} /></div>
+
+                            {inputs.mezzEnabled && (
+                                <div className="grid grid-cols-4 gap-4 bg-amber-50/50 p-4 rounded-xl border border-amber-100">
+                                    <div className="space-y-1"><Label className="text-[9px] uppercase font-bold text-amber-700">Amount</Label><Input type="number" value={inputs.mezzAmount} onChange={e => setInputs({ mezzAmount: parseFloat(e.target.value) || 0 })} className="bg-white border-amber-200" /></div>
+                                    <div className="space-y-1"><Label className="text-[9px] uppercase font-bold text-amber-700">Interest (%)</Label><Input type="number" step="0.1" value={inputs.mezzInterestRate * 100} onChange={e => setInputs({ mezzInterestRate: (parseFloat(e.target.value) || 0) / 100 })} className="bg-white border-amber-200" /></div>
+                                    <div className="space-y-1"><Label className="text-[9px] uppercase font-bold text-amber-700">App Fee (%)</Label><Input type="number" step="0.1" value={inputs.mezzAppFeeRate * 100} onChange={e => setInputs({ mezzAppFeeRate: (parseFloat(e.target.value) || 0) / 100 })} className="bg-white border-amber-200" /></div>
+                                    <div className="space-y-1"><Label className="text-[9px] uppercase font-bold text-amber-700">Broker (%)</Label><Input type="number" step="0.1" value={inputs.mezzBrokerFeeRate * 100} onChange={e => setInputs({ mezzBrokerFeeRate: (parseFloat(e.target.value) || 0) / 100 })} className="bg-white border-amber-200" /></div>
+                                    <div className="col-span-2 space-y-1"><Label className="text-[9px] uppercase font-bold text-amber-700">Mezz Legal Fees</Label><Input type="number" value={inputs.mezzLegalFees} onChange={e => setInputs({ mezzLegalFees: parseFloat(e.target.value) || 0 })} className="bg-white border-amber-200" /></div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </AccordionContent>
             </AccordionItem>
 
-            {/* 8. Presales Tracker */}
+            {/* Presales Tracker */}
             <AccordionItem value="presales" className="bg-white border rounded-xl px-6 shadow-sm overflow-hidden">
                 <AccordionTrigger className="hover:no-underline py-4 font-bold uppercase tracking-widest text-[11px] text-gray-500">Presales Tracker</AccordionTrigger>
                 <AccordionContent className="pb-6">
@@ -291,18 +288,18 @@ export default function DealEditPage() {
                             <div key={idx} className="grid grid-cols-5 gap-4 items-center bg-gray-50/50 p-3 rounded-lg border border-gray-100">
                                 <div className="col-span-2"><Input value={p.buyer_name} onChange={e => updatePresale(idx, { buyer_name: e.target.value })} placeholder="Buyer/Unit" /></div>
                                 <div><Input type="number" value={p.sale_price} onChange={e => updatePresale(idx, { sale_price: parseFloat(e.target.value) || 0 })} /></div>
-                                <div className="flex justify-center items-center space-x-2"><Switch checked={p.is_qualifying} onCheckedChange={v => updatePresale(idx, { is_qualifying: v })} /><Label className="text-[10px] uppercase">Qualifying</Label></div>
+                                <div className="flex justify-center items-center space-x-2"><Switch checked={p.is_qualifying} onCheckedChange={v => updatePresale(idx, { is_qualifying: v })} /><Label className="text-[10px] uppercase font-bold">Qualifying</Label></div>
                                 <div className="flex justify-end"><Button variant="ghost" size="icon" className="text-gray-300 hover:text-red-600" onClick={() => removePresale(idx)}><Trash2 className="h-4 w-4" /></Button></div>
                             </div>
                         ))}
-                        <Button variant="outline" size="sm" onClick={addPresale} className="w-full border-dashed bg-white"><Plus className="h-4 w-4 mr-2" /> Add Presale</Button>
+                        <Button variant="outline" size="sm" onClick={addPresale} className="w-full border-dashed bg-white"><Plus className="h-4 w-4 mr-2" /> Add Presale Entry</Button>
                     </div>
                 </AccordionContent>
             </AccordionItem>
 
-            {/* 9. Risk Scoring */}
+            {/* Risk Scoring */}
             <AccordionItem value="risk" className="bg-white border rounded-xl px-6 shadow-sm overflow-hidden">
-                <AccordionTrigger className="hover:no-underline py-4 font-bold uppercase tracking-widest text-[11px] text-gray-500">Risk Scoring</AccordionTrigger>
+                <AccordionTrigger className="hover:no-underline py-4 font-bold uppercase tracking-widest text-[11px] text-gray-500">Risk Assessment</AccordionTrigger>
                 <AccordionContent className="pb-6">
                     <div className="grid grid-cols-2 gap-12">
                         <div className="space-y-4">
@@ -326,17 +323,6 @@ export default function DealEditPage() {
                     </div>
                 </AccordionContent>
             </AccordionItem>
-
-            {/* 10. Assumptions */}
-            <AccordionItem value="assumptions" className="bg-white border rounded-xl px-6 shadow-sm overflow-hidden">
-                <AccordionTrigger className="hover:no-underline py-4 font-bold uppercase tracking-widest text-[11px] text-gray-500">Assumptions Register</AccordionTrigger>
-                <AccordionContent className="pb-6">
-                    <div className="grid grid-cols-2 gap-8">
-                        <div className="space-y-2"><Label>GRV Basis</Label><Textarea value={inputs.assumptionsGrvBasis} onChange={e => setInputs({ assumptionsGrvBasis: e.target.value })} /></div>
-                        <div className="space-y-2"><Label>Construction Basis</Label><Textarea value={inputs.assumptionsConstructionBasis} onChange={e => setInputs({ assumptionsConstructionBasis: e.target.value })} /></div>
-                    </div>
-                </AccordionContent>
-            </AccordionItem>
           </Accordion>
         </div>
 
@@ -349,9 +335,10 @@ export default function DealEditPage() {
           <Tabs defaultValue="summary" className="flex-1 flex flex-col overflow-hidden">
             <TabsList className="w-full justify-start rounded-none border-b bg-gray-50/50 px-4 h-12">
                 <TabsTrigger value="summary" className="text-[10px] uppercase font-black data-[state=active]:bg-white data-[state=active]:text-blue-600 rounded-none h-full border-x first:border-l-0">Metrics</TabsTrigger>
+                <TabsTrigger value="mezz" className="text-[10px] uppercase font-black data-[state=active]:bg-white data-[state=active]:text-blue-600 rounded-none h-full border-r">Mezzanine</TabsTrigger>
                 <TabsTrigger value="scenarios" className="text-[10px] uppercase font-black data-[state=active]:bg-white data-[state=active]:text-blue-600 rounded-none h-full border-r">Sensitivity</TabsTrigger>
-                <TabsTrigger value="exit" className="text-[10px] uppercase font-black data-[state=active]:bg-white data-[state=active]:text-blue-600 rounded-none h-full border-r">Exit Position</TabsTrigger>
-                <TabsTrigger value="audit" className="text-[10px] uppercase font-black data-[state=active]:bg-white data-[state=active]:text-blue-600 rounded-none h-full border-r">Logic Audit</TabsTrigger>
+                <TabsTrigger value="exit" className="text-[10px] uppercase font-black data-[state=active]:bg-white data-[state=active]:text-blue-600 rounded-none h-full border-r">Exit</TabsTrigger>
+                <TabsTrigger value="audit" className="text-[10px] uppercase font-black data-[state=active]:bg-white data-[state=active]:text-blue-600 rounded-none h-full border-r">Audit</TabsTrigger>
             </TabsList>
             <TabsContent value="summary" className="flex-1 overflow-auto p-6 space-y-6 m-0 bg-white">
                 <div className="grid grid-cols-2 gap-4">
@@ -360,16 +347,20 @@ export default function DealEditPage() {
                 </div>
                 <BreachAlerts results={results} /><Separator /><div className="space-y-4"><h3 className="text-[10px] font-black uppercase tracking-widest text-gray-300">Capital Stack</h3><CapitalStackChart inputs={inputs} results={results} /></div><Separator /><div className="space-y-4"><h3 className="text-[10px] font-black uppercase tracking-widest text-gray-300">Monthly Debt</h3><CashflowChart results={results} /></div>
             </TabsContent>
+            <TabsContent value="mezz" className="flex-1 overflow-auto p-6 m-0 bg-white"><MezzanineAnalysis inputs={inputs} results={results} /></TabsContent>
             <TabsContent value="scenarios" className="flex-1 overflow-auto p-6 space-y-6 m-0 bg-white"><ScenarioComparison inputs={inputs} /><Separator /><SensitivityMatrix inputs={inputs} /></TabsContent>
-            <TabsContent value="exit" className="flex-1 overflow-auto p-6 m-0 bg-white">
-                <ExitPosition results={results} />
-            </TabsContent>
+            <TabsContent value="exit" className="flex-1 overflow-auto p-6 m-0 bg-white"><ExitPosition results={results} /></TabsContent>
             <TabsContent value="audit" className="flex-1 overflow-auto p-6 m-0 bg-white"><CalculationAudit inputs={inputs} results={results} /></TabsContent>
           </Tabs>
+
+          <div className="p-4 bg-gray-50 border-t flex justify-between items-center mt-auto">
+            <div className="flex items-center text-[10px] text-gray-400 font-bold uppercase"><Info className="h-3 w-3 mr-1" /> All figures ex. GST unless stated</div>
+            <p className="text-[10px] text-gray-300 font-mono">v1.3.1-STABLE</p>
+          </div>
         </div>
       </div>
 
-      {/* Sticky Bottom Action Bar */}
+      {/* Bottom Action Bar */}
       <div className="fixed bottom-0 left-0 right-0 h-20 bg-[#0F1923] border-t border-white/10 z-50 flex items-center px-8 shadow-2xl justify-between">
         <div className="flex items-center space-x-8">
             <div className="flex flex-col"><span className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-0.5">Projected ROC</span><div className="flex items-center space-x-2"><span className={`text-2xl font-mono font-black ${results.roc >= 0.2 ? 'text-green-400' : 'text-red-400'}`}>{formatPercent(results.roc)}</span>{results.roc >= 0.2 ? <CheckCircle2 className="h-4 w-4 text-green-500" /> : <AlertCircle className="h-4 w-4 text-red-500" />}</div></div>
@@ -379,7 +370,7 @@ export default function DealEditPage() {
 
         <div className="flex items-center space-x-3">
             <Button variant="outline" className="bg-transparent text-white border-white/10 hover:bg-white/5 h-10 px-6 font-bold uppercase text-[11px] tracking-tight" onClick={handleSave} disabled={isSaving}>
-                {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="mr-2 h-4 w-4" />}
+                {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="mr-2 h-4 w-4 mr-2" />}
                 Commit Draft
             </Button>
 
