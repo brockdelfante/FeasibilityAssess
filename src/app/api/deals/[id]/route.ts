@@ -16,7 +16,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     .select('*')
     .eq('deal_id', id)
     .order('changed_at', { ascending: false })
-    .limit(10);
+    .limit(30);
 
   return NextResponse.json({ ...deal, audit_logs: auditLogs || [] });
 }
@@ -27,12 +27,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const body = await req.json();
     const editorName = req.headers.get('x-editor-name') ?? 'Unknown';
 
-    // Separate nested relations from main deal updates
+    const { data: existing } = await supabase.from('deals').select('*').eq('id', id).single();
+
     const { products, presales, ...dealUpdates } = body;
 
-    const { data: updatedDeal, error: updateError } = await supabase
-      .from('deals')
-      .update({
+    const mappedUpdates: any = {
         customer_group: dealUpdates.customerGroup,
         project_address: dealUpdates.projectAddress,
         deal_type: dealUpdates.dealType,
@@ -74,25 +73,86 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         calc_grv: dealUpdates.calc_grv,
         calc_roc: dealUpdates.calc_roc,
         calc_lvr_gross: dealUpdates.calc_lvr_gross,
+        calc_ltc: dealUpdates.calc_ltc,
+        calc_total_dev_costs: dealUpdates.calc_total_dev_costs,
+        calc_net_realisations: dealUpdates.calc_net_realisations,
+        calc_senior_funding: dealUpdates.calc_senior_funding,
+        calc_peak_debt: dealUpdates.calc_peak_debt,
+        calc_covenant_breach: dealUpdates.calc_covenant_breach,
         updated_at: new Date().toISOString()
-      })
+    };
+
+    const { data: updatedDeal, error: updateError } = await supabase
+      .from('deals')
+      .update(mappedUpdates)
       .eq('id', id)
       .select()
       .single();
 
     if (updateError) throw updateError;
 
-    // Log the change
-    await supabase.from('deal_audit_log').insert({
-      deal_id: id,
-      changed_by: editorName,
-      changed_by_name: editorName,
-      field_name: 'multi_save',
-      change_note: 'Assessment updated from editor'
-    });
+    // Update Products (Delete and Re-insert for simplicity in this prototype)
+    if (products) {
+        await supabase.from('deal_products').delete().eq('deal_id', id);
+        if (products.length > 0) {
+            await supabase.from('deal_products').insert(
+                products.map((p: any, i: number) => ({
+                    deal_id: id,
+                    sort_order: i,
+                    num_lots: p.numLots,
+                    description: p.description,
+                    area_sqm: p.areaSqm,
+                    gross_aic_valuation: p.grossAICValuation,
+                    qualifying_presale_value: p.qualifyingPresaleValue,
+                    non_qualifying_presale_value: p.nonQualifyingPresaleValue
+                }))
+            );
+        }
+    }
+
+    // Update Presales
+    if (presales) {
+        await supabase.from('deal_presales').delete().eq('deal_id', id);
+        if (presales.length > 0) {
+            await supabase.from('deal_presales').insert(
+                presales.map((p: any) => ({
+                    deal_id: id,
+                    buyer_name: p.buyer_name,
+                    sale_price: p.sale_price,
+                    is_qualifying: p.is_qualifying,
+                    status: p.status || 'conditional'
+                }))
+            );
+        }
+    }
+
+    // Detailed Audit Logging
+    if (existing) {
+        for (const [key, newValue] of Object.entries(mappedUpdates)) {
+            const oldValue = (existing as any)[key];
+            if (newValue !== undefined && String(oldValue) !== String(newValue) && key !== 'updated_at') {
+                await supabase.from('deal_audit_log').insert({
+                    deal_id: id,
+                    changed_by: editorName,
+                    changed_by_name: editorName,
+                    field_name: key,
+                    old_value: String(oldValue),
+                    new_value: String(newValue),
+                    change_note: `Updated ${key.replace(/_/g, ' ')}`
+                });
+            }
+        }
+    }
 
     return NextResponse.json({ success: true, data: updatedDeal });
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
+}
+
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const { error } = await supabase.from('deals').delete().eq('id', id);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ success: true });
 }
