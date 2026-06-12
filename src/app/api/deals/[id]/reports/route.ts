@@ -1,16 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
+import { supabase } from "@/lib/supabase";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const body = await req.json();
 
-    // In a real environment, this would generate a PDF and return the URL
-    // For this prototype, we'll return a success message and a mock URL
+    // Create a record in deal_reports table
+    const { data: report, error } = await supabase.from('deal_reports').insert({
+        deal_id: id,
+        generated_by: 'Jules Smith',
+        report_type: 'full_assessment',
+        calculation_snapshot: body.results,
+        pdf_url: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
+    }).select().single();
+
+    if (error) throw error;
+
     return NextResponse.json({
       success: true,
-      message: "Report generated successfully",
-      pdfUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
+      pdfUrl: report.pdf_url
     });
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });

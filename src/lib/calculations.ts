@@ -24,7 +24,7 @@ export interface DealInputs {
   landAcquisitionCost: number
   siteValue: number
   preliminaries: number
-  construction: number // For Subdivision, this is Civil Works
+  construction: number
   constructionContingency: number
   professionalFees: number
   councilContributions: number
@@ -39,6 +39,11 @@ export interface DealInputs {
   mezzAppFeeRate: number
   mezzBrokerFeeRate: number
   mezzLegalFees: number
+  marketingSellingCost?: number
+  legalFeesIndirect?: number
+  ratesTaxes?: number
+  financeCostsIndirect?: number
+  otherIndirectCosts?: number
   targetRoc?: number
 }
 
@@ -65,11 +70,13 @@ export interface CalculationResults {
   totalInterest: number
   averagePDFBalance: number
   totalDirectCosts: number
+  totalDevelopmentCosts: number
   seniorFunding: number
   ltc: number
   lvrGross: number
   lvrNet: number
   roc: number
+  roe: number
   profitAmount: number
   profitMargin: number
   residualANZDebt: number
@@ -81,13 +88,12 @@ export interface CalculationResults {
   allPresalesCover: number
   constructionCostPerSqm: number
   rlv: number
-  mezzTotalInterest?: number
-  mezzTotalRepayment?: number
-  blendedTotalDebt?: number
-  roe: number
   blendedRate: number
   profitPerUnit: number
   costPerUnit: number
+  mezzTotalInterest?: number
+  mezzTotalRepayment?: number
+  blendedTotalDebt?: number
   mezzLVR?: number
   cashflow: MonthlyRow[]
 }
@@ -147,39 +153,41 @@ export function calculateAll(inputs: DealInputs): CalculationResults {
   const nrv = grv - gst
 
   const sellingCosts = nrv * inputs.salesCommissionRate
-  const totalPresales = inputs.products.reduce((sum, p) => sum + p.qualifyingPresaleValue + p.nonQualifyingPresaleValue, 0)
+  const qualifyingPresales = inputs.products.reduce((sum, p) => sum + (Number(p.qualifyingPresaleValue) || 0), 0)
+  const nonQualifyingPresales = inputs.products.reduce((sum, p) => sum + (Number(p.nonQualifyingPresaleValue) || 0), 0)
+  const totalPresales = qualifyingPresales + nonQualifyingPresales
   const presaleSellingCosts = totalPresales * inputs.presaleCommissionRate
   const totalSellingCosts = sellingCosts + presaleSellingCosts
   const netRealisations = nrv - totalSellingCosts
 
   const cashflow: MonthlyRow[] = []
   let balance = 0
-  const monthlyRate = inputs.interestRate / 12
+  const monthlyRate = (inputs.interestRate || 0) / 12
   let totalInterest = 0
 
   for (let m = 1; m <= inputs.loanTermMonths; m++) {
     const opening = balance
     let draws = 0
 
-    draws += m === 1 ? inputs.siteValue : 0
-    draws += m === 1 ? inputs.preliminaries : 0
-    draws += monthlyDraw(m, inputs.buildTermMonths, inputs.construction)
-    draws += monthlyDraw(m, inputs.buildTermMonths, inputs.constructionContingency)
+    draws += m === 1 ? (inputs.siteValue || 0) : 0
+    draws += m === 1 ? (inputs.preliminaries || 0) : 0
+    draws += monthlyDraw(m, inputs.buildTermMonths, inputs.construction || 0)
+    draws += monthlyDraw(m, inputs.buildTermMonths, inputs.constructionContingency || 0)
 
     if (m === 1) {
-      draws += inputs.professionalFees * 0.5
+      draws += (inputs.professionalFees || 0) * 0.5
       if (inputs.buildTermMonths > 0) {
-        draws += (inputs.professionalFees * 0.5) / inputs.buildTermMonths
+        draws += ((inputs.professionalFees || 0) * 0.5) / inputs.buildTermMonths
       }
     } else if (m <= inputs.buildTermMonths) {
-      draws += (inputs.professionalFees * 0.5) / inputs.buildTermMonths
+      draws += ((inputs.professionalFees || 0) * 0.5) / inputs.buildTermMonths
     }
 
-    draws += m === 1 ? inputs.councilContributions : 0
-    draws += m === 1 ? inputs.authorityFees : 0
-    draws += m === 1 ? inputs.establishmentFees : 0
-    draws += m === 1 ? inputs.legalFees : 0
-    draws += inputs.developmentContingency / Math.max(1, inputs.loanTermMonths)
+    draws += m === 1 ? (inputs.councilContributions || 0) : 0
+    draws += m === 1 ? (inputs.authorityFees || 0) : 0
+    draws += m === 1 ? (inputs.establishmentFees || 0) : 0
+    draws += m === 1 ? (inputs.legalFees || 0) : 0
+    draws += (inputs.developmentContingency || 0) / Math.max(1, inputs.loanTermMonths)
 
     const interest = opening * monthlyRate
     totalInterest += interest
@@ -199,20 +207,24 @@ export function calculateAll(inputs: DealInputs): CalculationResults {
   const peakDebt = cashflow.length > 0 ? Math.max(...cashflow.map(r => r.closingBalance)) : 0
   const averagePDFBalance = cashflow.length > 0 ? cashflow.reduce((sum, r) => sum + r.closingBalance, 0) / cashflow.length : 0
 
-  const totalDirectCosts = inputs.siteValue + inputs.preliminaries + inputs.construction +
-    inputs.constructionContingency + inputs.professionalFees + inputs.councilContributions +
-    inputs.authorityFees + inputs.establishmentFees + inputs.legalFees +
-    inputs.developmentContingency + totalInterest
+  const totalDirectCosts = (inputs.siteValue || 0) + (inputs.preliminaries || 0) + (inputs.construction || 0) +
+    (inputs.constructionContingency || 0) + (inputs.professionalFees || 0) + (inputs.councilContributions || 0) +
+    (inputs.authorityFees || 0) + (inputs.establishmentFees || 0) + (inputs.legalFees || 0) +
+    (inputs.developmentContingency || 0) + totalInterest
 
-  const seniorFunding = totalDirectCosts - inputs.customerCashEquity - (inputs.mezzEnabled ? inputs.mezzAmount : 0)
+  const totalIndirectCosts = (inputs.marketingSellingCost || 0) + (inputs.legalFeesIndirect || 0) + (inputs.ratesTaxes || 0) + (inputs.financeCostsIndirect || 0) + (inputs.otherIndirectCosts || 0)
+  const totalDevelopmentCosts = totalDirectCosts + totalIndirectCosts
+
+  const seniorFunding = totalDirectCosts - (inputs.customerCashEquity || 0) - (inputs.mezzEnabled ? (inputs.mezzAmount || 0) : 0)
 
   const ltc = totalDirectCosts > 0 ? seniorFunding / totalDirectCosts : 0
   const lvrGross = grv > 0 ? seniorFunding / grv : 0
   const lvrNet = nrv > 0 ? seniorFunding / nrv : 0
 
-  const roc = totalDirectCosts > 0 ? (netRealisations - totalDirectCosts) / totalDirectCosts : 0
-  const profitAmount = netRealisations - totalDirectCosts
+  const profitAmount = netRealisations - totalDevelopmentCosts
+  const roc = totalDevelopmentCosts > 0 ? profitAmount / totalDevelopmentCosts : 0
   const profitMargin = netRealisations > 0 ? profitAmount / netRealisations : 0
+  const roe = (inputs.customerCashEquity || 0) > 0 ? profitAmount / (inputs.customerCashEquity || 0) : 0
 
   const residualANZDebt = seniorFunding
   const grossResidualValue = grv
@@ -222,49 +234,45 @@ export function calculateAll(inputs: DealInputs): CalculationResults {
   const avgSalePriceNetOfCosts = totalLots > 0 ? (netRealisations / totalLots) : 0
   const salesToRepay = avgSalePriceNetOfCosts > 0 ? Math.ceil(residualANZDebt / avgSalePriceNetOfCosts) : 0
 
-  const qualifyingPresales = inputs.products.reduce((sum, p) => sum + p.qualifyingPresaleValue, 0)
-  const nonQualifyingPresales = inputs.products.reduce((sum, p) => sum + p.nonQualifyingPresaleValue, 0)
   const qualifyingPresalesCover = seniorFunding > 0 ? qualifyingPresales / seniorFunding : 0
   const allPresalesCover = seniorFunding > 0 ? (qualifyingPresales + nonQualifyingPresales) / seniorFunding : 0
 
-  const constructionCostPerSqm = totalGFA > 0 ? inputs.construction / totalGFA : 0
+  const constructionCostPerSqm = totalGFA > 0 ? (inputs.construction || 0) / totalGFA : 0
 
   const targetROC = inputs.targetRoc ?? 0.20
-  const totalCostsExLand = totalDirectCosts - inputs.siteValue
+  const totalCostsExLand = totalDirectCosts - (inputs.siteValue || 0)
   const rlv = (netRealisations - totalCostsExLand * (1 + targetROC)) / (1 + targetROC)
 
-  const profit = netRealisations - totalDirectCosts;
-  const roe = inputs.customerCashEquity > 0 ? profit / inputs.customerCashEquity : 0;
-
-  const totalDebt = seniorFunding + (inputs.mezzEnabled ? inputs.mezzAmount : 0);
-  const profitPerUnit = totalLots > 0 ? profit / totalLots : 0;
-  const costPerUnit = totalLots > 0 ? totalDirectCosts / totalLots : 0;
+  const totalDebt = seniorFunding + (inputs.mezzEnabled ? (inputs.mezzAmount || 0) : 0);
+  const profitPerUnit = totalLots > 0 ? profitAmount / totalLots : 0;
+  const costPerUnit = totalLots > 0 ? totalDevelopmentCosts / totalLots : 0;
   const blendedRate = totalDebt > 0 ?
-    (seniorFunding * inputs.interestRate + (inputs.mezzEnabled ? inputs.mezzAmount * inputs.mezzInterestRate : 0)) / totalDebt : 0;
+    (seniorFunding * (inputs.interestRate || 0) + (inputs.mezzEnabled ? (inputs.mezzAmount || 0) * (inputs.mezzInterestRate || 0) : 0)) / totalDebt : 0;
+
   const results: CalculationResults = {
     grv, totalLots, totalGFA, gst, nrv, sellingCosts, totalSellingCosts, netRealisations,
-    peakDebt, totalInterest, averagePDFBalance, totalDirectCosts, seniorFunding,
-    ltc, lvrGross, lvrNet, roc, profitAmount, profitMargin,
+    peakDebt, totalInterest, averagePDFBalance, totalDirectCosts, totalDevelopmentCosts, seniorFunding,
+    ltc, lvrGross, lvrNet, roc, roe, profitAmount, profitMargin,
     residualANZDebt, grossResidualValue, netResidualValue, residualLVR, salesToRepay,
-    qualifyingPresalesCover, allPresalesCover, constructionCostPerSqm, rlv, roe, blendedRate, profitPerUnit, costPerUnit,
+    qualifyingPresalesCover, allPresalesCover, constructionCostPerSqm, rlv, blendedRate, profitPerUnit, costPerUnit,
     cashflow
   }
 
-  if (inputs.mezzEnabled && inputs.mezzAmount > 0) {
-    const mezzMonthlyRate = inputs.mezzInterestRate / 12
-    let mezzBalance = inputs.mezzAmount
+  if (inputs.mezzEnabled && (inputs.mezzAmount || 0) > 0) {
+    const mezzMonthlyRate = (inputs.mezzInterestRate || 0) / 12
+    let mezzBalance = inputs.mezzAmount || 0
     let mezzTotalInterest = 0
     for (let m = 1; m <= inputs.loanTermMonths; m++) {
       const interest = mezzBalance * mezzMonthlyRate
       mezzBalance += interest
       mezzTotalInterest += interest
     }
-    const mezzAppFee = inputs.mezzAmount * inputs.mezzAppFeeRate
-    const mezzBrokerFee = inputs.mezzAmount * inputs.mezzBrokerFeeRate
+    const mezzAppFee = (inputs.mezzAmount || 0) * (inputs.mezzAppFeeRate || 0)
+    const mezzBrokerFee = (inputs.mezzAmount || 0) * (inputs.mezzBrokerFeeRate || 0)
     results.mezzTotalInterest = mezzTotalInterest
-    results.mezzTotalRepayment = inputs.mezzAmount + mezzTotalInterest + mezzAppFee + mezzBrokerFee + inputs.mezzLegalFees
+    results.mezzTotalRepayment = (inputs.mezzAmount || 0) + mezzTotalInterest + mezzAppFee + mezzBrokerFee + (inputs.mezzLegalFees || 0)
     results.blendedTotalDebt = seniorFunding + results.mezzTotalRepayment
-    results.mezzLVR = grv > 0 ? (seniorFunding + inputs.mezzAmount) / grv : 0
+    results.mezzLVR = grv > 0 ? (seniorFunding + (inputs.mezzAmount || 0)) / grv : 0
   }
 
   return results
@@ -277,9 +285,9 @@ export function runScenario(baseInputs: DealInputs, adjustment: ScenarioAdjustme
       ...p,
       grossAICValuation: p.grossAICValuation * (1 + adjustment.grvAdjustment)
     })),
-    construction: baseInputs.construction * (1 + adjustment.costAdjustment),
-    constructionContingency: baseInputs.constructionContingency * (1 + adjustment.costAdjustment),
-    interestRate: baseInputs.interestRate + adjustment.interestAdjustment
+    construction: (baseInputs.construction || 0) * (1 + adjustment.costAdjustment),
+    constructionContingency: (baseInputs.constructionContingency || 0) * (1 + adjustment.costAdjustment),
+    interestRate: (baseInputs.interestRate || 0) + adjustment.interestAdjustment
   }
   return calculateAll(adjusted)
 }
@@ -288,7 +296,7 @@ export function executeScenarios(inputs: DealInputs, policy: any) {
   return {
     base: calculateAll(inputs),
     upside: runScenario(inputs, {
-      grvAdjustment: policy?.scenario_upside_grv ?? 0.10,
+      grvAdjustment: policy?.scenario_downside_grv ? -policy.scenario_downside_grv : 0.10,
       costAdjustment: policy?.scenario_upside_costs ?? -0.05,
       interestAdjustment: policy?.scenario_upside_rate ?? -0.01
     }),

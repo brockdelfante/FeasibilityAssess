@@ -2,19 +2,54 @@ import { create } from 'zustand'
 import { DealInputs, CalculationResults, calculateAll } from './calculations'
 
 interface DealState {
-  inputs: DealInputs
+  inputs: DealInputs & {
+    customerGroup: string
+    projectAddress: string
+    developerExperienceYears: number
+    developerProjectsCompleted: number
+    developerTnw: number
+    developerLiquidity: number
+    developerNotes: string
+    delayContingencyMonths: number
+    marketingSellingCost: number
+    legalFeesIndirect: number
+    ratesTaxes: number
+    financeCostsIndirect: number
+    otherIndirectCosts: number
+    indirectCostNotes: string
+    additionalSecurityFmv: number
+    additionalSecurityExtended: number
+    sponsorRecourse: boolean
+    tangibleNetWorth: number
+    riskScoreLocation: number
+    riskScoreDeveloperExp: number
+    riskScorePresales: number
+    riskScoreLvr: number
+    riskScoreContingency: number
+    riskScoreNotes: string
+    assumptionsGrvBasis: string
+    assumptionsConstructionBasis: string
+    assumptionsProgrammeBasis: string
+    assumptionsOther: string
+    presales: any[]
+  }
   results: CalculationResults
   isLoading: boolean
-  setInputs: (inputs: Partial<DealInputs>) => void
+  setInputs: (inputs: any) => void
   updateProduct: (index: number, product: any) => void
   addProduct: () => void
   removeProduct: (index: number) => void
+  updatePresale: (index: number, presale: any) => void
+  addPresale: () => void
+  removePresale: (index: number) => void
   loadDeal: (deal: any) => void
   setLoading: (loading: boolean) => void
 }
 
-const defaultInputs: DealInputs = {
+const defaultInputs: any = {
   dealType: 'construction',
+  customerGroup: '',
+  projectAddress: '',
   products: [{ numLots: 1, description: 'Example Lot', areaSqm: 100, grossAICValuation: 0, qualifyingPresaleValue: 0, nonQualifyingPresaleValue: 0 }],
   loanTermMonths: 18,
   buildTermMonths: 12,
@@ -42,7 +77,34 @@ const defaultInputs: DealInputs = {
   mezzInterestRate: 0.20,
   mezzAppFeeRate: 0.022,
   mezzBrokerFeeRate: 0.010,
-  mezzLegalFees: 6600
+  mezzLegalFees: 6600,
+  developerExperienceYears: 0,
+  developerProjectsCompleted: 0,
+  developerTnw: 0,
+  developerLiquidity: 0,
+  developerNotes: '',
+  delayContingencyMonths: 0,
+  marketingSellingCost: 0,
+  legalFeesIndirect: 0,
+  ratesTaxes: 0,
+  financeCostsIndirect: 0,
+  otherIndirectCosts: 0,
+  indirectCostNotes: '',
+  additionalSecurityFmv: 0,
+  additionalSecurityExtended: 0,
+  sponsorRecourse: false,
+  tangibleNetWorth: 0,
+  riskScoreLocation: 3,
+  riskScoreDeveloperExp: 3,
+  riskScorePresales: 3,
+  riskScoreLvr: 3,
+  riskScoreContingency: 3,
+  riskScoreNotes: '',
+  assumptionsGrvBasis: '',
+  assumptionsConstructionBasis: '',
+  assumptionsProgrammeBasis: '',
+  assumptionsOther: '',
+  presales: []
 };
 
 export const useDealStore = create<DealState>((set) => ({
@@ -51,6 +113,8 @@ export const useDealStore = create<DealState>((set) => ({
   isLoading: false,
   setInputs: (newInputs) => set((state) => {
     const updatedInputs = { ...state.inputs, ...newInputs }
+    // Update derived product values if needed (e.g. presales)
+    // Actually the calculation engine handles the totals
     return {
       inputs: updatedInputs,
       results: calculateAll(updatedInputs)
@@ -88,9 +152,42 @@ export const useDealStore = create<DealState>((set) => ({
       results: calculateAll(updatedInputs)
     }
   }),
+  updatePresale: (index, presale) => set((state) => {
+    const newPresales = [...state.inputs.presales]
+    newPresales[index] = { ...newPresales[index], ...presale }
+
+    // Sync to product qualifying values (simplified for this model)
+    const totalQualifying = newPresales.filter(p => p.is_qualifying).reduce((sum, p) => sum + (Number(p.sale_price) || 0), 0)
+    const totalNonQualifying = newPresales.filter(p => !p.is_qualifying).reduce((sum, p) => sum + (Number(p.sale_price) || 0), 0)
+
+    // We update the first product's presale values as a catch-all in this simplified sync
+    const newProducts = [...state.inputs.products]
+    if (newProducts.length > 0) {
+        newProducts[0].qualifyingPresaleValue = totalQualifying
+        newProducts[0].nonQualifyingPresaleValue = totalNonQualifying
+    }
+
+    const updatedInputs = { ...state.inputs, presales: newPresales, products: newProducts }
+    return {
+        inputs: updatedInputs,
+        results: calculateAll(updatedInputs)
+    }
+  }),
+  addPresale: () => set((state) => {
+    const newPresales = [...state.inputs.presales, { unit_description: '', buyer_name: '', sale_price: 0, is_qualifying: true }]
+    const updatedInputs = { ...state.inputs, presales: newPresales }
+    return { inputs: updatedInputs, results: calculateAll(updatedInputs) }
+  }),
+  removePresale: (index) => set((state) => {
+    const newPresales = state.inputs.presales.filter((_, i) => i !== index)
+    const updatedInputs = { ...state.inputs, presales: newPresales }
+    return { inputs: updatedInputs, results: calculateAll(updatedInputs) }
+  }),
   loadDeal: (deal) => set(() => {
-    const inputs: DealInputs = {
+    const inputs: any = {
         dealType: deal.deal_type || 'construction',
+        customerGroup: deal.customer_group || '',
+        projectAddress: deal.project_address || '',
         products: deal.deal_products?.length ? deal.deal_products.map((p: any) => ({
             numLots: p.num_lots,
             description: p.description,
@@ -99,6 +196,7 @@ export const useDealStore = create<DealState>((set) => ({
             qualifyingPresaleValue: p.qualifying_presale_value,
             nonQualifyingPresaleValue: p.non_qualifying_presale_value
         })) : defaultInputs.products,
+        presales: deal.deal_presales || [],
         loanTermMonths: deal.loan_term_months || 18,
         buildTermMonths: deal.build_term_months || 12,
         startDate: deal.start_date ? new Date(deal.start_date) : new Date(),
@@ -125,7 +223,33 @@ export const useDealStore = create<DealState>((set) => ({
         mezzInterestRate: Number(deal.mezz_interest_rate) || 0.20,
         mezzAppFeeRate: Number(deal.mezz_app_fee_rate) || 0.022,
         mezzBrokerFeeRate: Number(deal.mezz_broker_fee_rate) || 0.010,
-        mezzLegalFees: Number(deal.mezz_legal_fees) || 6600
+        mezzLegalFees: Number(deal.mezz_legal_fees) || 6600,
+        developerExperienceYears: deal.developer_experience_years || 0,
+        developerProjectsCompleted: deal.developer_projects_completed || 0,
+        developerTnw: Number(deal.developer_tnw) || 0,
+        developerLiquidity: Number(deal.developer_liquidity) || 0,
+        developerNotes: deal.developer_notes || '',
+        delayContingencyMonths: deal.delay_contingency_months || 0,
+        marketingSellingCost: Number(deal.marketing_selling_cost) || 0,
+        legalFeesIndirect: Number(deal.legal_fees_indirect) || 0,
+        ratesTaxes: Number(deal.rates_taxes) || 0,
+        financeCostsIndirect: Number(deal.finance_costs_indirect) || 0,
+        otherIndirectCosts: Number(deal.other_indirect_costs) || 0,
+        indirectCostNotes: deal.indirect_cost_notes || '',
+        additionalSecurityFmv: Number(deal.additional_security_fmv) || 0,
+        additionalSecurityExtended: Number(deal.additional_security_extended) || 0,
+        sponsorRecourse: deal.sponsor_recourse || false,
+        tangibleNetWorth: Number(deal.tangible_net_worth) || 0,
+        riskScoreLocation: deal.risk_score_location || 3,
+        riskScoreDeveloperExp: deal.risk_score_developer_exp || 3,
+        riskScorePresales: deal.risk_score_presales || 3,
+        riskScoreLvr: deal.risk_score_lvr || 3,
+        riskScoreContingency: deal.risk_score_contingency || 3,
+        riskScoreNotes: deal.risk_score_notes || '',
+        assumptionsGrvBasis: deal.assumptions_grv_basis || '',
+        assumptionsConstructionBasis: deal.assumptions_construction_basis || '',
+        assumptionsProgrammeBasis: deal.assumptions_programme_basis || '',
+        assumptionsOther: deal.assumptions_other || ''
     };
     return {
         inputs,
