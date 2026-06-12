@@ -8,30 +8,59 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
-import { ChevronRight, ChevronLeft, Check } from "lucide-react";
+import { ChevronRight, ChevronLeft, Check, Loader2 } from "lucide-react";
 
 export default function NewDealWizard() {
   const router = useRouter();
   const [step, setStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
-    dealType: "construction",
-    customerGroup: "",
-    projectAddress: "",
-    ownerBuilder: false,
-    startDate: "",
-    loanTermMonths: 18,
-    assignedTo: "Jules Smith"
+    deal_type: "construction",
+    customer_group: "",
+    project_address: "",
+    owner_builder: "3rd Party",
+    start_date: new Date().toISOString().split('T')[0],
+    loan_term_months: 18,
+    assigned_to: "Jules Smith"
   });
 
   const nextStep = () => setStep((s) => s + 1);
   const prevStep = () => setStep((s) => s - 1);
 
   const handleSubmit = async () => {
-    router.push("/deals/mock-id/edit");
+    setIsSubmitting(true);
+    try {
+      const res = await fetch("/api/deals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            ...formData,
+            status: 'draft',
+            created_by: 'Jules Smith',
+            interest_rate: 0.0999,
+            laf_rate: 0.015,
+            gst_method: 'standard',
+            site_value: 0,
+            construction: 0,
+            professional_fees: 0,
+            development_contingency: 0,
+            customer_cash_equity: 0,
+        })
+      });
+      const data = await res.json();
+      if (data.id) {
+        router.push(`/deals/${data.id}/edit`);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to create deal. Check console.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <div className="flex-1 flex items-center justify-center p-8 bg-gray-50">
+    <div className="flex-1 flex items-center justify-center p-8 bg-gray-50 min-h-screen">
       <div className="w-full max-w-2xl">
         <div className="mb-8 flex justify-between items-center px-2">
           {[1, 2, 3].map((i) => (
@@ -61,7 +90,7 @@ export default function NewDealWizard() {
           </CardHeader>
           <CardContent className="py-6">
             {step === 1 && (
-              <RadioGroup defaultValue="construction" onValueChange={(v) => setFormData({...formData, dealType: v})}>
+              <RadioGroup value={formData.deal_type} onValueChange={(v) => setFormData({...formData, deal_type: v})}>
                 <div className="grid gap-4">
                   <Label
                     htmlFor="construction"
@@ -72,7 +101,7 @@ export default function NewDealWizard() {
                       <span className="font-bold uppercase tracking-tight">Construction</span>
                     </div>
                     <span className="text-sm text-muted-foreground mt-2">
-                      Vertical development of residential or commercial buildings. Includes high-rise, townhouses, and mixed-use.
+                      Vertical development of residential or commercial buildings.
                     </span>
                   </Label>
                   <Label
@@ -84,7 +113,7 @@ export default function NewDealWizard() {
                       <span className="font-bold uppercase tracking-tight">Subdivision</span>
                     </div>
                     <span className="text-sm text-muted-foreground mt-2">
-                      Land subdivision and lot creation. Includes civil works, utilities, and infrastructure.
+                      Land subdivision and lot creation.
                     </span>
                   </Label>
                 </div>
@@ -98,8 +127,8 @@ export default function NewDealWizard() {
                   <Input
                     id="customerGroup"
                     placeholder="e.g. Siare Development Group"
-                    value={formData.customerGroup}
-                    onChange={(e) => setFormData({...formData, customerGroup: e.target.value})}
+                    value={formData.customer_group}
+                    onChange={(e) => setFormData({...formData, customer_group: e.target.value})}
                   />
                 </div>
                 <div className="grid gap-2">
@@ -107,19 +136,9 @@ export default function NewDealWizard() {
                   <Input
                     id="projectAddress"
                     placeholder="Full site address"
-                    value={formData.projectAddress}
-                    onChange={(e) => setFormData({...formData, projectAddress: e.target.value})}
+                    value={formData.project_address}
+                    onChange={(e) => setFormData({...formData, project_address: e.target.value})}
                   />
-                </div>
-                <div className="flex items-center space-x-4 pt-2">
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="ownerBuilder"
-                      checked={formData.ownerBuilder}
-                      onCheckedChange={(v) => setFormData({...formData, ownerBuilder: v})}
-                    />
-                    <Label htmlFor="ownerBuilder">Owner Builder Deal</Label>
-                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
@@ -127,8 +146,8 @@ export default function NewDealWizard() {
                     <Input
                       id="startDate"
                       type="date"
-                      value={formData.startDate}
-                      onChange={(e) => setFormData({...formData, startDate: e.target.value})}
+                      value={formData.start_date}
+                      onChange={(e) => setFormData({...formData, start_date: e.target.value})}
                     />
                   </div>
                   <div className="grid gap-2">
@@ -136,8 +155,8 @@ export default function NewDealWizard() {
                     <Input
                       id="loanTerm"
                       type="number"
-                      value={formData.loanTermMonths}
-                      onChange={(e) => setFormData({...formData, loanTermMonths: parseInt(e.target.value) || 0})}
+                      value={formData.loan_term_months}
+                      onChange={(e) => setFormData({...formData, loan_term_months: parseInt(e.target.value) || 0})}
                     />
                   </div>
                 </div>
@@ -148,32 +167,28 @@ export default function NewDealWizard() {
               <div className="space-y-4">
                 <div className="rounded-lg bg-blue-50 p-4 text-sm">
                   <p className="font-semibold text-blue-900 mb-2">Policy Configuration Applied</p>
-                  <p className="text-blue-800">This deal will be assessed against the <strong>2026 Policy</strong>. You can override individual thresholds later.</p>
+                  <p className="text-blue-800">This deal will be assessed against current policy thresholds.</p>
                 </div>
-                <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
-                  <span className="text-gray-500">Max LVR (Gross)</span>
-                  <span className="font-medium text-right">65.0%</span>
-                  <span className="text-gray-500">Max LTC</span>
-                  <span className="font-medium text-right">80.0%</span>
-                  <span className="text-gray-500">Min ROC</span>
-                  <span className="font-medium text-right">20.0%</span>
-                  <span className="text-gray-500">Min Presales Cover</span>
-                  <span className="font-medium text-right">80.0%</span>
-                  <div className="col-span-2 border-t my-2" />
-                  <span className="text-gray-500">Default Interest Rate</span>
-                  <span className="font-medium text-right">9.99%</span>
-                  <span className="text-gray-500">LAF Rate</span>
-                  <span className="font-medium text-right">1.50%</span>
+                <div className="grid grid-cols-2 gap-4 text-sm border p-4 rounded-lg">
+                  <div>
+                    <p className="text-gray-500">Address</p>
+                    <p className="font-bold">{formData.project_address}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Type</p>
+                    <p className="font-bold uppercase">{formData.deal_type}</p>
+                  </div>
                 </div>
               </div>
             )}
           </CardContent>
           <CardFooter className="flex justify-between border-t bg-gray-50/50 p-6">
-            <Button variant="outline" onClick={step === 1 ? () => router.back() : prevStep}>
+            <Button variant="outline" onClick={step === 1 ? () => router.back() : prevStep} disabled={isSubmitting}>
               {step === 1 ? "Cancel" : <><ChevronLeft className="mr-2 h-4 w-4" /> Previous</>}
             </Button>
-            <Button onClick={step === 3 ? handleSubmit : nextStep}>
-              {step === 3 ? "Create Deal Assessment" : <>Next <ChevronRight className="ml-2 h-4 w-4" /></>}
+            <Button onClick={step === 3 ? handleSubmit : nextStep} disabled={isSubmitting}>
+              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {step === 3 ? "Create Assessment" : <>Next <ChevronRight className="ml-2 h-4 w-4" /></>}
             </Button>
           </CardFooter>
         </Card>
