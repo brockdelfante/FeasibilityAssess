@@ -24,7 +24,7 @@ export interface DealInputs {
   landAcquisitionCost: number
   siteValue: number
   preliminaries: number
-  construction: number
+  construction: number // For Subdivision, this is Civil Works
   constructionContingency: number
   professionalFees: number
   councilContributions: number
@@ -84,8 +84,18 @@ export interface CalculationResults {
   mezzTotalInterest?: number
   mezzTotalRepayment?: number
   blendedTotalDebt?: number
+  roe: number
+  blendedRate: number
+  profitPerUnit: number
+  costPerUnit: number
   mezzLVR?: number
   cashflow: MonthlyRow[]
+}
+
+export interface ScenarioAdjustment {
+  grvAdjustment: number
+  costAdjustment: number
+  interestAdjustment: number
 }
 
 const S_CURVE_TABLE: [number, number][] = [
@@ -117,7 +127,7 @@ function sCurveCumulative(progress: number): number {
 }
 
 function monthlyDraw(month: number, buildTerm: number, totalCost: number): number {
-  if (month > buildTerm) return 0
+  if (month > buildTerm || buildTerm === 0) return 0
   const progressEnd = month / buildTerm
   const progressStart = (month - 1) / buildTerm
   return totalCost * (sCurveCumulative(progressEnd) - sCurveCumulative(progressStart))
@@ -169,7 +179,7 @@ export function calculateAll(inputs: DealInputs): CalculationResults {
     draws += m === 1 ? inputs.authorityFees : 0
     draws += m === 1 ? inputs.establishmentFees : 0
     draws += m === 1 ? inputs.legalFees : 0
-    draws += inputs.developmentContingency / inputs.loanTermMonths
+    draws += inputs.developmentContingency / Math.max(1, inputs.loanTermMonths)
 
     const interest = opening * monthlyRate
     totalInterest += interest
@@ -186,8 +196,8 @@ export function calculateAll(inputs: DealInputs): CalculationResults {
     })
   }
 
-  const peakDebt = Math.max(...cashflow.map(r => r.closingBalance))
-  const averagePDFBalance = cashflow.reduce((sum, r) => sum + r.closingBalance, 0) / cashflow.length
+  const peakDebt = cashflow.length > 0 ? Math.max(...cashflow.map(r => r.closingBalance)) : 0
+  const averagePDFBalance = cashflow.length > 0 ? cashflow.reduce((sum, r) => sum + r.closingBalance, 0) / cashflow.length : 0
 
   const totalDirectCosts = inputs.siteValue + inputs.preliminaries + inputs.construction +
     inputs.constructionContingency + inputs.professionalFees + inputs.councilContributions +
@@ -223,12 +233,20 @@ export function calculateAll(inputs: DealInputs): CalculationResults {
   const totalCostsExLand = totalDirectCosts - inputs.siteValue
   const rlv = (netRealisations - totalCostsExLand * (1 + targetROC)) / (1 + targetROC)
 
+  const profit = netRealisations - totalDirectCosts;
+  const roe = inputs.customerCashEquity > 0 ? profit / inputs.customerCashEquity : 0;
+
+  const totalDebt = seniorFunding + (inputs.mezzEnabled ? inputs.mezzAmount : 0);
+  const profitPerUnit = totalLots > 0 ? profit / totalLots : 0;
+  const costPerUnit = totalLots > 0 ? totalDirectCosts / totalLots : 0;
+  const blendedRate = totalDebt > 0 ?
+    (seniorFunding * inputs.interestRate + (inputs.mezzEnabled ? inputs.mezzAmount * inputs.mezzInterestRate : 0)) / totalDebt : 0;
   const results: CalculationResults = {
     grv, totalLots, totalGFA, gst, nrv, sellingCosts, totalSellingCosts, netRealisations,
     peakDebt, totalInterest, averagePDFBalance, totalDirectCosts, seniorFunding,
     ltc, lvrGross, lvrNet, roc, profitAmount, profitMargin,
     residualANZDebt, grossResidualValue, netResidualValue, residualLVR, salesToRepay,
-    qualifyingPresalesCover, allPresalesCover, constructionCostPerSqm, rlv,
+    qualifyingPresalesCover, allPresalesCover, constructionCostPerSqm, rlv, roe, blendedRate, profitPerUnit, costPerUnit,
     cashflow
   }
 
@@ -250,4 +268,34 @@ export function calculateAll(inputs: DealInputs): CalculationResults {
   }
 
   return results
+}
+
+export function runScenario(baseInputs: DealInputs, adjustment: ScenarioAdjustment): CalculationResults {
+  const adjusted = {
+    ...baseInputs,
+    products: baseInputs.products.map(p => ({
+      ...p,
+      grossAICValuation: p.grossAICValuation * (1 + adjustment.grvAdjustment)
+    })),
+    construction: baseInputs.construction * (1 + adjustment.costAdjustment),
+    constructionContingency: baseInputs.constructionContingency * (1 + adjustment.costAdjustment),
+    interestRate: baseInputs.interestRate + adjustment.interestAdjustment
+  }
+  return calculateAll(adjusted)
+}
+
+export function executeScenarios(inputs: DealInputs, policy: any) {
+  return {
+    base: calculateAll(inputs),
+    upside: runScenario(inputs, {
+      grvAdjustment: policy?.scenario_upside_grv ?? 0.10,
+      costAdjustment: policy?.scenario_upside_costs ?? -0.05,
+      interestAdjustment: policy?.scenario_upside_rate ?? -0.01
+    }),
+    downside: runScenario(inputs, {
+      grvAdjustment: policy?.scenario_downside_grv ?? -0.10,
+      costAdjustment: policy?.scenario_downside_costs ?? 0.10,
+      interestAdjustment: policy?.scenario_downside_rate ?? 0.01
+    })
+  }
 }

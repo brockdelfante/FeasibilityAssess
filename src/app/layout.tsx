@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
-import { LayoutDashboard, Settings, FileText, PlusSquare } from "lucide-react";
+import { LayoutDashboard, Settings, FileText, PlusSquare, Calculator } from "lucide-react";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono" });
@@ -36,6 +36,10 @@ export default function RootLayout({
               <Link href="/deals/new" className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5">
                 <PlusSquare className="h-5 w-5" />
                 <span>New Deal</span>
+              </Link>
+              <Link href="/deals/quick-test" className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5">
+                <Calculator className="h-5 w-5" />
+                <span>Quick Test</span>
               </Link>
               <Link href="/settings/policy" className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5">
                 <Settings className="h-5 w-5" />
