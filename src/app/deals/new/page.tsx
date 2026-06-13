@@ -27,19 +27,7 @@ export default function NewDealWizard() {
       const res = await fetch("/api/deals", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            ...formData,
-            status: 'draft',
-            created_by: 'Jules Smith',
-            interest_rate: 0.0999,
-            laf_rate: 0.015,
-            gst_method: 'standard',
-            site_value: 0,
-            construction: 0,
-            professional_fees: 0,
-            development_contingency: 0,
-            customer_cash_equity: 0,
-        })
+        body: JSON.stringify(formData)
       });
       const data = await res.json();
       if (data.id) {
@@ -72,38 +60,54 @@ export default function NewDealWizard() {
 
         <Card className="shadow-lg border-t-4 border-t-blue-600">
           <CardHeader>
-            <CardTitle>{step === 1 ? "Select Type" : step === 2 ? "Basic Details" : "Confirm"}</CardTitle>
+            <CardTitle className="text-2xl font-black uppercase tracking-tight">
+              {step === 1 ? "Model Type" : step === 2 ? "Basic Details" : "Finalise"}
+            </CardTitle>
           </CardHeader>
           <CardContent className="py-6">
             {step === 1 && (
               <RadioGroup value={formData.deal_type} onValueChange={(v) => setFormData({...formData, deal_type: v})}>
                 <div className="grid gap-4">
-                  <Label htmlFor="construction" className="flex flex-col border-2 p-4 rounded-md cursor-pointer [&:has([data-state=checked])]:border-blue-600">
+                  <Label htmlFor="construction" className="flex flex-col border-2 p-5 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors [&:has([data-state=checked])]:border-blue-600 [&:has([data-state=checked])]:bg-blue-50/30">
                     <RadioGroupItem value="construction" id="construction" className="sr-only" />
-                    <span className="font-bold">Construction</span>
-                    <span className="text-xs text-gray-500">Vertical development</span>
+                    <span className="font-black uppercase tracking-tight text-lg">Construction</span>
+                    <span className="text-xs text-gray-500 font-medium">Vertical residential or commercial builds</span>
                   </Label>
-                  <Label htmlFor="subdivision" className="flex flex-col border-2 p-4 rounded-md cursor-pointer [&:has([data-state=checked])]:border-blue-600">
+                  <Label htmlFor="subdivision" className="flex flex-col border-2 p-5 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors [&:has([data-state=checked])]:border-blue-600 [&:has([data-state=checked])]:bg-blue-50/30">
                     <RadioGroupItem value="subdivision" id="subdivision" className="sr-only" />
-                    <span className="font-bold">Subdivision</span>
-                    <span className="text-xs text-gray-500">Land division</span>
+                    <span className="font-black uppercase tracking-tight text-lg">Subdivision</span>
+                    <span className="text-xs text-gray-500 font-medium">Horizontal land division and civil works</span>
                   </Label>
                 </div>
               </RadioGroup>
             )}
             {step === 2 && (
-              <div className="space-y-4">
-                <div className="grid gap-2"><Label>Group</Label><Input value={formData.customer_group} onChange={e => setFormData({...formData, customer_group: e.target.value})} /></div>
-                <div className="grid gap-2"><Label>Address</Label><Input value={formData.project_address} onChange={e => setFormData({...formData, project_address: e.target.value})} /></div>
+              <div className="space-y-6">
+                <div className="grid gap-2">
+                    <Label htmlFor="group-input" className="text-[10px] font-black uppercase text-gray-400">Group</Label>
+                    <Input id="group-input" placeholder="e.g. Siare Holdings" value={formData.customer_group} onChange={e => setFormData({...formData, customer_group: e.target.value})} className="h-12 text-lg font-bold" />
+                </div>
+                <div className="grid gap-2">
+                    <Label htmlFor="address-input" className="text-[10px] font-black uppercase text-gray-400">Address</Label>
+                    <Input id="address-input" placeholder="Full site address..." value={formData.project_address} onChange={e => setFormData({...formData, project_address: e.target.value})} className="h-12 text-lg font-bold" />
+                </div>
               </div>
             )}
-            {step === 3 && <div className="p-4 border rounded-lg bg-blue-50 text-blue-900 font-medium">Ready to create assessment for {formData.project_address}</div>}
+            {step === 3 && (
+                <div className="space-y-4">
+                    <div className="p-6 border-2 border-dashed rounded-2xl bg-blue-50/30 text-blue-900 text-center">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-2">Ready to Initialise</p>
+                        <h3 className="text-xl font-black">{formData.project_address || "Unnamed Project"}</h3>
+                        <p className="text-sm font-medium opacity-70 mt-1">{formData.customer_group || "Private Group"}</p>
+                    </div>
+                </div>
+            )}
           </CardContent>
           <CardFooter className="flex justify-between border-t bg-gray-50/50 p-6">
-            <Button variant="outline" onClick={() => step === 1 ? router.push('/') : setStep(s => s - 1)} disabled={isSubmitting}>Back</Button>
-            <Button onClick={() => step === 3 ? handleSubmit() : setStep(s => s + 1)} disabled={isSubmitting}>
+            <Button variant="ghost" onClick={() => step === 1 ? router.push('/') : setStep(s => s - 1)} disabled={isSubmitting} className="font-bold uppercase text-[11px] tracking-widest">Back</Button>
+            <Button onClick={() => step === 3 ? handleSubmit() : setStep(s => s + 1)} disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 px-8 font-black uppercase text-[11px] tracking-widest shadow-lg shadow-blue-900/20">
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {step === 3 ? "Create" : "Next"}
+              {step === 3 ? "Create Assessment" : "Next"}
             </Button>
           </CardFooter>
         </Card>

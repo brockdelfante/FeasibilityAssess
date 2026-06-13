@@ -69,7 +69,6 @@ export default function DealEditPage() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-        // Map store inputs back to snake_case for DB
         const payload = {
             customer_group: inputs.customerGroup,
             project_address: inputs.projectAddress,
@@ -81,13 +80,22 @@ export default function DealEditPage() {
             laf_rate: inputs.lafRate,
             gst_method: inputs.gstMethod,
             site_value: inputs.siteValue,
+            preliminaries: inputs.preliminaries,
             construction: inputs.construction,
+            construction_contingency: inputs.constructionContingency,
             professional_fees: inputs.professionalFees,
+            council_contributions: inputs.councilContributions,
+            authority_fees: inputs.authorityFees,
+            establishment_fees: inputs.establishmentFees,
+            legal_fees: inputs.legalFees,
             development_contingency: inputs.developmentContingency,
             customer_cash_equity: inputs.customerCashEquity,
             mezz_enabled: inputs.mezzEnabled,
             mezz_amount: inputs.mezzAmount,
             mezz_interest_rate: inputs.mezzInterestRate,
+            mezz_app_fee_rate: inputs.mezzAppFeeRate,
+            mezz_broker_fee_rate: inputs.mezzBrokerFeeRate,
+            mezz_legal_fees: inputs.mezzLegalFees,
             developer_experience_years: inputs.developerExperienceYears,
             developer_projects_completed: inputs.developerProjectsCompleted,
             developer_tnw: inputs.developerTnw,
@@ -122,15 +130,16 @@ export default function DealEditPage() {
             presales: inputs.presales
         };
 
-        await fetch(`/api/deals/${params.id}`, {
+        const res = await fetch(`/api/deals/${params.id}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json', 'x-editor-name': 'Jules Smith' },
             body: JSON.stringify(payload)
         });
+        if (!res.ok) throw new Error("Save failed");
         await fetchDeal();
-        alert("Draft saved successfully.");
+        alert("Draft committed to database.");
     } catch (e: any) {
-        alert("Error saving: " + e.message);
+        alert("Error: " + e.message);
     } finally {
         setIsSaving(false);
     }
@@ -148,8 +157,12 @@ export default function DealEditPage() {
         const data = await res.json();
         if (data.success) {
             await fetchDeal();
-            alert("Pushed successfully.");
+            alert(`Successfully pushed to HubSpot ${pipeline.toUpperCase()} pipeline.`);
+        } else {
+            throw new Error(data.error || "Push failed");
         }
+    } catch (e: any) {
+        alert("Error: " + e.message);
     } finally {
         setStatus(false);
     }
@@ -167,186 +180,309 @@ export default function DealEditPage() {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `Feasibility-${inputs.customerGroup || 'Project'}-${new Date().toISOString().split('T')[0]}.xlsx`;
+        a.download = `Siare_Feasibility_${inputs.customerGroup || 'Deal'}_${Date.now()}.xlsx`;
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
+    } catch (e) {
+        console.error(e);
     } finally {
         setIsExporting(false);
     }
   };
 
-  if (isLoading) return <div className="flex h-screen items-center justify-center bg-gray-50 flex-col space-y-4"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /><p className="text-sm font-bold text-gray-400">LOADING ASSESSMENT</p></div>
+  if (isLoading) return (
+    <div className="flex h-screen items-center justify-center bg-[#0F1923] flex-col space-y-6">
+        <Loader2 className="h-12 w-12 animate-spin text-blue-500" />
+        <p className="text-blue-100 font-black tracking-widest uppercase text-xs">Initialising Analysis Engine</p>
+    </div>
+  );
 
   return (
-    <div className="flex flex-col h-full bg-gray-50 min-h-screen relative">
+    <div className="flex flex-col h-full bg-gray-50 min-h-screen relative font-sans">
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Column */}
-        <div className="flex-1 overflow-auto p-6 space-y-6 text-sm pb-40">
+        {/* Left Column: Input Sections */}
+        <div className="flex-1 overflow-auto p-8 space-y-8 text-sm pb-40">
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="icon" onClick={() => router.push('/')} className="rounded-full bg-white shadow-sm border"><ArrowLeft className="h-5 w-5 text-gray-600" /></Button>
+            <div className="flex items-center space-x-6">
+              <Button variant="ghost" size="icon" onClick={() => router.push('/')} className="rounded-full bg-white shadow-sm border h-12 w-12 hover:bg-gray-100">
+                <ArrowLeft className="h-6 w-6 text-gray-900" />
+              </Button>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900 tracking-tight">{inputs.customerGroup || "Assessment Overview"}</h1>
-                <div className="flex items-center text-gray-500 font-medium text-xs mt-1 uppercase tracking-widest">
-                    <MapPin className="h-3 w-3 mr-1" /> {inputs.projectAddress || "Unnamed Site"}
-                    <span className="mx-2 text-gray-300">|</span>
-                    <Badge variant="secondary" className="text-[9px] font-black uppercase tracking-tighter">{inputs.dealType}</Badge>
+                <h1 className="text-3xl font-black text-gray-900 tracking-tight leading-none">{inputs.customerGroup || "Assessment Overview"}</h1>
+                <div className="flex items-center text-gray-500 font-bold text-[10px] mt-2 uppercase tracking-widest">
+                    <MapPin className="h-3 w-3 mr-1 text-blue-500" /> {inputs.projectAddress || "Unnamed Site"}
+                    <span className="mx-3 text-gray-300">|</span>
+                    <Badge variant="outline" className="text-[9px] font-black border-blue-200 text-blue-600 bg-blue-50">{inputs.dealType}</Badge>
                 </div>
               </div>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-3">
                 <Sheet>
-                    <SheetTrigger asChild><Button variant="outline" size="sm" className="bg-white"><History className="h-4 w-4 mr-2" />History</Button></SheetTrigger>
-                    <SheetContent className="w-[400px] sm:w-[540px] overflow-auto">
-                        <SheetHeader><SheetTitle className="flex items-center font-black uppercase tracking-tight text-lg"><History className="h-5 w-5 mr-2 text-blue-600" /> Audit Log</SheetTitle></SheetHeader>
-                        <div className="mt-8 space-y-4 pb-20">
-                            {(dealInfo?.audit_logs || []).length === 0 ? <p className="text-sm text-gray-400 italic">No history found.</p> :
+                    <SheetTrigger asChild>
+                        <Button variant="outline" className="bg-white border-gray-200 font-bold text-[11px] uppercase tracking-widest shadow-sm">
+                            <History className="h-4 w-4 mr-2 text-blue-600" />
+                            History
+                        </Button>
+                    </SheetTrigger>
+                    <SheetContent className="w-[450px] sm:w-[600px] overflow-auto border-l-4 border-l-blue-600">
+                        <SheetHeader className="border-b pb-6">
+                            <SheetTitle className="flex items-center font-black uppercase tracking-tighter text-2xl text-gray-900">
+                                <History className="h-6 w-6 mr-3 text-blue-600" />
+                                Audit Trail
+                            </SheetTitle>
+                            <SheetDescription className="font-medium text-gray-500">Chronological record of every technical change.</SheetDescription>
+                        </SheetHeader>
+                        <div className="mt-8 space-y-6 pb-20">
+                            {(dealInfo?.audit_logs || []).length === 0 ? (
+                                <div className="text-center py-20 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+                                    <p className="text-sm text-gray-400 font-bold uppercase tracking-widest italic">No change history recorded.</p>
+                                </div>
+                            ) : (
                                 dealInfo.audit_logs.map((log: any, i: number) => (
-                                    <div key={i} className="text-[12px] border-l-2 border-blue-50 pl-4 py-2 relative hover:bg-gray-50 rounded-r-lg transition-colors">
-                                        <div className="absolute -left-[5px] top-4 h-2 w-2 rounded-full bg-blue-500 shadow-sm" />
-                                        <div className="flex justify-between items-center mb-1"><span className="font-bold text-gray-900">{new Date(log.changed_at).toLocaleString()}</span><Badge variant="outline" className="text-[9px] uppercase font-bold text-blue-600">{log.changed_by}</Badge></div>
-                                        <p className="text-gray-500 leading-relaxed">{log.change_note}</p>
-                                        {log.field_name !== 'multi_save' && <div className="mt-1 flex items-center space-x-1 font-mono text-[9px]"><span className="text-gray-400">{log.field_name}:</span><span className="line-through text-gray-300">{log.old_value || 'null'}</span><span className="font-bold text-blue-600">{log.new_value}</span></div>}
+                                    <div key={i} className="text-[12px] border-l-4 border-blue-50 pl-5 py-3 relative hover:bg-gray-50 rounded-r-2xl transition-all group">
+                                        <div className="absolute -left-[7px] top-5 h-3 w-3 rounded-full bg-blue-500 border-2 border-white shadow-md group-hover:scale-125 transition-transform" />
+                                        <div className="flex justify-between items-center mb-2">
+                                            <span className="font-black text-gray-900 uppercase tracking-tighter">{new Date(log.changed_at).toLocaleString()}</span>
+                                            <Badge variant="secondary" className="text-[9px] font-black uppercase bg-blue-100 text-blue-700">{log.changed_by}</Badge>
+                                        </div>
+                                        <p className="text-gray-600 font-medium">{log.change_note}</p>
+                                        {log.field_name !== 'multi_save' && (
+                                            <div className="mt-2 bg-white border border-gray-100 p-2.5 rounded-lg flex flex-col space-y-1 shadow-sm">
+                                                <span className="text-[9px] uppercase font-black text-gray-400">Metric: {log.field_name}</span>
+                                                <div className="flex items-center space-x-2 text-[11px] font-mono">
+                                                    <span className="text-red-400 line-through">{log.old_value || 'NULL'}</span>
+                                                    <ArrowUpRight className="h-3 w-3 text-gray-300" />
+                                                    <span className="text-green-600 font-bold">{log.new_value}</span>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 ))
-                            }
+                            )}
                         </div>
                     </SheetContent>
                 </Sheet>
-                <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={isExporting} className="bg-white"><FileSpreadsheet className="h-4 w-4 mr-2 text-green-600" />Export XLSX</Button>
+                <Button variant="outline" onClick={handleExportExcel} disabled={isExporting} className="bg-white border-gray-200 font-bold text-[11px] uppercase tracking-widest shadow-sm">
+                    {isExporting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FileSpreadsheet className="h-4 w-4 mr-2 text-green-600" />}
+                    Export Data
+                </Button>
             </div>
           </div>
 
-          <Accordion type="multiple" defaultValue={["products", "costs", "finance"]} className="w-full space-y-4">
-             <AccordionItem value="products" className="bg-white border rounded-xl px-6 shadow-sm overflow-hidden">
-                <AccordionTrigger className="hover:no-underline py-4 font-bold uppercase tracking-widest text-[11px] text-gray-500">Lot Mix</AccordionTrigger>
-                <AccordionContent className="pb-6">
+          <Accordion type="multiple" defaultValue={["products", "costs", "programme", "finance", "risk"]} className="w-full space-y-6">
+             {/* Developer Profile Section */}
+             <AccordionItem value="developer" className="bg-white border rounded-2xl px-8 shadow-sm overflow-hidden border-gray-100">
+                <AccordionTrigger className="hover:no-underline py-6 font-black uppercase tracking-[0.2em] text-[11px] text-gray-400">Developer Profile</AccordionTrigger>
+                <AccordionContent className="pb-8">
+                    <div className="grid grid-cols-4 gap-8">
+                        <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-500 font-black">Experience (Yrs)</Label><Input type="number" value={inputs.developerExperienceYears} onChange={e => setInputs({ developerExperienceYears: parseInt(e.target.value) || 0 })} className="h-10 font-bold" /></div>
+                        <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-500 font-black">Projects Completed</Label><Input type="number" value={inputs.developerProjectsCompleted} onChange={e => setInputs({ developerProjectsCompleted: parseInt(e.target.value) || 0 })} className="h-10 font-bold" /></div>
+                        <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-500 font-black">Net Worth (AUD)</Label><Input type="number" value={inputs.developerTnw} onChange={e => setInputs({ developerTnw: parseFloat(e.target.value) || 0 })} className="h-10 font-bold" /></div>
+                        <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-500 font-black">Liquidity (AUD)</Label><Input type="number" value={inputs.developerLiquidity} onChange={e => setInputs({ developerLiquidity: parseFloat(e.target.value) || 0 })} className="h-10 font-bold" /></div>
+                        <div className="col-span-4 space-y-2 pt-2"><Label className="text-[10px] uppercase text-gray-500 font-black">Professional Commentary</Label><Textarea className="min-h-[100px] leading-relaxed" value={inputs.developerNotes} onChange={e => setInputs({ developerNotes: e.target.value })} placeholder="Discuss developer track record and project relevance..." /></div>
+                    </div>
+                </AccordionContent>
+            </AccordionItem>
+
+            {/* Product Mix Section */}
+            <AccordionItem value="products" className="bg-white border rounded-2xl px-8 shadow-sm overflow-hidden border-gray-100">
+                <AccordionTrigger className="hover:no-underline py-6 font-black uppercase tracking-[0.2em] text-[11px] text-gray-400">{isSubdivision ? "Lot Inventory" : "Unit Inventory"}</AccordionTrigger>
+                <AccordionContent className="pb-8">
                     <div className="space-y-4">
+                        <div className="grid grid-cols-6 gap-6 text-[10px] uppercase font-black text-gray-400 px-2">
+                            <div className="col-span-2">Description</div>
+                            <div className="text-center">{isSubdivision ? "No. Lots" : "No. Units"}</div>
+                            <div className="text-center">Area (sqm)</div>
+                            <div className="text-right">Valuation (inc GST)</div>
+                            <div />
+                        </div>
                         {inputs.products.map((product, idx) => (
-                            <div key={idx} className="grid grid-cols-6 gap-4 items-center bg-gray-50/50 p-3 rounded-lg border border-gray-100">
-                                <div className="col-span-2 space-y-1"><Label className="text-[9px] uppercase text-gray-400 font-bold">Desc</Label><Input value={product.description} onChange={(e) => updateProduct(idx, { description: e.target.value })} className="bg-white h-9" /></div>
-                                <div><Label className="text-[9px] uppercase text-gray-400 font-bold">Lots</Label><Input type="number" value={product.numLots} onChange={(e) => updateProduct(idx, { numLots: parseInt(e.target.value) || 0 })} className="bg-white h-9" /></div>
-                                <div><Label className="text-[9px] uppercase text-gray-400 font-bold">Size</Label><Input type="number" value={product.areaSqm} onChange={(e) => updateProduct(idx, { areaSqm: parseFloat(e.target.value) || 0 })} className="bg-white h-9" /></div>
-                                <div><Label className="text-[9px] uppercase text-gray-400 font-bold">Value</Label><Input type="number" value={product.grossAICValuation} onChange={(e) => updateProduct(idx, { grossAICValuation: parseFloat(e.target.value) || 0 })} className="bg-white h-9" /></div>
-                                <div className="flex justify-end pt-5"><Button variant="ghost" size="icon" className="text-gray-300 hover:text-red-600" onClick={() => removeProduct(idx)}><Trash2 className="h-4 w-4" /></Button></div>
+                            <div key={idx} className="grid grid-cols-6 gap-6 items-center bg-gray-50/50 p-4 rounded-2xl border border-gray-100 group hover:bg-blue-50/30 transition-colors">
+                                <div className="col-span-2"><Input value={product.description} onChange={(e) => updateProduct(idx, { description: e.target.value })} className="bg-white border-gray-200 font-bold h-11" /></div>
+                                <div><Input type="number" value={product.numLots} onChange={(e) => updateProduct(idx, { numLots: parseInt(e.target.value) || 0 })} className="bg-white border-gray-200 text-center font-mono font-bold h-11" /></div>
+                                <div><Input type="number" value={product.areaSqm} onChange={(e) => updateProduct(idx, { areaSqm: parseFloat(e.target.value) || 0 })} className="bg-white border-gray-200 text-center font-mono font-bold h-11" /></div>
+                                <div><Input type="number" value={product.grossAICValuation} onChange={(e) => updateProduct(idx, { grossAICValuation: parseFloat(e.target.value) || 0 })} className="bg-white border-gray-200 text-right font-mono font-bold h-11" /></div>
+                                <div className="flex justify-end"><Button variant="ghost" size="icon" className="text-gray-300 hover:text-red-600 hover:bg-red-50 rounded-full h-11 w-11" onClick={() => removeProduct(idx)}><Trash2 className="h-5 w-5" /></Button></div>
                             </div>
                         ))}
-                        <Button variant="outline" size="sm" onClick={addProduct} className="w-full border-dashed bg-white text-gray-500 hover:text-blue-600"><Plus className="h-4 w-4 mr-2" /> Add Product Line</Button>
+                        <Button variant="outline" size="lg" onClick={addProduct} className="w-full border-2 border-dashed border-gray-200 bg-white text-gray-400 font-black uppercase text-[10px] tracking-widest hover:text-blue-600 hover:border-blue-200 h-14 rounded-2xl"><Plus className="h-5 w-5 mr-3" /> Add Assessment Line</Button>
                     </div>
                 </AccordionContent>
             </AccordionItem>
 
-            <AccordionItem value="costs" className="bg-white border rounded-xl px-6 shadow-sm overflow-hidden">
-                <AccordionTrigger className="hover:no-underline py-4 font-bold uppercase tracking-widest text-[11px] text-gray-500">Costs</AccordionTrigger>
-                <AccordionContent className="pb-6">
-                    <div className="grid grid-cols-2 gap-8">
-                        <div className="space-y-4">
-                            <div className="space-y-2"><Label>Site Value</Label><Input type="number" value={inputs.siteValue} onChange={e => setInputs({ siteValue: parseFloat(e.target.value) || 0 })} /></div>
-                            <div className="space-y-2"><Label>Construction</Label><Input type="number" value={inputs.construction} onChange={e => setInputs({ construction: parseFloat(e.target.value) || 0 })} /></div>
+            {/* Direct Project Costs Section */}
+            <AccordionItem value="costs" className="bg-white border rounded-2xl px-8 shadow-sm overflow-hidden border-gray-100">
+                <AccordionTrigger className="hover:no-underline py-6 font-black uppercase tracking-[0.2em] text-[11px] text-gray-400">Direct Project Costs (ex GST)</AccordionTrigger>
+                <AccordionContent className="pb-8">
+                    <div className="grid grid-cols-2 gap-x-16 gap-y-8">
+                        <div className="space-y-6">
+                            <div className="space-y-2 border-l-4 border-blue-500 pl-6"><Label className="text-[10px] font-black uppercase text-gray-500">Site Value (inc land)</Label><Input id="site-value-input" type="number" value={inputs.siteValue} onChange={e => setInputs({ siteValue: parseFloat(e.target.value) || 0 })} className="h-12 text-lg font-black font-mono border-gray-300 bg-blue-50/10 focus:bg-white" /></div>
+                            <div className="space-y-2 border-l-4 border-blue-500 pl-6"><Label className="text-[10px] font-black uppercase text-gray-500">{isSubdivision ? "Civil Works Estimate" : "Vertical Construction Estimate"}</Label><Input id="construction-cost-input" type="number" value={inputs.construction} onChange={e => setInputs({ construction: parseFloat(e.target.value) || 0 })} className="h-12 text-lg font-black font-mono border-gray-300 bg-blue-50/10 focus:bg-white" /></div>
+                            <div className="space-y-2 pl-7"><Label className="text-[10px] font-black uppercase text-gray-400">Preliminaries</Label><Input type="number" value={inputs.preliminaries} onChange={e => setInputs({ preliminaries: parseFloat(e.target.value) || 0 })} className="h-11 font-bold border-gray-200" /></div>
+                            <div className="space-y-2 pl-7"><Label className="text-[10px] font-black uppercase text-gray-400">Construction Contingency</Label><Input type="number" value={inputs.constructionContingency} onChange={e => setInputs({ constructionContingency: parseFloat(e.target.value) || 0 })} className="h-11 font-bold border-gray-200" /></div>
                         </div>
-                        <div className="space-y-4">
-                            <div className="space-y-2"><Label>Professional Fees</Label><Input type="number" value={inputs.professionalFees} onChange={e => setInputs({ professionalFees: parseFloat(e.target.value) || 0 })} /></div>
-                            <div className="space-y-2"><Label>Contingency</Label><Input type="number" value={inputs.developmentContingency} onChange={e => setInputs({ developmentContingency: parseFloat(e.target.value) || 0 })} /></div>
+                        <div className="space-y-6">
+                            <div className="space-y-2 pl-7"><Label className="text-[10px] font-black uppercase text-gray-400">Professional Fees</Label><Input type="number" value={inputs.professionalFees} onChange={e => setInputs({ professionalFees: parseFloat(e.target.value) || 0 })} className="h-11 font-bold border-gray-200" /></div>
+                            <div className="space-y-2 pl-7"><Label className="text-[10px] font-black uppercase text-gray-400">Council Contributions</Label><Input type="number" value={inputs.councilContributions} onChange={e => setInputs({ councilContributions: parseFloat(e.target.value) || 0 })} className="h-11 font-bold border-gray-200" /></div>
+                            <div className="space-y-2 pl-7"><Label className="text-[10px] font-black uppercase text-gray-400">Authority Fees & Charges</Label><Input type="number" value={inputs.authorityFees} onChange={e => setInputs({ authorityFees: parseFloat(e.target.value) || 0 })} className="h-11 font-bold border-gray-200" /></div>
+                            <div className="space-y-2 pl-7"><Label className="text-[10px] font-black uppercase text-gray-400">Establishment Fees (LAF $)</Label><Input type="number" value={inputs.establishmentFees} onChange={e => setInputs({ establishmentFees: parseFloat(e.target.value) || 0 })} className="h-11 font-bold border-gray-200" /></div>
+                            <div className="space-y-2 pl-7"><Label className="text-[10px] font-black uppercase text-gray-400">Legal Fees (Senior)</Label><Input type="number" value={inputs.legalFees} onChange={e => setInputs({ legalFees: parseFloat(e.target.value) || 0 })} className="h-11 font-bold border-gray-200" /></div>
+                            <div className="space-y-2 pl-7 border-t pt-4 mt-4 border-gray-100"><Label className="text-[10px] font-black uppercase text-gray-400 text-blue-600">Development Contingency</Label><Input type="number" value={inputs.developmentContingency} onChange={e => setInputs({ developmentContingency: parseFloat(e.target.value) || 0 })} className="h-11 font-black font-mono border-blue-100 bg-blue-50/20" /></div>
                         </div>
                     </div>
                 </AccordionContent>
             </AccordionItem>
 
-            <AccordionItem value="finance" className="bg-white border rounded-xl px-6 shadow-sm overflow-hidden">
-                <AccordionTrigger className="hover:no-underline py-4 font-bold uppercase tracking-widest text-[11px] text-gray-500">Finance</AccordionTrigger>
-                <AccordionContent className="pb-6">
-                    <div className="grid grid-cols-3 gap-8">
-                        <div className="space-y-2"><Label>Senior Interest (%)</Label><Input type="number" step="0.01" value={inputs.interestRate * 100} onChange={e => setInputs({ interestRate: (parseFloat(e.target.value) || 0) / 100 })} /></div>
-                        <div className="space-y-2"><Label>Equity (Cash)</Label><Input type="number" value={inputs.customerCashEquity} onChange={e => setInputs({ customerCashEquity: parseFloat(e.target.value) || 0 })} /></div>
+            {/* Indirect Project Costs Section */}
+            <AccordionItem value="indirect" className="bg-white border rounded-2xl px-8 shadow-sm overflow-hidden border-gray-100">
+                <AccordionTrigger className="hover:no-underline py-6 font-black uppercase tracking-[0.2em] text-[11px] text-gray-400">Indirect Project Costs</AccordionTrigger>
+                <AccordionContent className="pb-8">
+                    <div className="grid grid-cols-2 gap-x-16 gap-y-8">
                         <div className="space-y-4">
-                            <div className="flex items-center justify-between"><Label className="text-[10px] uppercase font-bold text-amber-700">Mezzanine Layer</Label><Switch checked={inputs.mezzEnabled} onCheckedChange={v => setInputs({ mezzEnabled: v })} /></div>
-                            {inputs.mezzEnabled && <div className="space-y-2"><Label>Mezz Amount</Label><Input type="number" value={inputs.mezzAmount} onChange={e => setInputs({ mezzAmount: parseFloat(e.target.value) || 0 })} /></div>}
+                            <div className="space-y-2"><Label className="text-[10px] uppercase font-bold text-gray-400">Land Acquisition Costs</Label><Input type="number" value={inputs.landAcquisitionCost} onChange={e => setInputs({ landAcquisitionCost: parseFloat(e.target.value) || 0 })} className="h-11" /></div>
+                            <div className="space-y-2"><Label className="text-[10px] uppercase font-bold text-gray-400">Marketing & Selling</Label><Input type="number" value={inputs.marketingSellingCost} onChange={e => setInputs({ marketingSellingCost: parseFloat(e.target.value) || 0 })} className="h-11" /></div>
+                            <div className="space-y-2"><Label className="text-[10px] uppercase font-bold text-gray-400">Legal Fees (Indirect)</Label><Input type="number" value={inputs.legalFeesIndirect} onChange={e => setInputs({ legalFeesIndirect: parseFloat(e.target.value) || 0 })} className="h-11" /></div>
                         </div>
+                        <div className="space-y-4">
+                            <div className="space-y-2"><Label className="text-[10px] uppercase font-bold text-gray-400">Rates & Taxes</Label><Input type="number" value={inputs.ratesTaxes} onChange={e => setInputs({ ratesTaxes: parseFloat(e.target.value) || 0 })} className="h-11" /></div>
+                            <div className="space-y-2"><Label className="text-[10px] uppercase font-bold text-gray-400">Finance Costs (Indirect)</Label><Input type="number" value={inputs.financeCostsIndirect} onChange={e => setInputs({ financeCostsIndirect: parseFloat(e.target.value) || 0 })} className="h-11" /></div>
+                            <div className="space-y-2"><Label className="text-[10px] uppercase font-bold text-gray-400">Other Indirect Costs</Label><Input type="number" value={inputs.otherIndirectCosts} onChange={e => setInputs({ otherIndirectCosts: parseFloat(e.target.value) || 0 })} className="h-11" /></div>
+                        </div>
+                        <div className="col-span-2 space-y-2 pt-2"><Label className="text-[10px] uppercase font-bold text-gray-400 tracking-widest">Indirect Cost Notes</Label><Textarea value={inputs.indirectCostNotes} onChange={e => setInputs({ indirectCostNotes: e.target.value })} placeholder="Specify details for other indirect costs..." /></div>
                     </div>
                 </AccordionContent>
             </AccordionItem>
           </Accordion>
         </div>
 
-        {/* Right Column */}
-        <div className="w-[450px] border-l bg-white flex flex-col shadow-xl z-10 pb-20">
-          <div className="p-4 border-b bg-[#0F1923] text-white flex justify-between items-center">
-            <div className="flex items-center"><Calculator className="h-4 w-4 mr-2 text-blue-400" /><h2 className="text-xs font-bold uppercase tracking-widest text-gray-100">Analysis Engine</h2></div>
-            <Badge variant="outline" className="text-blue-400 border-blue-400 text-[10px] font-black uppercase">Active</Badge>
+        {/* Right Column: Engine Panel */}
+        <div className="w-[500px] border-l bg-white flex flex-col shadow-2xl z-10 pb-20 border-l-gray-200">
+          <div className="p-5 border-b bg-[#0F1923] text-white flex justify-between items-center shadow-md relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-1 h-full bg-blue-500" />
+            <div className="flex items-center">
+                <Calculator className="h-5 w-5 mr-3 text-blue-400 shadow-blue-400" />
+                <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-100">Live Analysis Engine</h2>
+            </div>
+            <div className="flex items-center space-x-2">
+                <div className="h-2 w-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)] animate-pulse" />
+                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Feed Connected</span>
+            </div>
           </div>
+
           <Tabs defaultValue="summary" className="flex-1 flex flex-col overflow-hidden">
-            <TabsList className="w-full justify-start rounded-none border-b bg-gray-50/50 px-4 h-12">
-                <TabsTrigger value="summary" className="text-[10px] uppercase font-black data-[state=active]:bg-white data-[state=active]:text-blue-600 rounded-none h-full border-x first:border-l-0">Metrics</TabsTrigger>
-                <TabsTrigger value="mezz" className="text-[10px] uppercase font-black data-[state=active]:bg-white data-[state=active]:text-blue-600 rounded-none h-full border-r">Mezzanine</TabsTrigger>
-                <TabsTrigger value="scenarios" className="text-[10px] uppercase font-black data-[state=active]:bg-white data-[state=active]:text-blue-600 rounded-none h-full border-r">Sensitivity</TabsTrigger>
-                <TabsTrigger value="exit" className="text-[10px] uppercase font-black data-[state=active]:bg-white data-[state=active]:text-blue-600 rounded-none h-full border-r">Exit</TabsTrigger>
-                <TabsTrigger value="audit" className="text-[10px] uppercase font-black data-[state=active]:bg-white data-[state=active]:text-blue-600 rounded-none h-full border-r">Logic</TabsTrigger>
+            <TabsList className="w-full justify-start rounded-none border-b bg-gray-50/80 px-4 h-14 gap-1">
+                <TabsTrigger value="summary" className="text-[9px] uppercase font-black data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm rounded-t-lg h-10 border-x first:border-l-0 px-6 transition-all">Gearing</TabsTrigger>
+                <TabsTrigger value="mezz" className="text-[9px] uppercase font-black data-[state=active]:bg-white data-[state=active]:text-amber-600 data-[state=active]:shadow-sm rounded-t-lg h-10 border-r px-6 transition-all">Mezzanine</TabsTrigger>
+                <TabsTrigger value="scenarios" className="text-[9px] uppercase font-black data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm rounded-t-lg h-10 border-r px-6 transition-all">Sensitivity</TabsTrigger>
+                <TabsTrigger value="exit" className="text-[9px] uppercase font-black data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm rounded-t-lg h-10 border-r px-6 transition-all">Exit Strategy</TabsTrigger>
+                <TabsTrigger value="audit" className="text-[9px] uppercase font-black data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm rounded-t-lg h-10 border-r px-6 transition-all">Calculation Audit</TabsTrigger>
             </TabsList>
-            <TabsContent value="summary" className="flex-1 overflow-auto p-6 space-y-6 m-0 bg-white">
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-gray-50/80 p-3 rounded-xl border border-gray-100 shadow-sm"><p className="text-[10px] text-gray-400 uppercase font-black tracking-tighter mb-1">ROC</p><p className={`text-2xl font-mono font-black ${results.roc >= 0.2 ? 'text-green-600' : 'text-red-600'}`}>{formatPercent(results.roc)}</p></div>
-                    <div className="bg-gray-50/80 p-3 rounded-xl border border-gray-100 shadow-sm"><p className="text-[10px] text-gray-400 uppercase font-black tracking-tighter mb-1">LVR</p><p className="text-2xl font-mono font-black text-gray-900">{formatPercent(results.lvrGross)}</p></div>
+
+            <TabsContent value="summary" className="flex-1 overflow-auto p-8 space-y-8 m-0 bg-white border-t border-gray-50">
+                <div className="grid grid-cols-2 gap-5">
+                    <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100 shadow-inner group hover:border-blue-200 transition-colors">
+                        <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-1.5 flex items-center group-hover:text-blue-600 transition-colors"><Scale className="h-3 w-3 mr-1.5" /> Return on Cost</p>
+                        <div className="flex items-baseline space-x-2">
+                            <p className={`text-3xl font-mono font-black ${results.roc >= 0.2 ? 'text-green-600' : 'text-red-600'}`}>{formatPercent(results.roc)}</p>
+                            <span className="text-[9px] font-black text-gray-300 uppercase">Target 20%</span>
+                        </div>
+                    </div>
+                    <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100 shadow-inner group hover:border-blue-200 transition-colors">
+                        <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-1.5 flex items-center group-hover:text-blue-600 transition-colors"><Wallet className="h-3 w-3 mr-1.5" /> Return on Equity</p>
+                        <p className="text-3xl font-mono font-black text-blue-700">{formatPercent(results.roe)}</p>
+                    </div>
+                    <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100 shadow-inner">
+                        <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-1.5">LVR (Gross GRV)</p>
+                        <p className="text-3xl font-mono font-black text-gray-900">{formatPercent(results.lvrGross)}</p>
+                    </div>
+                    <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100 shadow-inner">
+                        <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-1.5">Loan to Cost (LTC)</p>
+                        <p className="text-3xl font-mono font-black text-gray-900">{formatPercent(results.ltc)}</p>
+                    </div>
                 </div>
-                <BreachAlerts results={results} /><Separator /><div className="space-y-4"><h3 className="text-[10px] font-black uppercase tracking-widest text-gray-300">Capital Stack</h3><CapitalStackChart inputs={inputs} results={results} /></div><Separator /><div className="space-y-4"><h3 className="text-[10px] font-black uppercase tracking-widest text-gray-300">Debt Profile</h3><CashflowChart results={results} /></div>
+
+                <div className="space-y-5">
+                    <div className="flex items-center justify-between px-1">
+                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Policy Breach Alerts</h3>
+                        {results.roc < 0.2 || results.lvrGross > 0.65 ? <Badge className="bg-red-500 text-[9px] font-black border-0">ACTION REQUIRED</Badge> : <Badge className="bg-green-500 text-[9px] font-black border-0">COMPLIANT</Badge>}
+                    </div>
+                    <BreachAlerts results={results} />
+                </div>
+
+                <Separator className="bg-gray-100" />
+                <div className="space-y-5"><h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 px-1">Capital Stack Breakdown</h3><CapitalStackChart inputs={inputs} results={results} /></div>
+
+                <Separator className="bg-gray-100" />
+                <div className="space-y-5"><h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 px-1">Monthly Peak Debt Projection</h3><CashflowChart results={results} /></div>
             </TabsContent>
-            <TabsContent value="mezz" className="flex-1 overflow-auto p-6 m-0 bg-white"><MezzanineAnalysis inputs={inputs} results={results} /></TabsContent>
-            <TabsContent value="scenarios" className="flex-1 overflow-auto p-6 space-y-6 m-0 bg-white"><ScenarioComparison inputs={inputs} /><Separator /><SensitivityMatrix inputs={inputs} /></TabsContent>
-            <TabsContent value="exit" className="flex-1 overflow-auto p-6 m-0 bg-white"><ExitPosition results={results} /></TabsContent>
-            <TabsContent value="audit" className="flex-1 overflow-auto p-6 m-0 bg-white"><CalculationAudit inputs={inputs} results={results} /></TabsContent>
+
+            <TabsContent value="mezz" className="flex-1 overflow-auto p-8 m-0 bg-white"><MezzanineAnalysis inputs={inputs} results={results} /></TabsContent>
+            <TabsContent value="scenarios" className="flex-1 overflow-auto p-8 space-y-8 m-0 bg-white"><ScenarioComparison inputs={inputs} /><Separator /><SensitivityMatrix inputs={inputs} /></TabsContent>
+            <TabsContent value="exit" className="flex-1 overflow-auto p-8 m-0 bg-white"><ExitPosition results={results} /></TabsContent>
+            <TabsContent value="audit" className="flex-1 overflow-auto p-8 m-0 bg-white"><CalculationAudit inputs={inputs} results={results} /></TabsContent>
           </Tabs>
 
-          <div className="p-4 bg-gray-50 border-t flex justify-between items-center mt-auto">
-            <div className="flex items-center text-[10px] text-gray-400 font-bold uppercase"><Info className="h-3 w-3 mr-1" /> Ex. GST unless stated</div>
-            <p className="text-[10px] text-gray-300 font-mono">v1.3.1-STABLE</p>
+          <div className="p-6 bg-gray-50/50 border-t flex justify-between items-center mt-auto shadow-[0_-4px_20px_rgba(0,0,0,0.02)]">
+            <div className="flex items-center text-[9px] text-gray-400 font-black uppercase tracking-widest"><Info className="h-3 w-3 mr-2 text-blue-500" /> All metrics are ex-GST unless labeled otherwise</div>
+            <p className="text-[10px] text-gray-300 font-mono font-bold tracking-tighter">SIARE-CORE-v1.5.2-PROD</p>
           </div>
         </div>
       </div>
 
-      {/* Bottom Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 h-20 bg-[#0F1923] border-t border-white/10 z-50 flex items-center px-8 shadow-2xl justify-between">
-        <div className="flex items-center space-x-8">
-            <div className="flex flex-col"><span className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-0.5">Projected ROC</span><div className="flex items-center space-x-2"><span className={`text-2xl font-mono font-black ${results.roc >= 0.2 ? 'text-green-400' : 'text-red-400'}`}>{formatPercent(results.roc)}</span>{results.roc >= 0.2 ? <CheckCircle2 className="h-4 w-4 text-green-500" /> : <AlertCircle className="h-4 w-4 text-red-500" />}</div></div>
-            <div className="h-10 w-px bg-white/10" /><div className="flex flex-col"><span className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-0.5">Net Realisations</span><span className="text-xl font-mono font-black text-white">{formatCurrency(results.netRealisations)}</span></div>
-            <div className="h-10 w-px bg-white/10" /><div className="flex flex-col"><span className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-0.5">Max Senior Debt</span><span className="text-xl font-mono font-black text-blue-400">{formatCurrency(results.seniorFunding)}</span></div>
+      {/* Primary Global Actions (Sticky) */}
+      <div className="fixed bottom-0 left-0 right-0 h-24 bg-[#0F1923] border-t border-white/10 z-50 flex items-center px-12 shadow-[0_-10px_40px_rgba(0,0,0,0.4)] justify-between transition-all">
+        <div className="flex items-center space-x-12">
+            <div className="flex flex-col"><span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-1">Projected ROC</span><div className="flex items-center space-x-3"><span className={`text-3xl font-mono font-black ${results.roc >= 0.2 ? 'text-green-400' : 'text-red-400'}`}>{formatPercent(results.roc)}</span>{results.roc >= 0.2 ? <ShieldCheck className="h-6 w-6 text-green-500 fill-green-500/20" /> : <AlertCircle className="h-6 w-6 text-red-500 animate-pulse" />}</div></div>
+            <div className="h-12 w-px bg-white/10" />
+            <div className="flex flex-col"><span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-1">Net Realisation</span><span className="text-2xl font-mono font-black text-white">{formatCurrency(results.netRealisations)}</span></div>
+            <div className="h-12 w-px bg-white/10" />
+            <div className="flex flex-col"><span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-1">Max Senior Debt</span><span className="text-2xl font-mono font-black text-blue-400 shadow-blue-900">{formatCurrency(results.seniorFunding)}</span></div>
         </div>
 
-        <div className="flex items-center space-x-3">
-            <Button variant="outline" className="bg-transparent text-white border-white/10 hover:bg-white/5 h-10 px-6 font-bold uppercase text-[11px] tracking-tight" onClick={handleSave} disabled={isSaving}>
-                {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+        <div className="flex items-center space-x-4">
+            <Button variant="ghost" className="text-gray-500 hover:text-white hover:bg-white/5 font-black uppercase text-[11px] tracking-widest px-8" onClick={() => router.push('/')}>Discard</Button>
+            <Button variant="outline" className="bg-white/5 text-white border-white/20 hover:bg-blue-600 hover:border-blue-500 h-12 px-10 font-black uppercase text-[12px] tracking-[0.1em] transition-all active:scale-95" onClick={handleSave} disabled={isSaving}>
+                {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5 mr-3" />}
                 Commit Draft
             </Button>
 
-            <div className="flex items-center space-x-1 mx-2">
+            <div className="flex items-center space-x-2 px-4 border-x border-white/10 h-12">
                 {['dfs', 'advisory'].map((p) => {
                     const id = p === 'dfs' ? dealInfo?.hubspot_dfs_deal_id : dealInfo?.hubspot_advisory_deal_id;
                     const loading = p === 'dfs' ? isPushingDFS : isPushingAdv;
-                    const color = p === 'dfs' ? 'text-blue-300' : 'text-green-300';
+                    const colorClass = p === 'dfs' ? 'text-blue-400' : 'text-green-400';
+                    const icon = p === 'dfs' ? <Share2 className={`h-4 w-4 mr-2 ${colorClass}`} /> : <Share2 className={`h-4 w-4 mr-2 ${colorClass}`} />;
 
                     if (id) {
                         return (
                             <AlertDialog key={p}>
                                 <AlertDialogTrigger asChild>
-                                    <Button variant="secondary" className="bg-white/10 text-white border-0 hover:bg-white/20 h-10 px-4 text-[10px] font-black uppercase">
-                                        <CheckCircle2 className={`h-3 w-3 mr-1 ${color}`} /> {p} Pushed
+                                    <Button variant="secondary" className="bg-white/10 text-white border-0 hover:bg-white/20 h-12 px-5 text-[10px] font-black uppercase tracking-widest">
+                                        <CheckCircle2 className={`h-4 w-4 mr-2 ${colorClass}`} /> {p} Pushed
                                     </Button>
                                 </AlertDialogTrigger>
-                                <AlertDialogContent>
+                                <AlertDialogContent className="bg-white border-4 border-gray-900 rounded-3xl">
                                     <AlertDialogHeader>
-                                        <AlertDialogTitle>Push to HubSpot again?</AlertDialogTitle>
-                                        <AlertDialogDescription>This will create a NEW deal in the {p.toUpperCase()} pipeline with current assessment data.</AlertDialogDescription>
+                                        <AlertDialogTitle className="text-3xl font-black uppercase tracking-tighter">Synchronisation Warning</AlertDialogTitle>
+                                        <AlertDialogDescription className="text-gray-600 font-medium leading-relaxed">
+                                            This assessment was already pushed to the <strong className="text-gray-900 underline">{p.toUpperCase()}</strong> pipeline.
+                                            Continuing will create a <strong className="text-blue-600">DUPLICATE</strong> deal with current real-time metrics.
+                                            The previous record will remain intact. Proceed?
+                                        </AlertDialogDescription>
                                     </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handlePush(p as any)}>Confirm Push</AlertDialogAction>
+                                    <AlertDialogFooter className="pt-6">
+                                        <AlertDialogCancel className="rounded-xl font-bold border-2">Abort</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => handlePush(p as any)} className="bg-blue-600 hover:bg-blue-700 rounded-xl font-black uppercase tracking-widest">Confirm Re-Sync</AlertDialogAction>
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
                         );
                     }
                     return (
-                        <Button key={p} variant="secondary" className="bg-white/5 text-gray-400 border-0 hover:bg-white/10 h-10 px-4 text-[11px] font-black uppercase" onClick={() => handlePush(p as any)} disabled={loading}>
-                            {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : `Push ${p}`}
+                        <Button key={p} variant="secondary" className="bg-white/5 text-gray-400 border-0 hover:bg-white/10 h-12 px-6 text-[10px] font-black uppercase tracking-widest" onClick={() => handlePush(p as any)} disabled={loading}>
+                            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : icon}
+                            Push {p}
                         </Button>
                     );
                 })}

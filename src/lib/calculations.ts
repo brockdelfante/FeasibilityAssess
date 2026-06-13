@@ -141,12 +141,10 @@ function monthlyDraw(month: number, buildTerm: number, totalCost: number): numbe
 }
 
 export function calculateAll(inputs: DealInputs): CalculationResults {
-  // 4.1 GRV
   const grv = inputs.products.reduce((sum, p) => sum + p.numLots * p.grossAICValuation, 0)
   const totalLots = inputs.products.reduce((sum, p) => sum + p.numLots, 0)
   const totalGFA = inputs.products.reduce((sum, p) => sum + p.numLots * p.areaSqm, 0)
 
-  // 4.2 GST
   let gst = 0
   if (inputs.gstMethod === 'standard') {
     gst = grv / 11
@@ -155,7 +153,6 @@ export function calculateAll(inputs: DealInputs): CalculationResults {
   }
   const nrv = grv - gst
 
-  // 4.3 Selling Costs
   const sellingCosts = nrv * inputs.salesCommissionRate
   const qualifyingPresales = inputs.products.reduce((sum, p) => sum + (Number(p.qualifyingPresaleValue) || 0), 0)
   const nonQualifyingPresales = inputs.products.reduce((sum, p) => sum + (Number(p.nonQualifyingPresaleValue) || 0), 0)
@@ -164,7 +161,6 @@ export function calculateAll(inputs: DealInputs): CalculationResults {
   const totalSellingCosts = sellingCosts + presaleSellingCosts
   const netRealisations = nrv - totalSellingCosts
 
-  // 4.4 Monthly Cashflow
   const cashflow: MonthlyRow[] = []
   let balance = 0
   const monthlyRate = (inputs.interestRate || 0) / 12
@@ -212,7 +208,6 @@ export function calculateAll(inputs: DealInputs): CalculationResults {
   const peakDebt = cashflow.length > 0 ? Math.max(...cashflow.map(r => r.closingBalance)) : 0
   const averagePDFBalance = cashflow.length > 0 ? cashflow.reduce((sum, r) => sum + r.closingBalance, 0) / cashflow.length : 0
 
-  // 4.5 Funding
   const totalDirectCosts = (inputs.siteValue || 0) + (inputs.preliminaries || 0) + (inputs.construction || 0) +
     (inputs.constructionContingency || 0) + (inputs.professionalFees || 0) + (inputs.councilContributions || 0) +
     (inputs.authorityFees || 0) + (inputs.establishmentFees || 0) + (inputs.legalFees || 0) +
@@ -227,50 +222,42 @@ export function calculateAll(inputs: DealInputs): CalculationResults {
   const lvrGross = grv > 0 ? seniorFunding / grv : 0
   const lvrNet = nrv > 0 ? seniorFunding / nrv : 0
 
-  // 4.6 Profitability
   const profitAmount = netRealisations - totalDevelopmentCosts
   const roc = totalDevelopmentCosts > 0 ? profitAmount / totalDevelopmentCosts : 0
   const profitMargin = netRealisations > 0 ? profitAmount / netRealisations : 0
   const roe = (inputs.customerCashEquity || 0) > 0 ? profitAmount / (inputs.customerCashEquity || 0) : 0
 
-  // 4.7 Residual Position
   const residualANZDebt = seniorFunding
   const grossResidualValue = grv
   const netResidualValue = netRealisations
   const residualLVR = netRealisations > 0 ? residualANZDebt / netRealisations : 0
 
-  // Avg sale price net of GST and commission
   const avgSalePriceNetOfCosts = totalLots > 0 ? (netRealisations / totalLots) : 0
   const salesToRepay = avgSalePriceNetOfCosts > 0 ? Math.ceil(residualANZDebt / avgSalePriceNetOfCosts) : 0
 
-  // 4.8 Presales Cover
   const qualifyingPresalesCover = seniorFunding > 0 ? qualifyingPresales / seniorFunding : 0
   const allPresalesCover = seniorFunding > 0 ? (qualifyingPresales + nonQualifyingPresales) / seniorFunding : 0
 
-  // 4.11 Construction Benchmark
   const constructionCostPerSqm = totalGFA > 0 ? (inputs.construction || 0) / totalGFA : 0
 
-  // 4.10 RLV
   const targetROC = inputs.targetRoc ?? 0.20
   const totalCostsExLand = totalDirectCosts - (inputs.siteValue || 0)
   const rlv = (netRealisations - totalCostsExLand * (1 + targetROC)) / (1 + targetROC)
 
+  const profit = netRealisations - totalDevelopmentCosts;
   const totalDebt = seniorFunding + (inputs.mezzEnabled ? (inputs.mezzAmount || 0) : 0);
-  const profitPerUnit = totalLots > 0 ? profitAmount / totalLots : 0;
+  const profitPerUnit = totalLots > 0 ? profit / totalLots : 0;
   const costPerUnit = totalLots > 0 ? totalDevelopmentCosts / totalLots : 0;
-  const blendedRate = totalDebt > 0 ?
-    (seniorFunding * (inputs.interestRate || 0) + (inputs.mezzEnabled ? (inputs.mezzAmount || 0) * (inputs.mezzInterestRate || 0) : 0)) / totalDebt : 0;
 
   const results: CalculationResults = {
     grv, totalLots, totalGFA, gst, nrv, sellingCosts, totalSellingCosts, netRealisations,
     peakDebt, totalInterest, averagePDFBalance, totalDirectCosts, totalDevelopmentCosts, seniorFunding,
     ltc, lvrGross, lvrNet, roc, roe, profitAmount, profitMargin,
     residualANZDebt, grossResidualValue, netResidualValue, residualLVR, salesToRepay,
-    qualifyingPresalesCover, allPresalesCover, constructionCostPerSqm, rlv, blendedRate, profitPerUnit, costPerUnit,
+    qualifyingPresalesCover, allPresalesCover, constructionCostPerSqm, rlv, blendedRate: 0, profitPerUnit, costPerUnit,
     cashflow
   }
 
-  // 4.9 Mezzanine
   if (inputs.mezzEnabled && (inputs.mezzAmount || 0) > 0) {
     const mezzMonthlyRate = (inputs.mezzInterestRate || 0) / 12
     let mezzBalance = inputs.mezzAmount || 0
@@ -288,6 +275,10 @@ export function calculateAll(inputs: DealInputs): CalculationResults {
     results.mezzLVR = grv > 0 ? (seniorFunding + (inputs.mezzAmount || 0)) / grv : 0
     results.mezzLTC = totalDirectCosts > 0 ? (seniorFunding + (inputs.mezzAmount || 0)) / totalDirectCosts : 0
   }
+
+  const totalActualDebt = seniorFunding + (inputs.mezzEnabled ? (inputs.mezzAmount || 0) : 0);
+  results.blendedRate = totalActualDebt > 0 ?
+    (seniorFunding * (inputs.interestRate || 0) + (inputs.mezzEnabled ? (inputs.mezzAmount || 0) * (inputs.mezzInterestRate || 0) : 0)) / totalActualDebt : 0;
 
   return results
 }
