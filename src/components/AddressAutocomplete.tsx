@@ -44,26 +44,45 @@ export function AddressAutocomplete({
 
     setIsLoading(true);
     try {
-      // Using the Photon API (Komoot) which matches the expected behavior
-      const response = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=5`);
+      const response = await fetch(`https://addressr.p.rapidapi.com/addresses?q=${encodeURIComponent(query)}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'x-rapidapi-host': 'addressr.p.rapidapi.com',
+          'x-rapidapi-key': 'bf8d2a31b2msh6f8499be824c0b8p16ccdajsn96923e55cd4c'
+        }
+      });
+
       const data = await response.json();
 
-      const results = data.features.map((f: any) => {
-        const p = f.properties;
-        const name = p.name || "";
-        const house = p.housenumber || "";
-        const street = p.street || "";
-        const city = p.city || p.town || "";
-        const state = p.state || "";
-        const country = p.country || "";
+      // Map API response to our suggestion format
+      const results = data.map((item: any) => {
+        // ssla is often cleaner: "1/261 GEORGE ST, SYDNEY NSW 2000"
+        const label = item.ssla || item.sla;
 
-        let label = [name, house, street, city, state, country]
-          .filter(Boolean)
-          .join(", ");
+        // Parse components from ssla/sla for storage
+        // Format is usually: STREET, SUBURB STATE POSTCODE
+        const parts = label.split(',').map((p: any) => p.trim());
+        const street = parts[0] || "";
+        const lastPart = parts[parts.length - 1] || "";
+        const subParts = lastPart.split(' ');
+
+        // Postcode is usually last 4 digits
+        const postcode = subParts[subParts.length - 1] || "";
+        // State is usually second to last
+        const state = subParts[subParts.length - 2] || "";
+        // Suburb is everything before state in the last segment
+        const suburb = subParts.slice(0, -2).join(' ') || "";
 
         return {
           label,
-          properties: p
+          properties: {
+            street,
+            city: suburb,
+            state,
+            postcode,
+            country: "Australia", // API is AU centric
+            raw: item
+          }
         };
       });
 
@@ -96,17 +115,17 @@ export function AddressAutocomplete({
           onChange={handleInputChange}
           onFocus={() => suggestions.length > 0 && setIsOpen(true)}
           placeholder={placeholder}
-          className="pr-10"
+          className="pr-10 bg-white"
         />
         {isLoading && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2">
-            <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+            <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
           </div>
         )}
       </div>
 
       {isOpen && (
-        <div className="absolute z-[100] mt-1 w-full rounded-md border bg-white shadow-xl max-h-60 overflow-auto">
+        <div className="absolute z-[100] mt-1 w-full rounded-md border bg-white shadow-2xl max-h-60 overflow-auto">
           {suggestions.map((s, i) => (
             <button
               key={i}
