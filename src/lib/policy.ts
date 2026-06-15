@@ -27,7 +27,7 @@ export interface BreachResult {
   severity: 'warning' | 'breach' | 'compliant';
 }
 
-export function detectBreaches(calcs: any, policy: PolicyConfig = defaultPolicy): BreachResult[] {
+export function detectBreaches(calcs: any, inputs: any = {}, policy: PolicyConfig = defaultPolicy): BreachResult[] {
   const breaches: BreachResult[] = [];
 
   const check = (field: string, label: string, value: number, threshold: number, direction: 'above' | 'below') => {
@@ -53,6 +53,18 @@ export function detectBreaches(calcs: any, policy: PolicyConfig = defaultPolicy)
     breaches.push({ field: 'constructionSqmLow', label: 'Construction $/sqm (below benchmark)', value: calcs.constructionCostPerSqm, threshold: policy.constructionCostMinSqm, direction: 'below', severity: 'warning' });
   } else if (calcs.constructionCostPerSqm > policy.constructionCostMaxSqm) {
     breaches.push({ field: 'constructionSqmHigh', label: 'Construction $/sqm (above benchmark)', value: calcs.constructionCostPerSqm, threshold: policy.constructionCostMaxSqm, direction: 'above', severity: 'warning' });
+  }
+
+  // Domain Valuation Variance Check
+  if (inputs.estimateUpper && calcs.siteValue > inputs.estimateUpper) {
+    breaches.push({
+      field: 'valuationVariance',
+      label: 'Valuation Variance (High)',
+      value: calcs.siteValue,
+      threshold: inputs.estimateUpper,
+      direction: 'above',
+      severity: 'breach'
+    });
   }
 
   return breaches;

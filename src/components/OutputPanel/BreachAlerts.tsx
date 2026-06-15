@@ -1,17 +1,13 @@
-import { CalculationResults } from "@/lib/calculations";
+import { useDealStore } from "@/lib/store";
 import { detectBreaches, BreachResult } from "@/lib/policy";
 import { AlertCircle, CheckCircle2, AlertTriangle, TrendingDown } from "lucide-react";
 
-interface BreachAlertsProps {
-  results: CalculationResults;
-}
-
-export function BreachAlerts({ results }: BreachAlertsProps) {
-  const breaches = detectBreaches(results);
-  const rlvDiff = results.rlv - results.totalDirectCosts; // Simplified RLV comparison logic
+export function BreachAlerts() {
+  const { results, inputs } = useDealStore();
+  const breaches = detectBreaches(results, inputs);
 
   const formatValue = (result: BreachResult) => {
-    if (result.field.includes('Sqm')) {
+    if (result.field.includes('Sqm') || result.field.includes('valuation')) {
       return new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD', maximumFractionDigits: 0 }).format(result.value);
     }
     return (result.value * 100).toFixed(1) + '%';

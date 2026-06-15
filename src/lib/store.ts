@@ -66,6 +66,17 @@ interface DealState {
     assumptionsProgrammeBasis: string
     assumptionsOther: string
     presales: any[]
+
+    // Property Intelligence
+    estimateLower: number | null
+    estimateMid: number | null
+    estimateUpper: number | null
+    propertyImageUrl: string | null
+    propertyType: string | null
+    propertyBedrooms: number | null
+    propertyBathrooms: number | null
+    propertyParking: number | null
+    propertyLandArea: number | null
   }
   results: any
   isLoading: boolean
@@ -143,7 +154,17 @@ const defaultInputs: any = {
   assumptionsConstructionBasis: '',
   assumptionsProgrammeBasis: '',
   assumptionsOther: '',
-  presales: []
+  presales: [],
+
+  estimateLower: null,
+  estimateMid: null,
+  estimateUpper: null,
+  propertyImageUrl: null,
+  propertyType: null,
+  propertyBedrooms: null,
+  propertyBathrooms: null,
+  propertyParking: null,
+  propertyLandArea: null
 };
 
 export const useDealStore = create<DealState>((set) => ({
@@ -286,7 +307,17 @@ export const useDealStore = create<DealState>((set) => ({
         assumptionsGrvBasis: deal.assumptions_grv_basis || '',
         assumptionsConstructionBasis: deal.assumptions_construction_basis || '',
         assumptionsProgrammeBasis: deal.assumptions_programme_basis || '',
-        assumptionsOther: deal.assumptions_other || ''
+        assumptionsOther: deal.assumptions_other || '',
+
+        estimateLower: deal.estimate_lower ? Number(deal.estimate_lower) : null,
+        estimateMid: deal.estimate_mid ? Number(deal.estimate_mid) : null,
+        estimateUpper: deal.estimate_upper ? Number(deal.estimate_upper) : null,
+        propertyImageUrl: deal.property_image_url || null,
+        propertyType: deal.property_type || null,
+        propertyBedrooms: deal.property_bedrooms || null,
+        propertyBathrooms: deal.property_bathrooms || null,
+        propertyParking: deal.property_parking || null,
+        propertyLandArea: deal.property_land_area ? Number(deal.property_land_area) : null
     };
     return {
         inputs,

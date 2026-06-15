@@ -1,7 +1,7 @@
 "use client";
 
 import { useDealStore } from "@/lib/store";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { AlertCircle, CheckCircle2, TrendingUp, Save, Share2, Calculator, FileText, History, Wallet, Banknote, Loader2, ArrowLeft, Plus, Trash2, Calendar, User, ExternalLink, MapPin, Info, ArrowUpRight, Download, FileSpreadsheet, ShieldCheck, Scale, Trash, ChevronDown } from "lucide-react";
+import { AlertCircle, CheckCircle2, TrendingUp, Save, Share2, Calculator, FileText, History, Wallet, Banknote, Loader2, ArrowLeft, Plus, Trash2, Calendar, User, ExternalLink, MapPin, Info, ArrowUpRight, Download, FileSpreadsheet, ShieldCheck, Scale, Trash, ChevronDown, Search } from "lucide-react";
 import { BreachAlerts } from "@/components/OutputPanel/BreachAlerts";
 import { CashflowChart } from "@/components/OutputPanel/CashflowChart";
 import { SensitivityMatrix } from "@/components/OutputPanel/SensitivityMatrix";
@@ -27,6 +27,8 @@ import { ReportButton } from "@/components/Reports/ReportButton";
 import { MezzanineAnalysis } from "@/components/OutputPanel/MezzanineAnalysis";
 import { ExitPosition } from "@/components/OutputPanel/ExitPosition";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
+import { PropertyIntelligence } from "@/components/PropertyIntelligence";
+import { ValuationComparison } from "@/components/OutputPanel/ValuationComparison";
 
 export default function DealEditPage() {
   const params = useParams();
@@ -41,7 +43,34 @@ export default function DealEditPage() {
   const [isExporting, setIsExporting] = useState(false);
   const [isPushingDFS, setIsPushingDFS] = useState(false);
   const [isPushingAdv, setIsPushingAdv] = useState(false);
+  const [isIntelligenceLoading, setIsIntelligenceLoading] = useState(false);
   const [dealInfo, setDealInfo] = useState<any>(null);
+
+  const fetchIntelligence = useCallback(async (address: string) => {
+    if (!address) return;
+    setIsIntelligenceLoading(true);
+    try {
+        const res = await fetch(`/api/property-intelligence?query=${encodeURIComponent(address)}`);
+        const data = await res.json();
+        if (data.found) {
+            setInputs({
+                estimateLower: data.estimate_lower,
+                estimateMid: data.estimate_mid,
+                estimateUpper: data.estimate_upper,
+                propertyImageUrl: data.property_image_url,
+                propertyType: data.property_type,
+                propertyBedrooms: data.property_bedrooms,
+                propertyBathrooms: data.property_bathrooms,
+                propertyParking: data.property_parking,
+                propertyLandArea: data.property_land_area
+            });
+        }
+    } catch (e) {
+        console.error("Intelligence lookup failed", e);
+    } finally {
+        setIsIntelligenceLoading(false);
+    }
+  }, [setInputs]);
 
   const fetchDeal = async () => {
     try {
@@ -49,6 +78,11 @@ export default function DealEditPage() {
         const data = await res.json();
         setDealInfo(data);
         loadDeal(data);
+
+        // Auto-lookup intelligence if missing but address exists
+        if (data.project_address && !data.estimate_mid) {
+            fetchIntelligence(data.project_address);
+        }
     } catch (e) {
         console.error(e);
     }
@@ -134,7 +168,18 @@ export default function DealEditPage() {
             calc_peak_debt: results.peakDebt,
             calc_covenant_breach: results.roc < 0.15 || results.lvrGross > 0.7,
             products: inputs.products,
-            presales: inputs.presales
+            presales: inputs.presales,
+
+            // Property Intelligence fields
+            estimate_lower: inputs.estimateLower,
+            estimate_mid: inputs.estimateMid,
+            estimate_upper: inputs.estimateUpper,
+            property_image_url: inputs.propertyImageUrl,
+            property_type: inputs.propertyType,
+            property_bedrooms: inputs.propertyBedrooms,
+            property_bathrooms: inputs.propertyBathrooms,
+            property_parking: inputs.propertyParking,
+            property_land_area: inputs.propertyLandArea
         };
 
         const res = await fetch(`/api/deals/${params.id}`, {
@@ -210,15 +255,18 @@ export default function DealEditPage() {
     }
   };
 
-  const handleAddressSelect = (p: any) => {
+  const handleAddressSelect = (label: string, p: any) => {
     setInputs({
-      projectAddress: [p.name, p.housenumber, p.street, p.city || p.town, p.state, p.country].filter(Boolean).join(", "),
-      addressStreet: [p.housenumber, p.street].filter(Boolean).join(" "),
-      addressCity: p.city || p.town || "",
+      projectAddress: label,
+      addressStreet: p.street || "",
+      addressCity: p.city || "",
       addressState: p.state || "",
       addressPostcode: p.postcode || "",
-      addressCountry: p.country || ""
+      addressCountry: p.country || "Australia"
     });
+
+    // Trigger intelligence lookup
+    fetchIntelligence(label);
   };
 
   if (isLoading) return (
@@ -314,8 +362,8 @@ export default function DealEditPage() {
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter className="pt-4">
-                            <AlertDialogCancel className="rounded-xl font-bold border-2">Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700 text-white rounded-xl font-black uppercase tracking-widest">
+                            <AlertDialogCancel className="rounded-xl font-bold border-2 text-gray-900">Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700 text-white rounded-xl font-black uppercase tracking-widest border-0">
                                 {isDeleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash className="h-4 w-4 mr-2" />}
                                 Delete Forever
                             </AlertDialogAction>
@@ -325,7 +373,21 @@ export default function DealEditPage() {
             </div>
           </div>
 
-          <Accordion type="multiple" defaultValue={["products", "costs", "programme", "finance", "risk"]} className="w-full space-y-6">
+          {/* Property Intelligence Feature Card */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Project Context</h3>
+                {isIntelligenceLoading && (
+                    <div className="flex items-center space-x-2 text-blue-600">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Enriching Data...</span>
+                    </div>
+                )}
+            </div>
+            <PropertyIntelligence />
+          </div>
+
+          <Accordion type="multiple" defaultValue={["customer", "products", "costs", "programme", "finance", "risk"]} className="w-full space-y-6">
              {/* Customer & Project Section */}
              <AccordionItem value="customer" className="bg-white border rounded-2xl px-8 shadow-sm overflow-visible border-gray-100">
                 <AccordionTrigger className="hover:no-underline py-6 font-black uppercase tracking-[0.2em] text-[11px] text-gray-400">Customer & Project Details</AccordionTrigger>
@@ -334,13 +396,25 @@ export default function DealEditPage() {
                       <div className="grid grid-cols-2 gap-8 overflow-visible">
                           <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-500 font-black">Customer Group</Label><Input value={inputs.customerGroup} onChange={e => setInputs({ customerGroup: e.target.value })} className="h-10 font-bold" /></div>
                           <div className="space-y-2 overflow-visible"><Label className="text-[10px] uppercase text-gray-500 font-black">Project Address (Full)</Label>
-                              <AddressAutocomplete
-                                  value={inputs.projectAddress}
-                                  onChange={val => setInputs({ projectAddress: val })}
-                                  onSelect={handleAddressSelect}
-                                  placeholder="Search project address..."
-                                  className="h-10"
-                              />
+                              <div className="flex space-x-2">
+                                <AddressAutocomplete
+                                    value={inputs.projectAddress}
+                                    onChange={val => setInputs({ projectAddress: val })}
+                                    onSelect={(p) => handleAddressSelect(inputs.projectAddress, p)}
+                                    placeholder="Search project address..."
+                                    className="h-10 flex-1"
+                                />
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-10 w-10 shrink-0"
+                                    onClick={() => fetchIntelligence(inputs.projectAddress)}
+                                    title="Manual Intelligence Lookup"
+                                    type="button"
+                                >
+                                    <Search className="h-4 w-4 text-blue-600" />
+                                </Button>
+                              </div>
                           </div>
                       </div>
                       <Separator className="opacity-50" />
@@ -516,6 +590,9 @@ export default function DealEditPage() {
                     </div>
                 </div>
 
+                {/* Valuation Comparison Card */}
+                <ValuationComparison />
+
                 <div className="space-y-5">
                     <div className="flex items-center justify-between px-1">
                         <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Policy Breach Alerts</h3>
@@ -586,7 +663,7 @@ export default function DealEditPage() {
                                         </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter className="pt-6">
-                                        <AlertDialogCancel className="rounded-xl font-bold border-2">Abort</AlertDialogCancel>
+                                        <AlertDialogCancel className="rounded-xl font-bold border-2 text-gray-900">Abort</AlertDialogCancel>
                                         <AlertDialogAction onClick={() => handlePush(p as any)} className="bg-blue-600 hover:bg-blue-700 rounded-xl font-black uppercase tracking-widest text-white border-0">Confirm Re-Sync</AlertDialogAction>
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
