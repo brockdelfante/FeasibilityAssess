@@ -75,12 +75,17 @@ interface DealState {
     estimateLower: number | null
     estimateMid: number | null
     estimateUpper: number | null
+    estimateConfidence: string | null
     propertyImageUrl: string | null
     propertyType: string | null
     propertyBedrooms: number | null
     propertyBathrooms: number | null
     propertyParking: number | null
     propertyLandArea: number | null
+    propertyInternalArea: number | null
+    propertyYearBuilt: number | null
+    propertyLatitude: number | null
+    propertyLongitude: number | null
   }
   results: any
   isLoading: boolean
@@ -167,12 +172,17 @@ const defaultInputs: DealState['inputs'] = {
   estimateLower: null,
   estimateMid: null,
   estimateUpper: null,
+  estimateConfidence: null,
   propertyImageUrl: null,
   propertyType: null,
   propertyBedrooms: null,
   propertyBathrooms: null,
   propertyParking: null,
-  propertyLandArea: null
+  propertyLandArea: null,
+  propertyInternalArea: null,
+  propertyYearBuilt: null,
+  propertyLatitude: null,
+  propertyLongitude: null
 };
 
 export const useDealStore = create<DealState>((set) => ({
@@ -324,12 +334,17 @@ export const useDealStore = create<DealState>((set) => ({
         estimateLower: deal.estimate_lower ? Number(deal.estimate_lower) : null,
         estimateMid: deal.estimate_mid ? Number(deal.estimate_mid) : null,
         estimateUpper: deal.estimate_upper ? Number(deal.estimate_upper) : null,
+        estimateConfidence: deal.estimate_confidence || null,
         propertyImageUrl: deal.property_image_url || null,
         propertyType: deal.property_type || null,
         propertyBedrooms: deal.property_bedrooms || null,
         propertyBathrooms: deal.property_bathrooms || null,
         propertyParking: deal.property_parking || null,
-        propertyLandArea: deal.property_land_area ? Number(deal.property_land_area) : null
+        propertyLandArea: deal.property_land_area ? Number(deal.property_land_area) : null,
+        propertyInternalArea: deal.property_internal_area ? Number(deal.property_internal_area) : null,
+        propertyYearBuilt: deal.property_year_built || null,
+        propertyLatitude: deal.property_latitude ? Number(deal.property_latitude) : null,
+        propertyLongitude: deal.property_longitude ? Number(deal.property_longitude) : null
     };
     return {
         inputs,

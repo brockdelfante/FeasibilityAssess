@@ -56,12 +56,17 @@ export default function DealEditPage({ params }: { params: Promise<{ id: string 
                 estimateLower: data.estimate_lower,
                 estimateMid: data.estimate_mid,
                 estimateUpper: data.estimate_upper,
+                estimateConfidence: data.estimate_confidence,
                 propertyImageUrl: data.property_image_url,
                 propertyType: data.property_type,
                 propertyBedrooms: data.property_bedrooms,
                 propertyBathrooms: data.property_bathrooms,
                 propertyParking: data.property_parking,
-                propertyLandArea: data.property_land_area
+                propertyLandArea: data.property_land_area,
+                propertyInternalArea: data.property_internal_area,
+                propertyYearBuilt: data.property_year_built,
+                propertyLatitude: data.property_latitude,
+                propertyLongitude: data.property_longitude
             });
         }
     } catch (e) {
@@ -172,12 +177,17 @@ export default function DealEditPage({ params }: { params: Promise<{ id: string 
             estimate_lower: inputs.estimateLower,
             estimate_mid: inputs.estimateMid,
             estimate_upper: inputs.estimateUpper,
+            estimate_confidence: inputs.estimateConfidence,
             property_image_url: inputs.propertyImageUrl,
             property_type: inputs.propertyType,
             property_bedrooms: inputs.propertyBedrooms,
             property_bathrooms: inputs.propertyBathrooms,
             property_parking: inputs.propertyParking,
-            property_land_area: inputs.propertyLandArea
+            property_land_area: inputs.propertyLandArea,
+            property_internal_area: inputs.propertyInternalArea,
+            property_year_built: inputs.propertyYearBuilt,
+            property_latitude: inputs.propertyLatitude,
+            property_longitude: inputs.propertyLongitude
         };
 
         const res = await fetch(`/api/deals/${id}`, {
