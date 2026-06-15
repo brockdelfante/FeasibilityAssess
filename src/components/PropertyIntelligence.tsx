@@ -16,13 +16,14 @@ export function PropertyIntelligence() {
   const hasStats = inputs.propertyBedrooms || inputs.propertyBathrooms || inputs.propertyParking || inputs.propertyLandArea || inputs.propertyInternalArea || inputs.propertyYearBuilt;
 
   // Use OpenStreetMap for the map display if lat/long is available
+  // Using mlat/mlon for the marker pin
   const mapUrl = inputs.propertyLatitude && inputs.propertyLongitude
-    ? `https://www.openstreetmap.org/export/embed.html?bbox=${inputs.propertyLongitude - 0.005},${inputs.propertyLatitude - 0.005},${inputs.propertyLongitude + 0.005},${inputs.propertyLatitude + 0.005}&layer=mapnik&marker=${inputs.propertyLatitude},${inputs.propertyLongitude}`
+    ? `https://www.openstreetmap.org/export/embed.html?bbox=${inputs.propertyLongitude - 0.01},${inputs.propertyLatitude - 0.01},${inputs.propertyLongitude + 0.01},${inputs.propertyLatitude + 0.01}&layer=mapnik&mlat=${inputs.propertyLatitude}&mlon=${inputs.propertyLongitude}`
     : null;
 
   return (
     <Card className="overflow-hidden border-0 shadow-lg bg-white rounded-2xl">
-      <div className="grid grid-cols-1 md:grid-cols-2 h-64 border-b border-gray-100">
+      <div className="grid grid-cols-1 md:grid-cols-2 h-72 border-b border-gray-100">
         {/* Image Section */}
         <div className="relative h-full w-full bg-gray-100 overflow-hidden border-r border-gray-100">
           {inputs.propertyImageUrl ? (
@@ -32,7 +33,10 @@ export function PropertyIntelligence() {
               className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
             />
           ) : (
-            <div className="flex items-center justify-center h-full text-gray-400 font-bold uppercase text-[10px] tracking-widest">No Image Available</div>
+            <div className="flex items-center justify-center h-full text-gray-400 font-bold uppercase text-[10px] tracking-widest flex-col space-y-2">
+                <div className="bg-white p-3 rounded-full shadow-sm"><Home className="h-5 w-5 text-gray-200" /></div>
+                <span>No Property Image</span>
+            </div>
           )}
           <div className="absolute top-4 left-4">
             <Badge className="bg-blue-600/90 backdrop-blur-md text-white border-0 px-3 py-1 font-black uppercase text-[9px] tracking-widest shadow-lg">
@@ -52,11 +56,11 @@ export function PropertyIntelligence() {
                 marginHeight={0}
                 marginWidth={0}
                 src={mapUrl}
-                style={{ filter: 'grayscale(0.2) contrast(1.1)' }}
+                style={{ filter: 'contrast(1.1) brightness(1.05)' }}
             />
           ) : (
             <div className="flex items-center justify-center h-full text-gray-400 font-bold uppercase text-[10px] tracking-widest flex-col space-y-2">
-                <MapPin className="h-5 w-5 opacity-20" />
+                <div className="bg-white p-3 rounded-full shadow-sm"><MapPin className="h-5 w-5 text-gray-200" /></div>
                 <span>Geodata Pending</span>
             </div>
           )}
@@ -77,9 +81,14 @@ export function PropertyIntelligence() {
                     {inputs.propertyYearBuilt && <><span className="mx-2 opacity-30">|</span> <Calendar className="h-3 w-3 mr-1.5 text-blue-500" /> Built {inputs.propertyYearBuilt}</>}
                 </p>
             </div>
-            <Badge variant="outline" className="text-[9px] font-black border-blue-100 text-blue-600 bg-blue-50 uppercase tracking-widest px-3 py-1">
-                Verified Data
-            </Badge>
+            <div className="flex flex-col items-end space-y-1">
+                <Badge variant="outline" className="text-[9px] font-black border-blue-100 text-blue-600 bg-blue-50 uppercase tracking-widest px-3 py-1">
+                    Verified Data
+                </Badge>
+                {inputs.estimateConfidence && (
+                    <span className="text-[8px] font-black uppercase text-gray-400">Confidence: <span className="text-blue-600">{inputs.estimateConfidence}</span></span>
+                )}
+            </div>
         </div>
 
         {hasStats && (
@@ -123,8 +132,8 @@ export function PropertyIntelligence() {
               <TrendingUp className="h-3 w-3 mr-1.5 text-green-500" /> Automated Gearing Range
             </h4>
             <div className="flex items-center space-x-2">
-                <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
-                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Real-time Feed</span>
+                <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
+                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Live Valuation Feed</span>
             </div>
           </div>
 
