@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ChevronRight, ChevronLeft, Check, Loader2 } from "lucide-react";
+import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 
 export default function NewDealWizard() {
   const router = useRouter();
@@ -64,7 +65,7 @@ export default function NewDealWizard() {
               {step === 1 ? "Model Type" : step === 2 ? "Basic Details" : "Finalise"}
             </CardTitle>
           </CardHeader>
-          <CardContent className="py-6">
+          <CardContent className="py-6 overflow-visible">
             {step === 1 && (
               <RadioGroup value={formData.deal_type} onValueChange={(v) => setFormData({...formData, deal_type: v})}>
                 <div className="grid gap-4">
@@ -87,9 +88,14 @@ export default function NewDealWizard() {
                     <Label htmlFor="group-input" className="text-[10px] font-black uppercase text-gray-400">Group</Label>
                     <Input id="group-input" placeholder="e.g. Siare Holdings" value={formData.customer_group} onChange={e => setFormData({...formData, customer_group: e.target.value})} className="h-12 text-lg font-bold" />
                 </div>
-                <div className="grid gap-2">
+                <div className="grid gap-2 overflow-visible">
                     <Label htmlFor="address-input" className="text-[10px] font-black uppercase text-gray-400">Address</Label>
-                    <Input id="address-input" placeholder="Full site address..." value={formData.project_address} onChange={e => setFormData({...formData, project_address: e.target.value})} className="h-12 text-lg font-bold" />
+                    <AddressAutocomplete
+                        value={formData.project_address}
+                        onChange={(val) => setFormData({...formData, project_address: val})}
+                        placeholder="Start typing project address..."
+                        className="h-12"
+                    />
                 </div>
               </div>
             )}
@@ -105,7 +111,7 @@ export default function NewDealWizard() {
           </CardContent>
           <CardFooter className="flex justify-between border-t bg-gray-50/50 p-6">
             <Button variant="ghost" onClick={() => step === 1 ? router.push('/') : setStep(s => s - 1)} disabled={isSubmitting} className="font-bold uppercase text-[11px] tracking-widest">Back</Button>
-            <Button onClick={() => step === 3 ? handleSubmit() : setStep(s => s + 1)} disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 px-8 font-black uppercase text-[11px] tracking-widest shadow-lg shadow-blue-900/20">
+            <Button onClick={() => step === 3 ? handleSubmit() : setStep(s => s + 1)} disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 px-8 text-white font-black uppercase text-[11px] tracking-widest shadow-lg shadow-blue-900/20">
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {step === 3 ? "Create Assessment" : "Next"}
             </Button>

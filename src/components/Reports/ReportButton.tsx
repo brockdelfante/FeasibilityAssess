@@ -31,7 +31,7 @@ export function ReportButton({ dealId, data }: ReportButtonProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button className="bg-blue-600 hover:bg-blue-700 h-10 px-6 font-black uppercase text-[11px] tracking-widest" disabled={isGenerating}>
+        <Button className="bg-blue-600 hover:bg-blue-700 text-white h-10 px-6 font-black uppercase text-[11px] tracking-widest" disabled={isGenerating}>
           {isGenerating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FileText className="h-4 w-4 mr-2" />}
           Generate Reports
           <ChevronDown className="ml-2 h-4 w-4 opacity-50" />

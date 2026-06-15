@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { AlertCircle, CheckCircle2, TrendingUp, Save, Share2, Calculator, FileText, History, Wallet, Banknote, Loader2, ArrowLeft, Plus, Trash2, Calendar, User, ExternalLink, MapPin, Info, ArrowUpRight, Download, FileSpreadsheet, ShieldCheck, Scale } from "lucide-react";
+import { AlertCircle, CheckCircle2, TrendingUp, Save, Share2, Calculator, FileText, History, Wallet, Banknote, Loader2, ArrowLeft, Plus, Trash2, Calendar, User, ExternalLink, MapPin, Info, ArrowUpRight, Download, FileSpreadsheet, ShieldCheck, Scale, Trash, ChevronDown } from "lucide-react";
 import { BreachAlerts } from "@/components/OutputPanel/BreachAlerts";
 import { CashflowChart } from "@/components/OutputPanel/CashflowChart";
 import { SensitivityMatrix } from "@/components/OutputPanel/SensitivityMatrix";
@@ -26,6 +26,7 @@ import { CalculationAudit } from "@/components/OutputPanel/CalculationAudit";
 import { ReportButton } from "@/components/Reports/ReportButton";
 import { MezzanineAnalysis } from "@/components/OutputPanel/MezzanineAnalysis";
 import { ExitPosition } from "@/components/OutputPanel/ExitPosition";
+import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 
 export default function DealEditPage() {
   const params = useParams();
@@ -36,6 +37,7 @@ export default function DealEditPage() {
   } = useDealStore();
 
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isPushingDFS, setIsPushingDFS] = useState(false);
   const [isPushingAdv, setIsPushingAdv] = useState(false);
@@ -72,6 +74,11 @@ export default function DealEditPage() {
         const payload = {
             customer_group: inputs.customerGroup,
             project_address: inputs.projectAddress,
+            address_street: inputs.addressStreet,
+            address_city: inputs.addressCity,
+            address_state: inputs.addressState,
+            address_postcode: inputs.addressPostcode,
+            address_country: inputs.addressCountry,
             deal_type: inputs.dealType,
             loan_term_months: inputs.loanTermMonths,
             build_term_months: inputs.buildTermMonths,
@@ -145,6 +152,18 @@ export default function DealEditPage() {
     }
   };
 
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+        const res = await fetch(`/api/deals/${params.id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error("Delete failed");
+        router.push('/');
+    } catch (e: any) {
+        alert("Error: " + e.message);
+        setIsDeleting(false);
+    }
+  };
+
   const handlePush = async (pipeline: 'dfs' | 'advisory') => {
     const setStatus = pipeline === 'dfs' ? setIsPushingDFS : setIsPushingAdv;
     setStatus(true);
@@ -191,6 +210,17 @@ export default function DealEditPage() {
     }
   };
 
+  const handleAddressSelect = (p: any) => {
+    setInputs({
+      projectAddress: [p.name, p.housenumber, p.street, p.city || p.town, p.state, p.country].filter(Boolean).join(", "),
+      addressStreet: [p.housenumber, p.street].filter(Boolean).join(" "),
+      addressCity: p.city || p.town || "",
+      addressState: p.state || "",
+      addressPostcode: p.postcode || "",
+      addressCountry: p.country || ""
+    });
+  };
+
   if (isLoading) return (
     <div className="flex h-screen items-center justify-center bg-[#0F1923] flex-col space-y-6">
         <Loader2 className="h-12 w-12 animate-spin text-blue-500" />
@@ -225,7 +255,7 @@ export default function DealEditPage() {
                             History
                         </Button>
                     </SheetTrigger>
-                    <SheetContent className="w-[450px] sm:w-[600px] overflow-auto border-l-4 border-l-blue-600">
+                    <SheetContent className="w-[450px] sm:w-[600px] overflow-auto border-l-4 border-l-blue-600 bg-white">
                         <SheetHeader className="border-b pb-6">
                             <SheetTitle className="flex items-center font-black uppercase tracking-tighter text-2xl text-gray-900">
                                 <History className="h-6 w-6 mr-3 text-blue-600" />
@@ -267,10 +297,64 @@ export default function DealEditPage() {
                     {isExporting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FileSpreadsheet className="h-4 w-4 mr-2 text-green-600" />}
                     Export Data
                 </Button>
+
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="destructive" className="font-bold text-[11px] uppercase tracking-widest shadow-sm bg-red-600 hover:bg-red-700 text-white border-0">
+                            <Trash className="h-4 w-4 mr-2" />
+                            Delete
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="bg-white border-0 shadow-2xl rounded-2xl">
+                        <AlertDialogHeader>
+                            <AlertDialogTitle className="text-2xl font-black uppercase tracking-tight">Are you absolutely sure?</AlertDialogTitle>
+                            <AlertDialogDescription className="text-gray-500 font-medium">
+                                This action cannot be undone. This will permanently delete the assessment
+                                and all associated data from the database.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter className="pt-4">
+                            <AlertDialogCancel className="rounded-xl font-bold border-2">Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700 text-white rounded-xl font-black uppercase tracking-widest">
+                                {isDeleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash className="h-4 w-4 mr-2" />}
+                                Delete Forever
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </div>
           </div>
 
           <Accordion type="multiple" defaultValue={["products", "costs", "programme", "finance", "risk"]} className="w-full space-y-6">
+             {/* Customer & Project Section */}
+             <AccordionItem value="customer" className="bg-white border rounded-2xl px-8 shadow-sm overflow-visible border-gray-100">
+                <AccordionTrigger className="hover:no-underline py-6 font-black uppercase tracking-[0.2em] text-[11px] text-gray-400">Customer & Project Details</AccordionTrigger>
+                <AccordionContent className="pb-8 overflow-visible">
+                    <div className="space-y-6 overflow-visible">
+                      <div className="grid grid-cols-2 gap-8 overflow-visible">
+                          <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-500 font-black">Customer Group</Label><Input value={inputs.customerGroup} onChange={e => setInputs({ customerGroup: e.target.value })} className="h-10 font-bold" /></div>
+                          <div className="space-y-2 overflow-visible"><Label className="text-[10px] uppercase text-gray-500 font-black">Project Address (Full)</Label>
+                              <AddressAutocomplete
+                                  value={inputs.projectAddress}
+                                  onChange={val => setInputs({ projectAddress: val })}
+                                  onSelect={handleAddressSelect}
+                                  placeholder="Search project address..."
+                                  className="h-10"
+                              />
+                          </div>
+                      </div>
+                      <Separator className="opacity-50" />
+                      <div className="grid grid-cols-3 gap-6">
+                          <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-400 font-black">Street</Label><Input value={inputs.addressStreet} onChange={e => setInputs({ addressStreet: e.target.value })} className="h-10" /></div>
+                          <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-400 font-black">City</Label><Input value={inputs.addressCity} onChange={e => setInputs({ addressCity: e.target.value })} className="h-10" /></div>
+                          <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-400 font-black">State</Label><Input value={inputs.addressState} onChange={e => setInputs({ addressState: e.target.value })} className="h-10" /></div>
+                          <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-400 font-black">Postcode</Label><Input value={inputs.addressPostcode} onChange={e => setInputs({ addressPostcode: e.target.value })} className="h-10" /></div>
+                          <div className="space-y-2 col-span-2"><Label className="text-[10px] uppercase text-gray-400 font-black">Country</Label><Input value={inputs.addressCountry} onChange={e => setInputs({ addressCountry: e.target.value })} className="h-10" /></div>
+                      </div>
+                    </div>
+                </AccordionContent>
+            </AccordionItem>
+
              {/* Developer Profile Section */}
              <AccordionItem value="developer" className="bg-white border rounded-2xl px-8 shadow-sm overflow-hidden border-gray-100">
                 <AccordionTrigger className="hover:no-underline py-6 font-black uppercase tracking-[0.2em] text-[11px] text-gray-400">Developer Profile</AccordionTrigger>
@@ -371,12 +455,12 @@ export default function DealEditPage() {
           </div>
 
           <Tabs defaultValue="summary" className="flex-1 flex flex-col overflow-hidden">
-            <TabsList className="w-full justify-start rounded-none border-b bg-gray-50/80 px-4 h-14 gap-1">
-                <TabsTrigger value="summary" className="text-[9px] uppercase font-black data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm rounded-t-lg h-10 border-x first:border-l-0 px-6 transition-all">Gearing</TabsTrigger>
-                <TabsTrigger value="mezz" className="text-[9px] uppercase font-black data-[state=active]:bg-white data-[state=active]:text-amber-600 data-[state=active]:shadow-sm rounded-t-lg h-10 border-r px-6 transition-all">Mezzanine</TabsTrigger>
-                <TabsTrigger value="scenarios" className="text-[9px] uppercase font-black data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm rounded-t-lg h-10 border-r px-6 transition-all">Sensitivity</TabsTrigger>
-                <TabsTrigger value="exit" className="text-[9px] uppercase font-black data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm rounded-t-lg h-10 border-r px-6 transition-all">Exit Strategy</TabsTrigger>
-                <TabsTrigger value="audit" className="text-[9px] uppercase font-black data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm rounded-t-lg h-10 border-r px-6 transition-all">Calculation Audit</TabsTrigger>
+            <TabsList className="w-full justify-start rounded-none border-b bg-gray-50/80 px-4 h-14 gap-1 overflow-x-auto">
+                <TabsTrigger value="summary" className="text-[9px] uppercase font-black data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm rounded-t-lg h-10 border-x first:border-l-0 px-6 transition-all shrink-0">Gearing</TabsTrigger>
+                <TabsTrigger value="mezz" className="text-[9px] uppercase font-black data-[state=active]:bg-white data-[state=active]:text-amber-600 data-[state=active]:shadow-sm rounded-t-lg h-10 border-r px-6 transition-all shrink-0">Mezzanine</TabsTrigger>
+                <TabsTrigger value="scenarios" className="text-[9px] uppercase font-black data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm rounded-t-lg h-10 border-r px-6 transition-all shrink-0">Sensitivity</TabsTrigger>
+                <TabsTrigger value="exit" className="text-[9px] uppercase font-black data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm rounded-t-lg h-10 border-r px-6 transition-all shrink-0">Exit Strategy</TabsTrigger>
+                <TabsTrigger value="audit" className="text-[9px] uppercase font-black data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm rounded-t-lg h-10 border-r px-6 transition-all shrink-0">Calculation Audit</TabsTrigger>
             </TabsList>
 
             <TabsContent value="summary" className="flex-1 overflow-auto p-8 space-y-8 m-0 bg-white border-t border-gray-50">
@@ -405,7 +489,7 @@ export default function DealEditPage() {
                 <div className="space-y-5">
                     <div className="flex items-center justify-between px-1">
                         <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Policy Breach Alerts</h3>
-                        {results.roc < 0.2 || results.lvrGross > 0.65 ? <Badge className="bg-red-500 text-[9px] font-black border-0">ACTION REQUIRED</Badge> : <Badge className="bg-green-500 text-[9px] font-black border-0">COMPLIANT</Badge>}
+                        {results.roc < 0.2 || results.lvrGross > 0.65 ? <Badge className="bg-red-500 text-[9px] font-black border-0 text-white">ACTION REQUIRED</Badge> : <Badge className="bg-green-500 text-[9px] font-black border-0 text-white">COMPLIANT</Badge>}
                     </div>
                     <BreachAlerts results={results} />
                 </div>
@@ -431,8 +515,8 @@ export default function DealEditPage() {
       </div>
 
       {/* Primary Global Actions (Sticky) */}
-      <div className="fixed bottom-0 left-0 right-0 h-24 bg-[#0F1923] border-t border-white/10 z-50 flex items-center px-12 shadow-[0_-10px_40px_rgba(0,0,0,0.4)] justify-between transition-all">
-        <div className="flex items-center space-x-12">
+      <div className="fixed bottom-0 left-0 right-0 h-24 bg-[#0F1923] border-t border-white/10 z-50 flex items-center px-12 shadow-[0_-10px_40px_rgba(0,0,0,0.4)] justify-between transition-all overflow-x-auto">
+        <div className="flex items-center space-x-12 shrink-0">
             <div className="flex flex-col"><span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-1">Projected ROC</span><div className="flex items-center space-x-3"><span className={`text-3xl font-mono font-black ${results.roc >= 0.2 ? 'text-green-400' : 'text-red-400'}`}>{formatPercent(results.roc)}</span>{results.roc >= 0.2 ? <ShieldCheck className="h-6 w-6 text-green-500 fill-green-500/20" /> : <AlertCircle className="h-6 w-6 text-red-500 animate-pulse" />}</div></div>
             <div className="h-12 w-px bg-white/10" />
             <div className="flex flex-col"><span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-1">Net Realisation</span><span className="text-2xl font-mono font-black text-white">{formatCurrency(results.netRealisations)}</span></div>
@@ -440,8 +524,8 @@ export default function DealEditPage() {
             <div className="flex flex-col"><span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-1">Max Senior Debt</span><span className="text-2xl font-mono font-black text-blue-400 shadow-blue-900">{formatCurrency(results.seniorFunding)}</span></div>
         </div>
 
-        <div className="flex items-center space-x-4">
-            <Button variant="ghost" className="text-gray-500 hover:text-white hover:bg-white/5 font-black uppercase text-[11px] tracking-widest px-8" onClick={() => router.push('/')}>Discard</Button>
+        <div className="flex items-center space-x-4 shrink-0">
+            <Button variant="ghost" className="text-white/60 hover:text-white hover:bg-white/5 font-black uppercase text-[11px] tracking-widest px-8" onClick={() => router.push('/')}>Discard</Button>
             <Button variant="outline" className="bg-white/5 text-white border-white/20 hover:bg-blue-600 hover:border-blue-500 h-12 px-10 font-black uppercase text-[12px] tracking-[0.1em] transition-all active:scale-95" onClick={handleSave} disabled={isSaving}>
                 {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5 mr-3" />}
                 Commit Draft
@@ -462,7 +546,7 @@ export default function DealEditPage() {
                                         <CheckCircle2 className={`h-4 w-4 mr-2 ${colorClass}`} /> {p} Pushed
                                     </Button>
                                 </AlertDialogTrigger>
-                                <AlertDialogContent className="bg-white border-4 border-gray-900 rounded-3xl">
+                                <AlertDialogContent className="bg-white border-0 shadow-2xl rounded-2xl">
                                     <AlertDialogHeader>
                                         <AlertDialogTitle className="text-3xl font-black uppercase tracking-tighter">Synchronisation Warning</AlertDialogTitle>
                                         <AlertDialogDescription className="text-gray-600 font-medium leading-relaxed">
@@ -473,14 +557,14 @@ export default function DealEditPage() {
                                     </AlertDialogHeader>
                                     <AlertDialogFooter className="pt-6">
                                         <AlertDialogCancel className="rounded-xl font-bold border-2">Abort</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handlePush(p as any)} className="bg-blue-600 hover:bg-blue-700 rounded-xl font-black uppercase tracking-widest">Confirm Re-Sync</AlertDialogAction>
+                                        <AlertDialogAction onClick={() => handlePush(p as any)} className="bg-blue-600 hover:bg-blue-700 rounded-xl font-black uppercase tracking-widest text-white border-0">Confirm Re-Sync</AlertDialogAction>
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
                         );
                     }
                     return (
-                        <Button key={p} variant="secondary" className="bg-white/5 text-gray-400 border-0 hover:bg-white/10 h-12 px-6 text-[10px] font-black uppercase tracking-widest" onClick={() => handlePush(p as any)} disabled={loading}>
+                        <Button key={p} variant="secondary" className="bg-white/5 text-white bg-blue-600/20 border-blue-500/30 hover:bg-blue-600 h-12 px-6 text-[10px] font-black uppercase tracking-widest" onClick={() => handlePush(p as any)} disabled={loading}>
                             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : icon}
                             Push {p}
                         </Button>

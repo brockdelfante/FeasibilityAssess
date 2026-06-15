@@ -45,7 +45,7 @@ export default function PolicySettingsPage() {
           <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Policy Configuration</h1>
           <p className="text-gray-500 mt-1">Global lending thresholds and risk scoring weights applied to new assessments.</p>
         </div>
-        <Button className="bg-blue-600 shadow-lg" onClick={handleSave} disabled={isSaving}>
+        <Button className="bg-blue-600 shadow-lg text-white" onClick={handleSave} disabled={isSaving}>
           {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
           Update Active Policy
         </Button>

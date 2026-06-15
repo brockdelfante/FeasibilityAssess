@@ -1,10 +1,44 @@
 import { create } from 'zustand'
-import { DealInputs, CalculationResults, calculateAll } from './calculations'
+import { calculateAll } from './calculations'
 
 interface DealState {
-  inputs: DealInputs & {
+  inputs: {
+    dealType: 'construction' | 'subdivision'
     customerGroup: string
     projectAddress: string
+    addressStreet: string
+    addressCity: string
+    addressState: string
+    addressPostcode: string
+    addressCountry: string
+    products: any[]
+    loanTermMonths: number
+    buildTermMonths: number
+    startDate: Date
+    interestRate: number
+    lineFeeRate: number
+    lafRate: number
+    gstMethod: 'standard' | 'margin_scheme'
+    salesCommissionRate: number
+    presaleCommissionRate: number
+    landAcquisitionCost: number
+    siteValue: number
+    preliminaries: number
+    construction: number
+    constructionContingency: number
+    professionalFees: number
+    councilContributions: number
+    authorityFees: number
+    establishmentFees: number
+    legalFees: number
+    developmentContingency: number
+    customerCashEquity: number
+    mezzAmount: number
+    mezzEnabled: boolean
+    mezzInterestRate: number
+    mezzAppFeeRate: number
+    mezzBrokerFeeRate: number
+    mezzLegalFees: number
     developerExperienceYears: number
     developerProjectsCompleted: number
     developerTnw: number
@@ -33,7 +67,7 @@ interface DealState {
     assumptionsOther: string
     presales: any[]
   }
-  results: CalculationResults
+  results: any
   isLoading: boolean
   setInputs: (inputs: any) => void
   updateProduct: (index: number, product: any) => void
@@ -50,6 +84,11 @@ const defaultInputs: any = {
   dealType: 'construction',
   customerGroup: '',
   projectAddress: '',
+  addressStreet: '',
+  addressCity: '',
+  addressState: '',
+  addressPostcode: '',
+  addressCountry: '',
   products: [{ numLots: 1, description: 'Example Lot', areaSqm: 100, grossAICValuation: 0, qualifyingPresaleValue: 0, nonQualifyingPresaleValue: 0 }],
   loanTermMonths: 18,
   buildTermMonths: 12,
@@ -113,8 +152,6 @@ export const useDealStore = create<DealState>((set) => ({
   isLoading: false,
   setInputs: (newInputs) => set((state) => {
     const updatedInputs = { ...state.inputs, ...newInputs }
-    // Update derived product values if needed (e.g. presales)
-    // Actually the calculation engine handles the totals
     return {
       inputs: updatedInputs,
       results: calculateAll(updatedInputs)
@@ -155,18 +192,13 @@ export const useDealStore = create<DealState>((set) => ({
   updatePresale: (index, presale) => set((state) => {
     const newPresales = [...state.inputs.presales]
     newPresales[index] = { ...newPresales[index], ...presale }
-
-    // Sync to product qualifying values (simplified for this model)
     const totalQualifying = newPresales.filter(p => p.is_qualifying).reduce((sum, p) => sum + (Number(p.sale_price) || 0), 0)
     const totalNonQualifying = newPresales.filter(p => !p.is_qualifying).reduce((sum, p) => sum + (Number(p.sale_price) || 0), 0)
-
-    // We update the first product's presale values as a catch-all in this simplified sync
     const newProducts = [...state.inputs.products]
     if (newProducts.length > 0) {
         newProducts[0].qualifyingPresaleValue = totalQualifying
         newProducts[0].nonQualifyingPresaleValue = totalNonQualifying
     }
-
     const updatedInputs = { ...state.inputs, presales: newPresales, products: newProducts }
     return {
         inputs: updatedInputs,
@@ -188,6 +220,11 @@ export const useDealStore = create<DealState>((set) => ({
         dealType: deal.deal_type || 'construction',
         customerGroup: deal.customer_group || '',
         projectAddress: deal.project_address || '',
+        addressStreet: deal.address_street || '',
+        addressCity: deal.address_city || '',
+        addressState: deal.address_state || '',
+        addressPostcode: deal.address_postcode || '',
+        addressCountry: deal.address_country || '',
         products: deal.deal_products?.length ? deal.deal_products.map((p: any) => ({
             numLots: p.num_lots,
             description: p.description,

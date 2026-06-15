@@ -48,7 +48,7 @@ export default function Dashboard() {
             <p className="text-gray-500">Manage and track property development feasibility assessments.</p>
         </div>
         <div className="flex items-center space-x-2">
-          <Button asChild className="bg-blue-600 shadow-md hover:bg-blue-700">
+          <Button asChild className="bg-blue-600 shadow-md hover:bg-blue-700 text-white">
             <Link href="/deals/new">
               <PlusCircle className="mr-2 h-4 w-4" />
               New Assessment

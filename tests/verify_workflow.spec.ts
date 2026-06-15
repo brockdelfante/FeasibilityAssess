@@ -14,12 +14,13 @@ test('Full Assessment Life-cycle', async ({ page }) => {
   await page.waitForURL(/.*\/deals\/new/);
 
   console.log('Wizard Step 1...');
-  await page.click('text=Next');
+  await page.click('text=Next', { exact: true });
 
   console.log('Wizard Step 2...');
   await page.fill('#group-input', 'Test Automation Group');
-  await page.fill('#address-input', '123 Playwright Lane, Brisbane QLD');
-  await page.click('text=Next');
+  // New autocomplete field
+  await page.fill('input[placeholder="Start typing project address..."]', '123 Playwright Lane, Brisbane QLD');
+  await page.click('text=Next', { exact: true });
 
   console.log('Wizard Step 3...');
   await page.click('text=Create Assessment');
