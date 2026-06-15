@@ -5,10 +5,19 @@ import { Input } from "@/components/ui/input";
 import { Loader2, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+interface AddressSuggestion {
+  label: string;
+  street: string;
+  city: string;
+  state: string;
+  postcode: string;
+  country: string;
+}
+
 interface AddressAutocompleteProps {
   value: string;
   onChange: (value: string) => void;
-  onSelect?: (suggestion: any) => void;
+  onSelect?: (suggestion: AddressSuggestion) => void;
   placeholder?: string;
   className?: string;
 }
@@ -20,7 +29,7 @@ export function AddressAutocomplete({
   placeholder = "Search address...",
   className
 }: AddressAutocompleteProps) {
-  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -54,35 +63,24 @@ export function AddressAutocomplete({
 
       const data = await response.json();
 
-      // Map API response to our suggestion format
       const results = data.map((item: any) => {
-        // ssla is often cleaner: "1/261 GEORGE ST, SYDNEY NSW 2000"
         const label = item.ssla || item.sla;
-
-        // Parse components from ssla/sla for storage
-        // Format is usually: STREET, SUBURB STATE POSTCODE
         const parts = label.split(',').map((p: any) => p.trim());
         const street = parts[0] || "";
         const lastPart = parts[parts.length - 1] || "";
         const subParts = lastPart.split(' ');
 
-        // Postcode is usually last 4 digits
         const postcode = subParts[subParts.length - 1] || "";
-        // State is usually second to last
         const state = subParts[subParts.length - 2] || "";
-        // Suburb is everything before state in the last segment
         const suburb = subParts.slice(0, -2).join(' ') || "";
 
         return {
           label,
-          properties: {
-            street,
-            city: suburb,
-            state,
-            postcode,
-            country: "Australia", // API is AU centric
-            raw: item
-          }
+          street,
+          city: suburb,
+          state,
+          postcode,
+          country: "Australia"
         };
       });
 
@@ -101,10 +99,10 @@ export function AddressAutocomplete({
     fetchSuggestions(val);
   };
 
-  const handleSelect = (suggestion: any) => {
+  const handleSelect = (suggestion: AddressSuggestion) => {
     onChange(suggestion.label);
     setIsOpen(false);
-    if (onSelect) onSelect(suggestion.properties);
+    if (onSelect) onSelect(suggestion);
   };
 
   return (
@@ -115,7 +113,7 @@ export function AddressAutocomplete({
           onChange={handleInputChange}
           onFocus={() => suggestions.length > 0 && setIsOpen(true)}
           placeholder={placeholder}
-          className="pr-10 bg-white"
+          className="pr-10 bg-white border-gray-300 text-gray-900"
         />
         {isLoading && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -125,16 +123,16 @@ export function AddressAutocomplete({
       </div>
 
       {isOpen && (
-        <div className="absolute z-[100] mt-1 w-full rounded-md border bg-white shadow-2xl max-h-60 overflow-auto">
+        <div className="absolute z-[100] mt-1 w-full rounded-md border bg-white shadow-2xl max-h-60 overflow-auto border-gray-200">
           {suggestions.map((s, i) => (
             <button
               key={i}
               type="button"
               onClick={() => handleSelect(s)}
-              className="flex w-full items-center px-4 py-3 text-left text-sm hover:bg-blue-50 transition-colors border-b last:border-0"
+              className="flex w-full items-center px-4 py-3 text-left text-sm hover:bg-blue-50 transition-colors border-b last:border-0 text-gray-700"
             >
               <MapPin className="mr-3 h-4 w-4 text-blue-500 shrink-0" />
-              <span className="truncate text-gray-700 font-medium">{s.label}</span>
+              <span className="truncate font-medium">{s.label}</span>
             </button>
           ))}
         </div>

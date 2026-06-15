@@ -48,15 +48,15 @@ export default function NewDealWizard() {
     }
   };
 
-  const handleAddressSelect = (p: any) => {
+  const handleAddressSelect = (suggestion: any) => {
     setFormData({
       ...formData,
-      project_address: [p.name, p.housenumber, p.street, p.city || p.town, p.state, p.country].filter(Boolean).join(", "),
-      address_street: [p.housenumber, p.street].filter(Boolean).join(" "),
-      address_city: p.city || p.town || "",
-      address_state: p.state || "",
-      address_postcode: p.postcode || "",
-      address_country: p.country || ""
+      project_address: suggestion.label,
+      address_street: suggestion.street || "",
+      address_city: suggestion.city || "",
+      address_state: suggestion.state || "",
+      address_postcode: suggestion.postcode || "",
+      address_country: suggestion.country || "Australia"
     });
   };
 

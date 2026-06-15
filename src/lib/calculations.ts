@@ -39,6 +39,7 @@ export interface DealInputs {
   mezzAppFeeRate: number
   mezzBrokerFeeRate: number
   mezzLegalFees: number
+  mezzProvider?: string
   marketingSellingCost?: number
   legalFeesIndirect?: number
   ratesTaxes?: number
@@ -149,7 +150,7 @@ export function calculateAll(inputs: DealInputs): CalculationResults {
   if (inputs.gstMethod === 'standard') {
     gst = grv / 11
   } else {
-    gst = Math.max(0, (grv - inputs.landAcquisitionCost) / 11)
+    gst = Math.max(0, (grv - (inputs.landAcquisitionCost || 0)) / 11)
   }
   const nrv = grv - gst
 
@@ -245,7 +246,6 @@ export function calculateAll(inputs: DealInputs): CalculationResults {
   const rlv = (netRealisations - totalCostsExLand * (1 + targetROC)) / (1 + targetROC)
 
   const profit = netRealisations - totalDevelopmentCosts;
-  const totalDebt = seniorFunding + (inputs.mezzEnabled ? (inputs.mezzAmount || 0) : 0);
   const profitPerUnit = totalLots > 0 ? profit / totalLots : 0;
   const costPerUnit = totalLots > 0 ? totalDevelopmentCosts / totalLots : 0;
 

@@ -33,12 +33,16 @@ interface DealState {
     legalFees: number
     developmentContingency: number
     customerCashEquity: number
-    mezzAmount: number
+
+    // Mezzanine
     mezzEnabled: boolean
+    mezzProvider: string
+    mezzAmount: number
     mezzInterestRate: number
     mezzAppFeeRate: number
     mezzBrokerFeeRate: number
     mezzLegalFees: number
+
     developerExperienceYears: number
     developerProjectsCompleted: number
     developerTnw: number
@@ -80,7 +84,7 @@ interface DealState {
   }
   results: any
   isLoading: boolean
-  setInputs: (inputs: any) => void
+  setInputs: (inputs: Partial<DealState['inputs']>) => void
   updateProduct: (index: number, product: any) => void
   addProduct: () => void
   removeProduct: (index: number) => void
@@ -91,7 +95,7 @@ interface DealState {
   setLoading: (loading: boolean) => void
 }
 
-const defaultInputs: any = {
+const defaultInputs: DealState['inputs'] = {
   dealType: 'construction',
   customerGroup: '',
   projectAddress: '',
@@ -122,12 +126,16 @@ const defaultInputs: any = {
   legalFees: 0,
   developmentContingency: 0,
   customerCashEquity: 0,
-  mezzAmount: 0,
+
+  // Mezzanine
   mezzEnabled: false,
+  mezzProvider: '',
+  mezzAmount: 0,
   mezzInterestRate: 0.20,
   mezzAppFeeRate: 0.022,
   mezzBrokerFeeRate: 0.010,
   mezzLegalFees: 6600,
+
   developerExperienceYears: 0,
   developerProjectsCompleted: 0,
   developerTnw: 0,
@@ -276,12 +284,16 @@ export const useDealStore = create<DealState>((set) => ({
         legalFees: Number(deal.legal_fees) || 0,
         developmentContingency: Number(deal.development_contingency) || 0,
         customerCashEquity: Number(deal.customer_cash_equity) || 0,
-        mezzAmount: Number(deal.mezz_amount) || 0,
+
+        // Mezzanine
         mezzEnabled: deal.mezz_enabled || false,
+        mezzProvider: deal.mezz_provider || '',
+        mezzAmount: Number(deal.mezz_amount) || 0,
         mezzInterestRate: Number(deal.mezz_interest_rate) || 0.20,
         mezzAppFeeRate: Number(deal.mezz_app_fee_rate) || 0.022,
         mezzBrokerFeeRate: Number(deal.mezz_broker_fee_rate) || 0.010,
         mezzLegalFees: Number(deal.mezz_legal_fees) || 6600,
+
         developerExperienceYears: deal.developer_experience_years || 0,
         developerProjectsCompleted: deal.developer_projects_completed || 0,
         developerTnw: Number(deal.developer_tnw) || 0,

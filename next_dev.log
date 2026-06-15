@@ -1,0 +1,289 @@
+
+> siare-project@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.9 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.0.2:3000
+- Environments: .env.local
+✓ Ready in 2.0s
+
+ GET / 200 in 1955ms (next.js: 943ms, application-code: 1012ms)
+ GET /api/deals 200 in 1702ms (next.js: 323ms, application-code: 1379ms)
+ GET / 200 in 129ms (next.js: 6ms, application-code: 124ms)
+ GET /api/deals 200 in 428ms (next.js: 4ms, application-code: 424ms)
+ GET /deals/new 200 in 148ms (next.js: 48ms, application-code: 100ms)
+ GET / 200 in 181ms (next.js: 7ms, application-code: 174ms)
+ GET /api/deals 200 in 806ms (next.js: 14ms, application-code: 791ms)
+ GET /deals/new 200 in 77ms (next.js: 9ms, application-code: 68ms)
+ GET / 200 in 110ms (next.js: 6ms, application-code: 104ms)
+ GET /api/deals 200 in 429ms (next.js: 4ms, application-code: 425ms)
+ GET /deals/new 200 in 75ms (next.js: 6ms, application-code: 69ms)
+POST /api/deals body: {
+  deal_type: 'construction',
+  customer_group: 'Verification Test Group',
+  project_address: '100 QUEEN ST, PETERBOROUGH SA 5422',
+  address_street: '100 QUEEN ST',
+  address_city: 'PETERBOROUGH',
+  address_state: 'SA',
+  address_postcode: '5422',
+  address_country: 'Australia',
+  start_date: '2026-06-15',
+  loan_term_months: 18
+}
+ POST /api/deals 200 in 1022ms (next.js: 4ms, application-code: 1018ms)
+ GET /deals/a6d02c8d-32b2-4d25-8606-d720c311c619/edit 200 in 1179ms (next.js: 1092ms, application-code: 87ms)
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+ GET /api/deals/a6d02c8d-32b2-4d25-8606-d720c311c619 200 in 1883ms (next.js: 1384ms, application-code: 500ms)
+ GET /api/deals/a6d02c8d-32b2-4d25-8606-d720c311c619 200 in 522ms (next.js: 30ms, application-code: 492ms)
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+ GET /api/property-intelligence?query=100%20QUEEN%20ST%2C%20PETERBOROUGH%20SA%205422 200 in 936ms (next.js: 104ms, application-code: 832ms)
+ GET /api/property-intelligence?query=100%20QUEEN%20ST%2C%20PETERBOROUGH%20SA%205422 200 in 717ms (next.js: 5ms, application-code: 712ms)
+ GET / 200 in 133ms (next.js: 5ms, application-code: 128ms)
+ GET /api/deals 200 in 603ms (next.js: 5ms, application-code: 598ms)
+ GET /deals/new 200 in 56ms (next.js: 4ms, application-code: 52ms)
+POST /api/deals body: {
+  deal_type: 'construction',
+  customer_group: 'Verification Test Group',
+  project_address: '100 QUEEN ST, PETERBOROUGH SA 5422',
+  address_street: '100 QUEEN ST',
+  address_city: 'PETERBOROUGH',
+  address_state: 'SA',
+  address_postcode: '5422',
+  address_country: 'Australia',
+  start_date: '2026-06-15',
+  loan_term_months: 18
+}
+ POST /api/deals 200 in 1129ms (next.js: 3ms, application-code: 1126ms)
+ GET /deals/5116c48e-48d2-4781-8df0-051807d1b07d/edit 200 in 204ms (next.js: 37ms, application-code: 167ms)
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+ GET /api/deals/5116c48e-48d2-4781-8df0-051807d1b07d 200 in 601ms (next.js: 40ms, application-code: 561ms)
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+ GET /api/deals/5116c48e-48d2-4781-8df0-051807d1b07d 200 in 557ms (next.js: 4ms, application-code: 553ms)
+ GET /api/property-intelligence?query=100%20QUEEN%20ST%2C%20PETERBOROUGH%20SA%205422 200 in 974ms (next.js: 3ms, application-code: 972ms)
+ GET /api/property-intelligence?query=100%20QUEEN%20ST%2C%20PETERBOROUGH%20SA%205422 200 in 634ms (next.js: 3ms, application-code: 631ms)
+ GET / 200 in 101ms (next.js: 4ms, application-code: 97ms)
+ GET /api/deals 200 in 473ms (next.js: 3ms, application-code: 470ms)
+ GET /deals/new 200 in 86ms (next.js: 6ms, application-code: 80ms)
+POST /api/deals body: {
+  deal_type: 'construction',
+  customer_group: 'Verification Test Group',
+  project_address: '100 QUEEN ST, PETERBOROUGH SA 5422',
+  address_street: '100 QUEEN ST',
+  address_city: 'PETERBOROUGH',
+  address_state: 'SA',
+  address_postcode: '5422',
+  address_country: 'Australia',
+  start_date: '2026-06-15',
+  loan_term_months: 18
+}
+ POST /api/deals 200 in 991ms (next.js: 4ms, application-code: 987ms)
+ GET /deals/26b2e8e9-ad3f-42bf-b4a8-4e232e0eea91/edit 200 in 99ms (next.js: 36ms, application-code: 63ms)
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+ GET /api/deals/26b2e8e9-ad3f-42bf-b4a8-4e232e0eea91 200 in 577ms (next.js: 62ms, application-code: 514ms)
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+ GET /api/deals/26b2e8e9-ad3f-42bf-b4a8-4e232e0eea91 200 in 490ms (next.js: 3ms, application-code: 488ms)
+ GET /api/property-intelligence?query=100%20QUEEN%20ST%2C%20PETERBOROUGH%20SA%205422 200 in 831ms (next.js: 4ms, application-code: 827ms)
+ GET /api/property-intelligence?query=100%20QUEEN%20ST%2C%20PETERBOROUGH%20SA%205422 200 in 824ms (next.js: 8ms, application-code: 816ms)
+ GET / 200 in 120ms (next.js: 5ms, application-code: 115ms)
+ GET /api/deals 200 in 796ms (next.js: 5ms, application-code: 791ms)
+ GET /deals/new 200 in 72ms (next.js: 5ms, application-code: 67ms)
+POST /api/deals body: {
+  deal_type: 'construction',
+  customer_group: 'Verification Test Group',
+  project_address: '100 QUEEN ST, PETERBOROUGH SA 5422',
+  address_street: '100 QUEEN ST',
+  address_city: 'PETERBOROUGH',
+  address_state: 'SA',
+  address_postcode: '5422',
+  address_country: 'Australia',
+  start_date: '2026-06-15',
+  loan_term_months: 18
+}
+ POST /api/deals 200 in 622ms (next.js: 3ms, application-code: 619ms)
+ GET /deals/91e86041-bbdc-4f93-a6e0-2a60df24deb1/edit 200 in 120ms (next.js: 37ms, application-code: 83ms)
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+ GET /api/deals/91e86041-bbdc-4f93-a6e0-2a60df24deb1 200 in 599ms (next.js: 34ms, application-code: 565ms)
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+ GET /api/deals/91e86041-bbdc-4f93-a6e0-2a60df24deb1 200 in 557ms (next.js: 5ms, application-code: 552ms)
+ GET /api/property-intelligence?query=100%20QUEEN%20ST%2C%20PETERBOROUGH%20SA%205422 200 in 773ms (next.js: 9ms, application-code: 765ms)
+ GET /api/property-intelligence?query=100%20QUEEN%20ST%2C%20PETERBOROUGH%20SA%205422 200 in 655ms (next.js: 9ms, application-code: 646ms)
+ GET / 200 in 106ms (next.js: 3ms, application-code: 102ms)
+ GET /api/deals 200 in 472ms (next.js: 2ms, application-code: 469ms)
+ GET /deals/new 200 in 47ms (next.js: 3ms, application-code: 44ms)
+ GET / 200 in 92ms (next.js: 3ms, application-code: 89ms)
+ GET /api/deals 200 in 330ms (next.js: 3ms, application-code: 327ms)
+ GET /deals/new 200 in 91ms (next.js: 4ms, application-code: 87ms)
+ GET / 200 in 84ms (next.js: 6ms, application-code: 78ms)
+ GET /api/deals 200 in 487ms (next.js: 3ms, application-code: 484ms)
+ GET /deals/new 200 in 56ms (next.js: 4ms, application-code: 53ms)
+POST /api/deals body: {
+  deal_type: 'construction',
+  customer_group: 'Verification Test Group',
+  project_address: '100 QUEEN ST, PETERBOROUGH SA 5422',
+  address_street: '100 QUEEN ST',
+  address_city: 'PETERBOROUGH',
+  address_state: 'SA',
+  address_postcode: '5422',
+  address_country: 'Australia',
+  start_date: '2026-06-15',
+  loan_term_months: 18
+}
+ POST /api/deals 200 in 548ms (next.js: 3ms, application-code: 545ms)
+ GET /deals/52112e4d-6208-4662-8449-806bd1d7a88b/edit 200 in 81ms (next.js: 33ms, application-code: 48ms)
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+ GET /api/deals/52112e4d-6208-4662-8449-806bd1d7a88b 200 in 521ms (next.js: 32ms, application-code: 488ms)
+ GET /api/deals/52112e4d-6208-4662-8449-806bd1d7a88b 200 in 519ms (next.js: 5ms, application-code: 514ms)
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+ GET /api/property-intelligence?query=100%20QUEEN%20ST%2C%20PETERBOROUGH%20SA%205422 200 in 944ms (next.js: 3ms, application-code: 940ms)
+ GET /api/property-intelligence?query=100%20QUEEN%20ST%2C%20PETERBOROUGH%20SA%205422 200 in 624ms (next.js: 2ms, application-code: 622ms)

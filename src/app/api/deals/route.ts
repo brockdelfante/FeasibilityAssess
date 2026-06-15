@@ -32,6 +32,7 @@ export async function POST(req: NextRequest) {
         mezz_app_fee_rate: policy?.mezz_app_fee_rate || 0.022,
         mezz_broker_fee_rate: policy?.mezz_broker_fee_rate || 0.010,
         mezz_legal_fees: policy?.mezz_legal_fees || 6600,
+        mezz_provider: '',
         site_value: 0,
         construction: 0,
         professional_fees: 0,

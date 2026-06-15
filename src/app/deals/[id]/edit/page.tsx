@@ -1,10 +1,9 @@
 "use client";
 
 import { useDealStore } from "@/lib/store";
-import { useEffect, useState, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState, useCallback, use } from "react";
+import { useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -13,10 +12,9 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { AlertCircle, CheckCircle2, TrendingUp, Save, Share2, Calculator, FileText, History, Wallet, Banknote, Loader2, ArrowLeft, Plus, Trash2, Calendar, User, ExternalLink, MapPin, Info, ArrowUpRight, Download, FileSpreadsheet, ShieldCheck, Scale, Trash, ChevronDown, Search } from "lucide-react";
+import { AlertCircle, CheckCircle2, TrendingUp, Save, Share2, Calculator, FileText, History, Wallet, Loader2, ArrowLeft, Plus, Trash2, MapPin, Info, ArrowUpRight, FileSpreadsheet, ShieldCheck, Scale, Trash, ChevronDown, Search, RefreshCcw } from "lucide-react";
 import { BreachAlerts } from "@/components/OutputPanel/BreachAlerts";
 import { CashflowChart } from "@/components/OutputPanel/CashflowChart";
 import { SensitivityMatrix } from "@/components/OutputPanel/SensitivityMatrix";
@@ -30,12 +28,12 @@ import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 import { PropertyIntelligence } from "@/components/PropertyIntelligence";
 import { ValuationComparison } from "@/components/OutputPanel/ValuationComparison";
 
-export default function DealEditPage() {
-  const params = useParams();
+export default function DealEditPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const router = useRouter();
   const {
     inputs, results, setInputs, updateProduct, addProduct, removeProduct,
-    loadDeal, isLoading, setLoading, updatePresale, addPresale, removePresale
+    loadDeal, isLoading, setLoading
   } = useDealStore();
 
   const [isSaving, setIsSaving] = useState(false);
@@ -72,28 +70,27 @@ export default function DealEditPage() {
     }
   }, [setInputs]);
 
-  const fetchDeal = async () => {
+  const fetchDeal = useCallback(async () => {
     try {
-        const res = await fetch(`/api/deals/${params.id}`);
+        const res = await fetch(`/api/deals/${id}`);
         const data = await res.json();
         setDealInfo(data);
         loadDeal(data);
 
-        // Auto-lookup intelligence if missing but address exists
-        if (data.project_address && !data.estimate_mid) {
+        if (data.project_address && (data.estimate_mid === null || data.estimate_mid === undefined)) {
             fetchIntelligence(data.project_address);
         }
     } catch (e) {
         console.error(e);
     }
-  };
+  }, [id, loadDeal, fetchIntelligence]);
 
   useEffect(() => {
-    if (params.id) {
+    if (id) {
         setLoading(true);
         fetchDeal();
     }
-  }, [params.id]);
+  }, [id, fetchDeal, setLoading]);
 
   const formatCurrency = (val: number) =>
     new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD', maximumFractionDigits: 0 }).format(val);
@@ -132,6 +129,7 @@ export default function DealEditPage() {
             development_contingency: inputs.developmentContingency,
             customer_cash_equity: inputs.customerCashEquity,
             mezz_enabled: inputs.mezzEnabled,
+            mezz_provider: inputs.mezzProvider,
             mezz_amount: inputs.mezzAmount,
             mezz_interest_rate: inputs.mezzInterestRate,
             mezz_app_fee_rate: inputs.mezzAppFeeRate,
@@ -170,7 +168,6 @@ export default function DealEditPage() {
             products: inputs.products,
             presales: inputs.presales,
 
-            // Property Intelligence fields
             estimate_lower: inputs.estimateLower,
             estimate_mid: inputs.estimateMid,
             estimate_upper: inputs.estimateUpper,
@@ -182,7 +179,7 @@ export default function DealEditPage() {
             property_land_area: inputs.propertyLandArea
         };
 
-        const res = await fetch(`/api/deals/${params.id}`, {
+        const res = await fetch(`/api/deals/${id}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json', 'x-editor-name': 'Jules Smith' },
             body: JSON.stringify(payload)
@@ -200,7 +197,7 @@ export default function DealEditPage() {
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
-        const res = await fetch(`/api/deals/${params.id}`, { method: 'DELETE' });
+        const res = await fetch(`/api/deals/${id}`, { method: 'DELETE' });
         if (!res.ok) throw new Error("Delete failed");
         router.push('/');
     } catch (e: any) {
@@ -213,7 +210,7 @@ export default function DealEditPage() {
     const setStatus = pipeline === 'dfs' ? setIsPushingDFS : setIsPushingAdv;
     setStatus(true);
     try {
-        const res = await fetch(`/api/deals/${params.id}/push-${pipeline}`, {
+        const res = await fetch(`/api/deals/${id}/push-${pipeline}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ ...inputs, ...results })
@@ -235,7 +232,7 @@ export default function DealEditPage() {
   const handleExportExcel = async () => {
     setIsExporting(true);
     try {
-        const res = await fetch(`/api/deals/${params.id}/export`, {
+        const res = await fetch(`/api/deals/${id}/export`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ ...inputs, results })
@@ -255,18 +252,16 @@ export default function DealEditPage() {
     }
   };
 
-  const handleAddressSelect = (label: string, p: any) => {
+  const handleAddressSelect = (suggestion: any) => {
     setInputs({
-      projectAddress: label,
-      addressStreet: p.street || "",
-      addressCity: p.city || "",
-      addressState: p.state || "",
-      addressPostcode: p.postcode || "",
-      addressCountry: p.country || "Australia"
+      projectAddress: suggestion.label,
+      addressStreet: suggestion.street || "",
+      addressCity: suggestion.city || "",
+      addressState: suggestion.state || "",
+      addressPostcode: suggestion.postcode || "",
+      addressCountry: suggestion.country || "Australia"
     });
-
-    // Trigger intelligence lookup
-    fetchIntelligence(label);
+    fetchIntelligence(suggestion.label);
   };
 
   if (isLoading) return (
@@ -277,7 +272,7 @@ export default function DealEditPage() {
   );
 
   return (
-    <div className="flex flex-col h-full bg-gray-50 min-h-screen relative font-sans">
+    <div className="flex flex-col h-full bg-gray-50 min-h-screen relative font-sans text-[13px]">
       <div className="flex-1 flex overflow-hidden">
         {/* Left Column: Input Sections */}
         <div className="flex-1 overflow-auto p-8 space-y-8 text-sm pb-40">
@@ -341,7 +336,7 @@ export default function DealEditPage() {
                         </div>
                     </SheetContent>
                 </Sheet>
-                <Button variant="outline" onClick={handleExportExcel} disabled={isExporting} className="bg-white border-gray-200 font-bold text-[11px] uppercase tracking-widest shadow-sm">
+                <Button variant="outline" onClick={handleExportExcel} disabled={isExporting} className="bg-white border-gray-200 font-bold text-[11px] uppercase tracking-widest shadow-sm text-gray-900">
                     {isExporting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FileSpreadsheet className="h-4 w-4 mr-2 text-green-600" />}
                     Export Data
                 </Button>
@@ -355,7 +350,7 @@ export default function DealEditPage() {
                     </AlertDialogTrigger>
                     <AlertDialogContent className="bg-white border-0 shadow-2xl rounded-2xl">
                         <AlertDialogHeader>
-                            <AlertDialogTitle className="text-2xl font-black uppercase tracking-tight">Are you absolutely sure?</AlertDialogTitle>
+                            <AlertDialogTitle className="text-2xl font-black uppercase tracking-tight text-gray-900">Are you absolutely sure?</AlertDialogTitle>
                             <AlertDialogDescription className="text-gray-500 font-medium">
                                 This action cannot be undone. This will permanently delete the assessment
                                 and all associated data from the database.
@@ -390,40 +385,40 @@ export default function DealEditPage() {
           <Accordion type="multiple" defaultValue={["customer", "products", "costs", "programme", "finance", "risk"]} className="w-full space-y-6">
              {/* Customer & Project Section */}
              <AccordionItem value="customer" className="bg-white border rounded-2xl px-8 shadow-sm overflow-visible border-gray-100">
-                <AccordionTrigger className="hover:no-underline py-6 font-black uppercase tracking-[0.2em] text-[11px] text-gray-400">Customer & Project Details</AccordionTrigger>
-                <AccordionContent className="pb-8 overflow-visible">
+                <AccordionTrigger className="hover:no-underline py-6 font-black uppercase tracking-[0.2em] text-[11px] text-gray-900">Customer & Project Details</AccordionTrigger>
+                <AccordionContent className="pb-8 overflow-visible text-gray-900">
                     <div className="space-y-6 overflow-visible">
                       <div className="grid grid-cols-2 gap-8 overflow-visible">
-                          <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-500 font-black">Customer Group</Label><Input value={inputs.customerGroup} onChange={e => setInputs({ customerGroup: e.target.value })} className="h-10 font-bold" /></div>
-                          <div className="space-y-2 overflow-visible"><Label className="text-[10px] uppercase text-gray-500 font-black">Project Address (Full)</Label>
+                          <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-500 font-black">Customer Group</Label><Input value={inputs.customerGroup} onChange={e => setInputs({ customerGroup: e.target.value })} className="h-10 font-bold border-gray-300" /></div>
+                          <div className="space-y-2 overflow-visible"><Label className="text-[10px] uppercase text-gray-500 font-black text-gray-500">Project Address (Full)</Label>
                               <div className="flex space-x-2">
                                 <AddressAutocomplete
                                     value={inputs.projectAddress}
                                     onChange={val => setInputs({ projectAddress: val })}
-                                    onSelect={(p) => handleAddressSelect(inputs.projectAddress, p)}
+                                    onSelect={handleAddressSelect}
                                     placeholder="Search project address..."
                                     className="h-10 flex-1"
                                 />
                                 <Button
                                     variant="outline"
                                     size="icon"
-                                    className="h-10 w-10 shrink-0"
+                                    className="h-10 w-10 shrink-0 border-gray-300"
                                     onClick={() => fetchIntelligence(inputs.projectAddress)}
                                     title="Manual Intelligence Lookup"
                                     type="button"
                                 >
-                                    <Search className="h-4 w-4 text-blue-600" />
+                                    <RefreshCcw className={`h-4 w-4 text-blue-600 ${isIntelligenceLoading ? 'animate-spin' : ''}`} />
                                 </Button>
                               </div>
                           </div>
                       </div>
                       <Separator className="opacity-50" />
                       <div className="grid grid-cols-3 gap-6">
-                          <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-400 font-black">Street</Label><Input value={inputs.addressStreet} onChange={e => setInputs({ addressStreet: e.target.value })} className="h-10" /></div>
-                          <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-400 font-black">City</Label><Input value={inputs.addressCity} onChange={e => setInputs({ addressCity: e.target.value })} className="h-10" /></div>
-                          <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-400 font-black">State</Label><Input value={inputs.addressState} onChange={e => setInputs({ addressState: e.target.value })} className="h-10" /></div>
-                          <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-400 font-black">Postcode</Label><Input value={inputs.addressPostcode} onChange={e => setInputs({ addressPostcode: e.target.value })} className="h-10" /></div>
-                          <div className="space-y-2 col-span-2"><Label className="text-[10px] uppercase text-gray-400 font-black">Country</Label><Input value={inputs.addressCountry} onChange={e => setInputs({ addressCountry: e.target.value })} className="h-10" /></div>
+                          <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-400 font-black">Street</Label><Input value={inputs.addressStreet} onChange={e => setInputs({ addressStreet: e.target.value })} className="h-10 border-gray-300" /></div>
+                          <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-400 font-black">City</Label><Input value={inputs.addressCity} onChange={e => setInputs({ addressCity: e.target.value })} className="h-10 border-gray-300" /></div>
+                          <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-400 font-black">State</Label><Input value={inputs.addressState} onChange={e => setInputs({ addressState: e.target.value })} className="h-10 border-gray-300" /></div>
+                          <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-400 font-black">Postcode</Label><Input value={inputs.addressPostcode} onChange={e => setInputs({ addressPostcode: e.target.value })} className="h-10 border-gray-300" /></div>
+                          <div className="space-y-2 col-span-2"><Label className="text-[10px] uppercase text-gray-400 font-black">Country</Label><Input value={inputs.addressCountry} onChange={e => setInputs({ addressCountry: e.target.value })} className="h-10 border-gray-300" /></div>
                       </div>
                     </div>
                 </AccordionContent>
@@ -431,22 +426,22 @@ export default function DealEditPage() {
 
              {/* Developer Profile Section */}
              <AccordionItem value="developer" className="bg-white border rounded-2xl px-8 shadow-sm overflow-hidden border-gray-100">
-                <AccordionTrigger className="hover:no-underline py-6 font-black uppercase tracking-[0.2em] text-[11px] text-gray-400">Developer Profile</AccordionTrigger>
-                <AccordionContent className="pb-8">
+                <AccordionTrigger className="hover:no-underline py-6 font-black uppercase tracking-[0.2em] text-[11px] text-gray-900">Developer Profile</AccordionTrigger>
+                <AccordionContent className="pb-8 text-gray-900">
                     <div className="grid grid-cols-4 gap-8">
-                        <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-500 font-black">Experience (Yrs)</Label><Input type="number" value={inputs.developerExperienceYears} onChange={e => setInputs({ developerExperienceYears: parseInt(e.target.value) || 0 })} className="h-10 font-bold" /></div>
-                        <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-500 font-black">Projects Completed</Label><Input type="number" value={inputs.developerProjectsCompleted} onChange={e => setInputs({ developerProjectsCompleted: parseInt(e.target.value) || 0 })} className="h-10 font-bold" /></div>
-                        <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-500 font-black">Net Worth (AUD)</Label><Input type="number" value={inputs.developerTnw} onChange={e => setInputs({ developerTnw: parseFloat(e.target.value) || 0 })} className="h-10 font-bold" /></div>
-                        <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-500 font-black">Liquidity (AUD)</Label><Input type="number" value={inputs.developerLiquidity} onChange={e => setInputs({ developerLiquidity: parseFloat(e.target.value) || 0 })} className="h-10 font-bold" /></div>
-                        <div className="col-span-4 space-y-2 pt-2"><Label className="text-[10px] uppercase text-gray-500 font-black">Professional Commentary</Label><Textarea className="min-h-[100px] leading-relaxed" value={inputs.developerNotes} onChange={e => setInputs({ developerNotes: e.target.value })} placeholder="Discuss developer track record and project relevance..." /></div>
+                        <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-500 font-black">Experience (Yrs)</Label><Input type="number" value={inputs.developerExperienceYears} onChange={e => setInputs({ developerExperienceYears: parseInt(e.target.value) || 0 })} className="h-10 font-bold border-gray-300" /></div>
+                        <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-500 font-black">Projects Completed</Label><Input type="number" value={inputs.developerProjectsCompleted} onChange={e => setInputs({ developerProjectsCompleted: parseInt(e.target.value) || 0 })} className="h-10 font-bold border-gray-300" /></div>
+                        <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-500 font-black">Net Worth (AUD)</Label><Input type="number" value={inputs.developerTnw} onChange={e => setInputs({ developerTnw: parseFloat(e.target.value) || 0 })} className="h-10 font-bold border-gray-300" /></div>
+                        <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-500 font-black">Liquidity (AUD)</Label><Input type="number" value={inputs.developerLiquidity} onChange={e => setInputs({ developerLiquidity: parseFloat(e.target.value) || 0 })} className="h-10 font-bold border-gray-300" /></div>
+                        <div className="col-span-4 space-y-2 pt-2"><Label className="text-[10px] uppercase text-gray-500 font-black">Professional Commentary</Label><Textarea className="min-h-[100px] leading-relaxed border-gray-300" value={inputs.developerNotes} onChange={e => setInputs({ developerNotes: e.target.value })} placeholder="Discuss developer track record and project relevance..." /></div>
                     </div>
                 </AccordionContent>
             </AccordionItem>
 
             {/* Product Mix Section */}
             <AccordionItem value="products" className="bg-white border rounded-2xl px-8 shadow-sm overflow-hidden border-gray-100">
-                <AccordionTrigger className="hover:no-underline py-6 font-black uppercase tracking-[0.2em] text-[11px] text-gray-400">{isSubdivision ? "Lot Inventory" : "Unit Inventory"}</AccordionTrigger>
-                <AccordionContent className="pb-8">
+                <AccordionTrigger className="hover:no-underline py-6 font-black uppercase tracking-[0.2em] text-[11px] text-gray-900">{isSubdivision ? "Lot Inventory" : "Unit Inventory"}</AccordionTrigger>
+                <AccordionContent className="pb-8 text-gray-900">
                     <div className="space-y-4">
                         <div className="grid grid-cols-6 gap-6 text-[10px] uppercase font-black text-gray-400 px-2">
                             <div className="col-span-2">Description</div>
@@ -457,10 +452,10 @@ export default function DealEditPage() {
                         </div>
                         {inputs.products.map((product, idx) => (
                             <div key={idx} className="grid grid-cols-6 gap-6 items-center bg-gray-50/50 p-4 rounded-2xl border border-gray-100 group hover:bg-blue-50/30 transition-colors">
-                                <div className="col-span-2"><Input value={product.description} onChange={(e) => updateProduct(idx, { description: e.target.value })} className="bg-white border-gray-200 font-bold h-11" /></div>
-                                <div><Input type="number" value={product.numLots} onChange={(e) => updateProduct(idx, { numLots: parseInt(e.target.value) || 0 })} className="bg-white border-gray-200 text-center font-mono font-bold h-11" /></div>
-                                <div><Input type="number" value={product.areaSqm} onChange={(e) => updateProduct(idx, { areaSqm: parseFloat(e.target.value) || 0 })} className="bg-white border-gray-200 text-center font-mono font-bold h-11" /></div>
-                                <div><Input type="number" value={product.grossAICValuation} onChange={(e) => updateProduct(idx, { grossAICValuation: parseFloat(e.target.value) || 0 })} className="bg-white border-gray-200 text-right font-mono font-bold h-11" /></div>
+                                <div className="col-span-2"><Input value={product.description} onChange={(e) => updateProduct(idx, { description: e.target.value })} className="bg-white border-gray-200 font-bold h-11 border-gray-300" /></div>
+                                <div><Input type="number" value={product.numLots} onChange={(e) => updateProduct(idx, { numLots: parseInt(e.target.value) || 0 })} className="bg-white border-gray-200 text-center font-mono font-bold h-11 border-gray-300" /></div>
+                                <div><Input type="number" value={product.areaSqm} onChange={(e) => updateProduct(idx, { areaSqm: parseFloat(e.target.value) || 0 })} className="bg-white border-gray-200 text-center font-mono font-bold h-11 border-gray-300" /></div>
+                                <div><Input type="number" value={product.grossAICValuation} onChange={(e) => updateProduct(idx, { grossAICValuation: parseFloat(e.target.value) || 0 })} className="bg-white border-gray-200 text-right font-mono font-bold h-11 border-gray-300" /></div>
                                 <div className="flex justify-end"><Button variant="ghost" size="icon" className="text-gray-300 hover:text-red-600 hover:bg-red-50 rounded-full h-11 w-11" onClick={() => removeProduct(idx)}><Trash2 className="h-5 w-5" /></Button></div>
                             </div>
                         ))}
@@ -471,21 +466,21 @@ export default function DealEditPage() {
 
             {/* Direct Project Costs Section */}
             <AccordionItem value="costs" className="bg-white border rounded-2xl px-8 shadow-sm overflow-hidden border-gray-100">
-                <AccordionTrigger className="hover:no-underline py-6 font-black uppercase tracking-[0.2em] text-[11px] text-gray-400">Direct Project Costs (ex GST)</AccordionTrigger>
-                <AccordionContent className="pb-8">
+                <AccordionTrigger className="hover:no-underline py-6 font-black uppercase tracking-[0.2em] text-[11px] text-gray-900">Direct Project Costs (ex GST)</AccordionTrigger>
+                <AccordionContent className="pb-8 text-gray-900">
                     <div className="grid grid-cols-2 gap-x-16 gap-y-8">
                         <div className="space-y-6">
                             <div className="space-y-2 border-l-4 border-blue-500 pl-6"><Label className="text-[10px] font-black uppercase text-gray-500">Site Value (inc land)</Label><Input id="site-value-input" type="number" value={inputs.siteValue} onChange={e => setInputs({ siteValue: parseFloat(e.target.value) || 0 })} className="h-12 text-lg font-black font-mono border-gray-300 bg-blue-50/10 focus:bg-white" /></div>
                             <div className="space-y-2 border-l-4 border-blue-500 pl-6"><Label className="text-[10px] font-black uppercase text-gray-500">{isSubdivision ? "Civil Works Estimate" : "Vertical Construction Estimate"}</Label><Input id="construction-cost-input" type="number" value={inputs.construction} onChange={e => setInputs({ construction: parseFloat(e.target.value) || 0 })} className="h-12 text-lg font-black font-mono border-gray-300 bg-blue-50/10 focus:bg-white" /></div>
-                            <div className="space-y-2 pl-7"><Label className="text-[10px] font-black uppercase text-gray-400">Preliminaries</Label><Input type="number" value={inputs.preliminaries} onChange={e => setInputs({ preliminaries: parseFloat(e.target.value) || 0 })} className="h-11 font-bold border-gray-200" /></div>
-                            <div className="space-y-2 pl-7"><Label className="text-[10px] font-black uppercase text-gray-400">Construction Contingency</Label><Input type="number" value={inputs.constructionContingency} onChange={e => setInputs({ constructionContingency: parseFloat(e.target.value) || 0 })} className="h-11 font-bold border-gray-200" /></div>
+                            <div className="space-y-2 pl-7"><Label className="text-[10px] font-black uppercase text-gray-400">Preliminaries</Label><Input type="number" value={inputs.preliminaries} onChange={e => setInputs({ preliminaries: parseFloat(e.target.value) || 0 })} className="h-11 font-bold border-gray-300" /></div>
+                            <div className="space-y-2 pl-7"><Label className="text-[10px] font-black uppercase text-gray-400">Construction Contingency</Label><Input type="number" value={inputs.constructionContingency} onChange={e => setInputs({ constructionContingency: parseFloat(e.target.value) || 0 })} className="h-11 font-bold border-gray-300" /></div>
                         </div>
                         <div className="space-y-6">
-                            <div className="space-y-2 pl-7"><Label className="text-[10px] font-black uppercase text-gray-400">Professional Fees</Label><Input type="number" value={inputs.professionalFees} onChange={e => setInputs({ professionalFees: parseFloat(e.target.value) || 0 })} className="h-11 font-bold border-gray-200" /></div>
-                            <div className="space-y-2 pl-7"><Label className="text-[10px] font-black uppercase text-gray-400">Council Contributions</Label><Input type="number" value={inputs.councilContributions} onChange={e => setInputs({ councilContributions: parseFloat(e.target.value) || 0 })} className="h-11 font-bold border-gray-200" /></div>
-                            <div className="space-y-2 pl-7"><Label className="text-[10px] font-black uppercase text-gray-400">Authority Fees & Charges</Label><Input type="number" value={inputs.authorityFees} onChange={e => setInputs({ authorityFees: parseFloat(e.target.value) || 0 })} className="h-11 font-bold border-gray-200" /></div>
-                            <div className="space-y-2 pl-7"><Label className="text-[10px] font-black uppercase text-gray-400">Establishment Fees (LAF $)</Label><Input type="number" value={inputs.establishmentFees} onChange={e => setInputs({ establishmentFees: parseFloat(e.target.value) || 0 })} className="h-11 font-bold border-gray-200" /></div>
-                            <div className="space-y-2 pl-7"><Label className="text-[10px] font-black uppercase text-gray-400">Legal Fees (Senior)</Label><Input type="number" value={inputs.legalFees} onChange={e => setInputs({ legalFees: parseFloat(e.target.value) || 0 })} className="h-11 font-bold border-gray-200" /></div>
+                            <div className="space-y-2 pl-7"><Label className="text-[10px] font-black uppercase text-gray-400">Professional Fees</Label><Input type="number" value={inputs.professionalFees} onChange={e => setInputs({ professionalFees: parseFloat(e.target.value) || 0 })} className="h-11 font-bold border-gray-300" /></div>
+                            <div className="space-y-2 pl-7"><Label className="text-[10px] font-black uppercase text-gray-400">Council Contributions</Label><Input type="number" value={inputs.councilContributions} onChange={e => setInputs({ councilContributions: parseFloat(e.target.value) || 0 })} className="h-11 font-bold border-gray-300" /></div>
+                            <div className="space-y-2 pl-7"><Label className="text-[10px] font-black uppercase text-gray-400">Authority Fees & Charges</Label><Input type="number" value={inputs.authorityFees} onChange={e => setInputs({ authorityFees: parseFloat(e.target.value) || 0 })} className="h-11 font-bold border-gray-300" /></div>
+                            <div className="space-y-2 pl-7"><Label className="text-[10px] font-black uppercase text-gray-400">Establishment Fees (LAF $)</Label><Input type="number" value={inputs.establishmentFees} onChange={e => setInputs({ establishmentFees: parseFloat(e.target.value) || 0 })} className="h-11 font-bold border-gray-300" /></div>
+                            <div className="space-y-2 pl-7"><Label className="text-[10px] font-black uppercase text-gray-400">Legal Fees (Senior)</Label><Input type="number" value={inputs.legalFees} onChange={e => setInputs({ legalFees: parseFloat(e.target.value) || 0 })} className="h-11 font-bold border-gray-300" /></div>
                             <div className="space-y-2 pl-7 border-t pt-4 mt-4 border-gray-100"><Label className="text-[10px] font-black uppercase text-gray-400 text-blue-600">Development Contingency</Label><Input type="number" value={inputs.developmentContingency} onChange={e => setInputs({ developmentContingency: parseFloat(e.target.value) || 0 })} className="h-11 font-black font-mono border-blue-100 bg-blue-50/20" /></div>
                         </div>
                     </div>
@@ -494,48 +489,48 @@ export default function DealEditPage() {
 
             {/* Indirect Project Costs Section */}
             <AccordionItem value="indirect" className="bg-white border rounded-2xl px-8 shadow-sm overflow-hidden border-gray-100">
-                <AccordionTrigger className="hover:no-underline py-6 font-black uppercase tracking-[0.2em] text-[11px] text-gray-400">Indirect Project Costs</AccordionTrigger>
-                <AccordionContent className="pb-8">
+                <AccordionTrigger className="hover:no-underline py-6 font-black uppercase tracking-[0.2em] text-[11px] text-gray-900">Indirect Project Costs</AccordionTrigger>
+                <AccordionContent className="pb-8 text-gray-900">
                     <div className="grid grid-cols-2 gap-x-16 gap-y-8">
                         <div className="space-y-4">
-                            <div className="space-y-2"><Label className="text-[10px] uppercase font-bold text-gray-400">Land Acquisition Costs</Label><Input type="number" value={inputs.landAcquisitionCost} onChange={e => setInputs({ landAcquisitionCost: parseFloat(e.target.value) || 0 })} className="h-11" /></div>
-                            <div className="space-y-2"><Label className="text-[10px] uppercase font-bold text-gray-400">Marketing & Selling</Label><Input type="number" value={inputs.marketingSellingCost} onChange={e => setInputs({ marketingSellingCost: parseFloat(e.target.value) || 0 })} className="h-11" /></div>
-                            <div className="space-y-2"><Label className="text-[10px] uppercase font-bold text-gray-400">Legal Fees (Indirect)</Label><Input type="number" value={inputs.legalFeesIndirect} onChange={e => setInputs({ legalFeesIndirect: parseFloat(e.target.value) || 0 })} className="h-11" /></div>
+                            <div className="space-y-2"><Label className="text-[10px] uppercase font-bold text-gray-400">Land Acquisition Costs</Label><Input type="number" value={inputs.landAcquisitionCost} onChange={e => setInputs({ landAcquisitionCost: parseFloat(e.target.value) || 0 })} className="h-11 border-gray-300" /></div>
+                            <div className="space-y-2"><Label className="text-[10px] uppercase font-bold text-gray-400">Marketing & Selling</Label><Input type="number" value={inputs.marketingSellingCost} onChange={e => setInputs({ marketingSellingCost: parseFloat(e.target.value) || 0 })} className="h-11 border-gray-300" /></div>
+                            <div className="space-y-2"><Label className="text-[10px] uppercase font-bold text-gray-400">Legal Fees (Indirect)</Label><Input type="number" value={inputs.legalFeesIndirect} onChange={e => setInputs({ legalFeesIndirect: parseFloat(e.target.value) || 0 })} className="h-11 border-gray-300" /></div>
                         </div>
                         <div className="space-y-4">
-                            <div className="space-y-2"><Label className="text-[10px] uppercase font-bold text-gray-400">Rates & Taxes</Label><Input type="number" value={inputs.ratesTaxes} onChange={e => setInputs({ ratesTaxes: parseFloat(e.target.value) || 0 })} className="h-11" /></div>
-                            <div className="space-y-2"><Label className="text-[10px] uppercase font-bold text-gray-400">Finance Costs (Indirect)</Label><Input type="number" value={inputs.financeCostsIndirect} onChange={e => setInputs({ financeCostsIndirect: parseFloat(e.target.value) || 0 })} className="h-11" /></div>
-                            <div className="space-y-2"><Label className="text-[10px] uppercase font-bold text-gray-400">Other Indirect Costs</Label><Input type="number" value={inputs.otherIndirectCosts} onChange={e => setInputs({ otherIndirectCosts: parseFloat(e.target.value) || 0 })} className="h-11" /></div>
+                            <div className="space-y-2"><Label className="text-[10px] uppercase font-bold text-gray-400">Rates & Taxes</Label><Input type="number" value={inputs.ratesTaxes} onChange={e => setInputs({ ratesTaxes: parseFloat(e.target.value) || 0 })} className="h-11 border-gray-300" /></div>
+                            <div className="space-y-2"><Label className="text-[10px] uppercase font-bold text-gray-400">Finance Costs (Indirect)</Label><Input type="number" value={inputs.financeCostsIndirect} onChange={e => setInputs({ financeCostsIndirect: parseFloat(e.target.value) || 0 })} className="h-11 border-gray-300" /></div>
+                            <div className="space-y-2"><Label className="text-[10px] uppercase font-bold text-gray-400">Other Indirect Costs</Label><Input type="number" value={inputs.otherIndirectCosts} onChange={e => setInputs({ otherIndirectCosts: parseFloat(e.target.value) || 0 })} className="h-11 border-gray-300" /></div>
                         </div>
-                        <div className="col-span-2 space-y-2 pt-2"><Label className="text-[10px] uppercase font-bold text-gray-400 tracking-widest">Indirect Cost Notes</Label><Textarea value={inputs.indirectCostNotes} onChange={e => setInputs({ indirectCostNotes: e.target.value })} placeholder="Specify details for other indirect costs..." /></div>
+                        <div className="col-span-2 space-y-2 pt-2"><Label className="text-[10px] uppercase font-bold text-gray-400 tracking-widest">Indirect Cost Notes</Label><Textarea className="border-gray-300" value={inputs.indirectCostNotes} onChange={e => setInputs({ indirectCostNotes: e.target.value })} placeholder="Specify details for other indirect costs..." /></div>
                     </div>
                 </AccordionContent>
             </AccordionItem>
 
             {/* Mezzanine Section */}
             <AccordionItem value="mezzanine" className="bg-white border rounded-2xl px-8 shadow-sm overflow-hidden border-gray-100">
-                <AccordionTrigger className="hover:no-underline py-6 font-black uppercase tracking-[0.2em] text-[11px] text-gray-400 flex items-center">
+                <AccordionTrigger className="hover:no-underline py-6 font-black uppercase tracking-[0.2em] text-[11px] flex items-center text-gray-900">
                   <span>Mezzanine / 2nd Mortgage Finance</span>
                   {inputs.mezzEnabled && <Badge className="ml-4 bg-amber-500 text-white border-0 text-[9px] font-black">ENABLED</Badge>}
                 </AccordionTrigger>
-                <AccordionContent className="pb-8">
+                <AccordionContent className="pb-8 text-gray-900">
                     <div className="space-y-8">
                         <div className="flex items-center justify-between bg-amber-50/50 p-6 rounded-2xl border border-amber-100">
                             <div className="space-y-1">
-                                <Label className="text-[11px] font-black uppercase text-amber-900 tracking-wider">Activate Mezzanine Layer</Label>
+                                <Label htmlFor="mezz-toggle" className="text-[11px] font-black uppercase text-amber-900 tracking-wider">Activate Mezzanine Layer</Label>
                                 <p className="text-xs text-amber-700/70 font-medium">Include a second mortgage in the capital stack calculations.</p>
                             </div>
-                            <Switch checked={inputs.mezzEnabled} onCheckedChange={v => setInputs({ mezzEnabled: v })} className="data-[state=checked]:bg-amber-600" />
+                            <Switch id="mezz-toggle" checked={inputs.mezzEnabled} onCheckedChange={v => setInputs({ mezzEnabled: v })} className="data-[state=checked]:bg-amber-600" />
                         </div>
 
                         {inputs.mezzEnabled && (
                           <div className="grid grid-cols-3 gap-8 animate-in fade-in slide-in-from-top-4 duration-300">
-                              <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-400 font-black">Provider Name</Label><Input value={inputs.mezzProvider} onChange={e => setInputs({ mezzProvider: e.target.value })} className="h-10 font-bold border-amber-200 focus:border-amber-500" /></div>
-                              <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-400 font-black">Advance Amount (AUD)</Label><Input type="number" value={inputs.mezzAmount} onChange={e => setInputs({ mezzAmount: parseFloat(e.target.value) || 0 })} className="h-10 font-black font-mono border-amber-200 focus:border-amber-500 bg-amber-50/10" /></div>
-                              <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-400 font-black">Interest Rate (p.a.)</Label><Input type="number" step="0.001" value={inputs.mezzInterestRate} onChange={e => setInputs({ mezzInterestRate: parseFloat(e.target.value) || 0 })} className="h-10 font-bold border-amber-200" /></div>
-                              <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-400 font-black">Application Fee (%)</Label><Input type="number" step="0.001" value={inputs.mezzAppFeeRate} onChange={e => setInputs({ mezzAppFeeRate: parseFloat(e.target.value) || 0 })} className="h-10 font-bold border-amber-200" /></div>
-                              <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-400 font-black">Broker Fee (%)</Label><Input type="number" step="0.001" value={inputs.mezzBrokerFeeRate} onChange={e => setInputs({ mezzBrokerFeeRate: parseFloat(e.target.value) || 0 })} className="h-10 font-bold border-amber-200" /></div>
-                              <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-400 font-black">Legal Fees (Fixed $)</Label><Input type="number" value={inputs.mezzLegalFees} onChange={e => setInputs({ mezzLegalFees: parseFloat(e.target.value) || 0 })} className="h-10 font-bold border-amber-200" /></div>
+                              <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-400 font-black">Provider Name</Label><Input value={inputs.mezzProvider} onChange={e => setInputs({ mezzProvider: e.target.value })} className="h-10 font-bold border-amber-200 focus:border-amber-500 border-gray-300" /></div>
+                              <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-400 font-black">Advance Amount (AUD)</Label><Input type="number" value={inputs.mezzAmount} onChange={e => setInputs({ mezzAmount: parseFloat(e.target.value) || 0 })} className="h-10 font-black font-mono border-amber-200 focus:border-amber-500 bg-amber-50/10 border-gray-300" /></div>
+                              <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-400 font-black">Interest Rate (p.a.)</Label><Input type="number" step="0.001" value={inputs.mezzInterestRate} onChange={e => setInputs({ mezzInterestRate: parseFloat(e.target.value) || 0 })} className="h-10 font-bold border-amber-200 border-gray-300" /></div>
+                              <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-400 font-black">Application Fee (%)</Label><Input type="number" step="0.001" value={inputs.mezzAppFeeRate} onChange={e => setInputs({ mezzAppFeeRate: parseFloat(e.target.value) || 0 })} className="h-10 font-bold border-amber-200 border-gray-300" /></div>
+                              <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-400 font-black">Broker Fee (%)</Label><Input type="number" step="0.001" value={inputs.mezzBrokerFeeRate} onChange={e => setInputs({ mezzBrokerFeeRate: parseFloat(e.target.value) || 0 })} className="h-10 font-bold border-amber-200 border-gray-300" /></div>
+                              <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-400 font-black">Legal Fees (Fixed $)</Label><Input type="number" value={inputs.mezzLegalFees} onChange={e => setInputs({ mezzLegalFees: parseFloat(e.target.value) || 0 })} className="h-10 font-bold border-amber-200 border-gray-300" /></div>
                           </div>
                         )}
                     </div>
@@ -545,8 +540,8 @@ export default function DealEditPage() {
         </div>
 
         {/* Right Column: Engine Panel */}
-        <div className="w-[500px] border-l bg-white flex flex-col shadow-2xl z-10 pb-20 border-l-gray-200">
-          <div className="p-5 border-b bg-[#0F1923] text-white flex justify-between items-center shadow-md relative overflow-hidden">
+        <div className="w-[500px] border-l bg-white flex flex-col shadow-2xl z-10 pb-20 border-l-gray-200 text-gray-900">
+          <div className="p-5 border-b bg-[#0F1923] text-white flex justify-between items-center shadow-md relative overflow-hidden text-gray-900">
             <div className="absolute top-0 left-0 w-1 h-full bg-blue-500" />
             <div className="flex items-center">
                 <Calculator className="h-5 w-5 mr-3 text-blue-400 shadow-blue-400" />
@@ -573,7 +568,7 @@ export default function DealEditPage() {
                         <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-1.5 flex items-center group-hover:text-blue-600 transition-colors"><Scale className="h-3 w-3 mr-1.5" /> Return on Cost</p>
                         <div className="flex items-baseline space-x-2">
                             <p className={`text-3xl font-mono font-black ${results.roc >= 0.2 ? 'text-green-600' : 'text-red-600'}`}>{formatPercent(results.roc)}</p>
-                            <span className="text-[9px] font-black text-gray-300 uppercase">Target 20%</span>
+                            <span className="text-[9px] font-black text-gray-300 uppercase text-gray-300">Target 20%</span>
                         </div>
                     </div>
                     <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100 shadow-inner group hover:border-blue-200 transition-colors">
@@ -590,15 +585,14 @@ export default function DealEditPage() {
                     </div>
                 </div>
 
-                {/* Valuation Comparison Card */}
                 <ValuationComparison />
 
-                <div className="space-y-5">
+                <div className="space-y-5 text-gray-900">
                     <div className="flex items-center justify-between px-1">
                         <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Policy Breach Alerts</h3>
                         {results.roc < 0.2 || results.lvrGross > 0.65 ? <Badge className="bg-red-500 text-[9px] font-black border-0 text-white">ACTION REQUIRED</Badge> : <Badge className="bg-green-500 text-[9px] font-black border-0 text-white">COMPLIANT</Badge>}
                     </div>
-                    <BreachAlerts results={results} />
+                    <BreachAlerts />
                 </div>
 
                 <Separator className="bg-gray-100" />
@@ -622,8 +616,8 @@ export default function DealEditPage() {
       </div>
 
       {/* Primary Global Actions (Sticky) */}
-      <div className="fixed bottom-0 left-0 right-0 h-24 bg-[#0F1923] border-t border-white/10 z-50 flex items-center px-12 shadow-[0_-10px_40px_rgba(0,0,0,0.4)] justify-between transition-all overflow-x-auto">
-        <div className="flex items-center space-x-12 shrink-0">
+      <div className="fixed bottom-0 left-0 right-0 h-24 bg-[#0F1923] border-t border-white/10 z-50 flex items-center px-12 shadow-[0_-10px_40px_rgba(0,0,0,0.4)] justify-between transition-all overflow-x-auto text-gray-900">
+        <div className="flex items-center space-x-12 shrink-0 text-white">
             <div className="flex flex-col"><span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-1">Projected ROC</span><div className="flex items-center space-x-3"><span className={`text-3xl font-mono font-black ${results.roc >= 0.2 ? 'text-green-400' : 'text-red-400'}`}>{formatPercent(results.roc)}</span>{results.roc >= 0.2 ? <ShieldCheck className="h-6 w-6 text-green-500 fill-green-500/20" /> : <AlertCircle className="h-6 w-6 text-red-500 animate-pulse" />}</div></div>
             <div className="h-12 w-px bg-white/10" />
             <div className="flex flex-col"><span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-1">Net Realisation</span><span className="text-2xl font-mono font-black text-white">{formatCurrency(results.netRealisations)}</span></div>
@@ -640,12 +634,12 @@ export default function DealEditPage() {
 
             <div className="flex items-center space-x-2 px-4 border-x border-white/10 h-12">
                 {['dfs', 'advisory'].map((p) => {
-                    const id = p === 'dfs' ? dealInfo?.hubspot_dfs_deal_id : dealInfo?.hubspot_advisory_deal_id;
+                    const isPushed = p === 'dfs' ? !!dealInfo?.hubspot_dfs_deal_id : !!dealInfo?.hubspot_advisory_deal_id;
                     const loading = p === 'dfs' ? isPushingDFS : isPushingAdv;
                     const colorClass = p === 'dfs' ? 'text-blue-400' : 'text-green-400';
-                    const icon = p === 'dfs' ? <Share2 className={`h-4 w-4 mr-2 ${colorClass}`} /> : <Share2 className={`h-4 w-4 mr-2 ${colorClass}`} />;
+                    const icon = <Share2 className={`h-4 w-4 mr-2 ${colorClass}`} />;
 
-                    if (id) {
+                    if (isPushed) {
                         return (
                             <AlertDialog key={p}>
                                 <AlertDialogTrigger asChild>
@@ -655,7 +649,7 @@ export default function DealEditPage() {
                                 </AlertDialogTrigger>
                                 <AlertDialogContent className="bg-white border-0 shadow-2xl rounded-2xl">
                                     <AlertDialogHeader>
-                                        <AlertDialogTitle className="text-3xl font-black uppercase tracking-tighter">Synchronisation Warning</AlertDialogTitle>
+                                        <AlertDialogTitle className="text-3xl font-black uppercase tracking-tighter text-gray-900">Synchronisation Warning</AlertDialogTitle>
                                         <AlertDialogDescription className="text-gray-600 font-medium leading-relaxed">
                                             This assessment was already pushed to the <strong className="text-gray-900 underline">{p.toUpperCase()}</strong> pipeline.
                                             Continuing will create a <strong className="text-blue-600">DUPLICATE</strong> deal with current real-time metrics.
@@ -679,7 +673,7 @@ export default function DealEditPage() {
                 })}
             </div>
 
-            <ReportButton dealId={params.id as string} data={{ ...inputs, results }} />
+            <ReportButton dealId={dealInfo?.id || ""} data={{ ...inputs, results }} />
         </div>
       </div>
     </div>
