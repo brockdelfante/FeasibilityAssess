@@ -14,7 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { AlertCircle, CheckCircle2, TrendingUp, Save, Share2, Calculator, FileText, History, Wallet, Loader2, ArrowLeft, Plus, Trash2, MapPin, Info, ArrowUpRight, FileSpreadsheet, ShieldCheck, Scale, Trash, ChevronDown, Search, RefreshCcw } from "lucide-react";
+import { AlertCircle, CheckCircle2, TrendingUp, Save, Share2, Calculator, FileText, History, Wallet, Loader2, ArrowLeft, Plus, Trash2, MapPin, Info, ArrowUpRight, FileSpreadsheet, ShieldCheck, Scale, Trash, ChevronDown, Search, RefreshCcw, Terminal } from "lucide-react";
 import { BreachAlerts } from "@/components/OutputPanel/BreachAlerts";
 import { CashflowChart } from "@/components/OutputPanel/CashflowChart";
 import { SensitivityMatrix } from "@/components/OutputPanel/SensitivityMatrix";
@@ -27,6 +27,7 @@ import { ExitPosition } from "@/components/OutputPanel/ExitPosition";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 import { PropertyIntelligence } from "@/components/PropertyIntelligence";
 import { ValuationComparison } from "@/components/OutputPanel/ValuationComparison";
+import { ApiLogSheet } from "@/components/ApiLogSheet";
 
 export default function DealEditPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -48,7 +49,7 @@ export default function DealEditPage({ params }: { params: Promise<{ id: string 
     if (!address) return;
     setIsIntelligenceLoading(true);
     try {
-        const res = await fetch(`/api/property-intelligence?query=${encodeURIComponent(address)}`);
+        const res = await fetch(`/api/property-intelligence?query=${encodeURIComponent(address)}&dealId=${id}`);
         const data = await res.json();
         if (data.found) {
             setInputs({
@@ -68,7 +69,7 @@ export default function DealEditPage({ params }: { params: Promise<{ id: string 
     } finally {
         setIsIntelligenceLoading(false);
     }
-  }, [setInputs]);
+  }, [id, setInputs]);
 
   const fetchDeal = useCallback(async () => {
     try {
@@ -291,6 +292,7 @@ export default function DealEditPage({ params }: { params: Promise<{ id: string 
               </div>
             </div>
             <div className="flex items-center space-x-3">
+                <ApiLogSheet dealId={id} />
                 <Sheet>
                     <SheetTrigger asChild>
                         <Button variant="outline" className="bg-white border-gray-200 font-bold text-[11px] uppercase tracking-widest shadow-sm">
@@ -382,7 +384,7 @@ export default function DealEditPage({ params }: { params: Promise<{ id: string 
             <PropertyIntelligence />
           </div>
 
-          <Accordion type="multiple" defaultValue={["customer", "products", "costs", "programme", "finance", "risk"]} className="w-full space-y-6">
+          <Accordion type="multiple" defaultValue={["customer", "products", "costs", "mezzanine", "risk"]} className="w-full space-y-6">
              {/* Customer & Project Section */}
              <AccordionItem value="customer" className="bg-white border rounded-2xl px-8 shadow-sm overflow-visible border-gray-100">
                 <AccordionTrigger className="hover:no-underline py-6 font-black uppercase tracking-[0.2em] text-[11px] text-gray-900">Customer & Project Details</AccordionTrigger>
@@ -554,13 +556,17 @@ export default function DealEditPage({ params }: { params: Promise<{ id: string 
           </div>
 
           <Tabs defaultValue="summary" className="flex-1 flex flex-col overflow-hidden">
-            <TabsList className="w-full justify-start rounded-none border-b bg-gray-50/80 px-4 h-14 gap-1 overflow-x-auto">
-                <TabsTrigger value="summary" className="text-[9px] uppercase font-black data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm rounded-t-lg h-10 border-x first:border-l-0 px-6 transition-all shrink-0">Gearing</TabsTrigger>
-                <TabsTrigger value="mezz" className="text-[9px] uppercase font-black data-[state=active]:bg-white data-[state=active]:text-amber-600 data-[state=active]:shadow-sm rounded-t-lg h-10 border-r px-6 transition-all shrink-0">Mezzanine</TabsTrigger>
-                <TabsTrigger value="scenarios" className="text-[9px] uppercase font-black data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm rounded-t-lg h-10 border-r px-6 transition-all shrink-0">Sensitivity</TabsTrigger>
-                <TabsTrigger value="exit" className="text-[9px] uppercase font-black data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm rounded-t-lg h-10 border-r px-6 transition-all shrink-0">Exit Strategy</TabsTrigger>
-                <TabsTrigger value="audit" className="text-[9px] uppercase font-black data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm rounded-t-lg h-10 border-r px-6 transition-all shrink-0">Calculation Audit</TabsTrigger>
-            </TabsList>
+            <div className="p-4 bg-gray-50/80 border-b">
+                <TabsList className="grid grid-cols-3 gap-2 bg-transparent h-auto p-0">
+                    <TabsTrigger value="summary" className="text-[9px] uppercase font-black data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm rounded-xl py-3 border border-gray-200 transition-all">Gearing</TabsTrigger>
+                    <TabsTrigger value="mezz" className="text-[9px] uppercase font-black data-[state=active]:bg-white data-[state=active]:text-amber-600 data-[state=active]:shadow-sm rounded-xl py-3 border border-gray-200 transition-all">Mezzanine</TabsTrigger>
+                    <TabsTrigger value="scenarios" className="text-[9px] uppercase font-black data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm rounded-xl py-3 border border-gray-200 transition-all">Sensitivity</TabsTrigger>
+                </TabsList>
+                <TabsList className="grid grid-cols-2 gap-2 bg-transparent h-auto p-0 mt-2">
+                    <TabsTrigger value="exit" className="text-[9px] uppercase font-black data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm rounded-xl py-3 border border-gray-200 transition-all">Exit Strategy</TabsTrigger>
+                    <TabsTrigger value="audit" className="text-[9px] uppercase font-black data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm rounded-xl py-3 border border-gray-200 transition-all">Calc Audit</TabsTrigger>
+                </TabsList>
+            </div>
 
             <TabsContent value="summary" className="flex-1 overflow-auto p-8 space-y-8 m-0 bg-white border-t border-gray-50">
                 <div className="grid grid-cols-2 gap-5">
@@ -568,7 +574,7 @@ export default function DealEditPage({ params }: { params: Promise<{ id: string 
                         <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-1.5 flex items-center group-hover:text-blue-600 transition-colors"><Scale className="h-3 w-3 mr-1.5" /> Return on Cost</p>
                         <div className="flex items-baseline space-x-2">
                             <p className={`text-3xl font-mono font-black ${results.roc >= 0.2 ? 'text-green-600' : 'text-red-600'}`}>{formatPercent(results.roc)}</p>
-                            <span className="text-[9px] font-black text-gray-300 uppercase text-gray-300">Target 20%</span>
+                            <span className="text-[9px] font-black text-gray-300 uppercase">Target 20%</span>
                         </div>
                     </div>
                     <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100 shadow-inner group hover:border-blue-200 transition-colors">

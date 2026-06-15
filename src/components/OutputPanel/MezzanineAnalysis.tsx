@@ -3,16 +3,37 @@
 import { CalculationResults, DealInputs } from "@/lib/calculations";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, ShieldAlert, Target } from "lucide-react";
+import { TrendingUp, ShieldAlert, Target, ArrowLeftRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export function MezzanineAnalysis({ inputs, results }: { inputs: DealInputs, results: CalculationResults }) {
+  const scrollToMezz = () => {
+    const el = document.getElementById('mezz-toggle');
+    if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Pulse the parent container if possible
+        const parent = el.closest('.accordion-item');
+        if (parent) {
+            parent.classList.add('ring-2', 'ring-amber-500', 'ring-offset-2');
+            setTimeout(() => parent.classList.remove('ring-2', 'ring-amber-500', 'ring-offset-2'), 2000);
+        }
+    }
+  };
+
   if (!inputs.mezzEnabled) return (
-    <div className="flex flex-col items-center justify-center p-12 text-center space-y-4">
-        <div className="bg-gray-100 p-4 rounded-full"><TrendingUp className="h-8 w-8 text-gray-400" /></div>
-        <div className="space-y-1">
-            <h3 className="font-bold text-gray-900">Mezzanine Not Active</h3>
-            <p className="text-sm text-gray-500 max-w-[200px]">Enable 2nd mortgage financing in the form to view layer analysis.</p>
+    <div className="flex flex-col items-center justify-center p-12 text-center space-y-6">
+        <div className="bg-amber-50 p-6 rounded-full ring-8 ring-amber-50/50"><TrendingUp className="h-10 w-10 text-amber-400" /></div>
+        <div className="space-y-2">
+            <h3 className="font-black text-gray-900 uppercase tracking-tighter text-lg">Layer Analysis Inactive</h3>
+            <p className="text-sm text-gray-500 max-w-[240px] leading-relaxed">Secondary debt metrics are calculated once the 2nd mortgage layer is activated in the project form.</p>
         </div>
+        <Button
+            onClick={scrollToMezz}
+            className="bg-amber-600 hover:bg-amber-700 text-white font-black uppercase text-[10px] tracking-widest h-12 px-8 rounded-xl shadow-lg shadow-amber-900/20 active:scale-95 transition-all"
+        >
+            <ArrowLeftRight className="h-4 w-4 mr-2" />
+            Enable Mezzanine Layer
+        </Button>
     </div>
   );
 
@@ -21,10 +42,10 @@ export function MezzanineAnalysis({ inputs, results }: { inputs: DealInputs, res
 
   const seniorLvr = results.lvrGross;
   const mezzLvr = results.mezzLVR || 0;
-  const mezzLayer = mezzLvr - seniorLvr;
+  const mezzLayer = Math.max(0, mezzLvr - seniorLvr);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
       <div className="bg-amber-50 border border-amber-200 p-5 rounded-2xl shadow-sm relative overflow-hidden">
         <div className="absolute top-0 right-0 p-2 opacity-5"><TrendingUp className="h-24 w-24" /></div>
         <div className="flex justify-between items-center mb-4 relative z-10">
@@ -52,7 +73,7 @@ export function MezzanineAnalysis({ inputs, results }: { inputs: DealInputs, res
                     <span>{(seniorLvr * 100).toFixed(1)}% LVR</span>
                 </div>
                 <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-blue-600" style={{ width: `${seniorLvr * 100}%` }} />
+                    <div className="h-full bg-blue-600" style={{ width: `${Math.min(100, seniorLvr * 100)}%` }} />
                 </div>
             </div>
             <div className="space-y-1">
@@ -61,8 +82,8 @@ export function MezzanineAnalysis({ inputs, results }: { inputs: DealInputs, res
                     <span>{(mezzLayer * 100).toFixed(1)}%</span>
                 </div>
                 <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden flex">
-                    <div className="h-full bg-blue-200" style={{ width: `${seniorLvr * 100}%` }} />
-                    <div className="h-full bg-amber-500" style={{ width: `${mezzLayer * 100}%` }} />
+                    <div className="h-full bg-blue-200" style={{ width: `${Math.min(100, seniorLvr * 100)}%` }} />
+                    <div className="h-full bg-amber-500" style={{ width: `${Math.min(100, mezzLayer * 100)}%` }} />
                 </div>
             </div>
         </div>
@@ -75,7 +96,7 @@ export function MezzanineAnalysis({ inputs, results }: { inputs: DealInputs, res
             </div>
             <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
                 <p className="text-[10px] text-gray-400 uppercase font-bold mb-1">Total LTC</p>
-                <p className="text-lg font-mono font-black text-gray-900">{(results.mezzLTC || 0 * 100).toFixed(1)}%</p>
+                <p className="text-lg font-mono font-black text-gray-900">{((results.mezzLTC || 0) * 100).toFixed(1)}%</p>
             </div>
       </div>
 

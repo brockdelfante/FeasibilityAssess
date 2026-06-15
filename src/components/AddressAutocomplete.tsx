@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Loader2, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useParams } from "next/navigation";
 
 interface AddressSuggestion {
   label: string;
@@ -33,6 +34,8 @@ export function AddressAutocomplete({
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const params = useParams();
+  const dealId = params?.id;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -53,17 +56,14 @@ export function AddressAutocomplete({
 
     setIsLoading(true);
     try {
-      const response = await fetch(`https://addressr.p.rapidapi.com/addresses?q=${encodeURIComponent(query)}`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'x-rapidapi-host': 'addressr.p.rapidapi.com',
-          'x-rapidapi-key': 'bf8d2a31b2msh6f8499be824c0b8p16ccdajsn96923e55cd4c'
-        }
-      });
+      const url = dealId
+        ? `/api/address-autocomplete?q=${encodeURIComponent(query)}&dealId=${dealId}`
+        : `/api/address-autocomplete?q=${encodeURIComponent(query)}`;
 
+      const response = await fetch(url);
       const data = await response.json();
 
-      const results = data.map((item: any) => {
+      const results = (data || []).map((item: any) => {
         const label = item.ssla || item.sla;
         const parts = label.split(',').map((p: any) => p.trim());
         const street = parts[0] || "";
@@ -113,7 +113,7 @@ export function AddressAutocomplete({
           onChange={handleInputChange}
           onFocus={() => suggestions.length > 0 && setIsOpen(true)}
           placeholder={placeholder}
-          className="pr-10 bg-white border-gray-300 text-gray-900"
+          className="pr-10 bg-white border-gray-300 text-gray-900 h-full"
         />
         {isLoading && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2">

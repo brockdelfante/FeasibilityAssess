@@ -287,3 +287,7 @@ POST /api/deals body: {
        height and width.
  GET /api/property-intelligence?query=100%20QUEEN%20ST%2C%20PETERBOROUGH%20SA%205422 200 in 944ms (next.js: 3ms, application-code: 940ms)
  GET /api/property-intelligence?query=100%20QUEEN%20ST%2C%20PETERBOROUGH%20SA%205422 200 in 624ms (next.js: 2ms, application-code: 622ms)
+ GET / 200 in 1447ms (next.js: 655ms, application-code: 792ms)
+ GET /api/deals 200 in 1638ms (next.js: 224ms, application-code: 1414ms)
+ GET /deals/new 200 in 73ms (next.js: 37ms, application-code: 36ms)
+ GET /api/address-autocomplete?q=100%20Queen%20St 200 in 1378ms (next.js: 370ms, application-code: 1008ms)
