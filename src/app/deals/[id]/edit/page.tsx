@@ -437,6 +437,36 @@ export default function DealEditPage() {
                     </div>
                 </AccordionContent>
             </AccordionItem>
+
+            {/* Mezzanine Section */}
+            <AccordionItem value="mezzanine" className="bg-white border rounded-2xl px-8 shadow-sm overflow-hidden border-gray-100">
+                <AccordionTrigger className="hover:no-underline py-6 font-black uppercase tracking-[0.2em] text-[11px] text-gray-400 flex items-center">
+                  <span>Mezzanine / 2nd Mortgage Finance</span>
+                  {inputs.mezzEnabled && <Badge className="ml-4 bg-amber-500 text-white border-0 text-[9px] font-black">ENABLED</Badge>}
+                </AccordionTrigger>
+                <AccordionContent className="pb-8">
+                    <div className="space-y-8">
+                        <div className="flex items-center justify-between bg-amber-50/50 p-6 rounded-2xl border border-amber-100">
+                            <div className="space-y-1">
+                                <Label className="text-[11px] font-black uppercase text-amber-900 tracking-wider">Activate Mezzanine Layer</Label>
+                                <p className="text-xs text-amber-700/70 font-medium">Include a second mortgage in the capital stack calculations.</p>
+                            </div>
+                            <Switch checked={inputs.mezzEnabled} onCheckedChange={v => setInputs({ mezzEnabled: v })} className="data-[state=checked]:bg-amber-600" />
+                        </div>
+
+                        {inputs.mezzEnabled && (
+                          <div className="grid grid-cols-3 gap-8 animate-in fade-in slide-in-from-top-4 duration-300">
+                              <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-400 font-black">Provider Name</Label><Input value={inputs.mezzProvider} onChange={e => setInputs({ mezzProvider: e.target.value })} className="h-10 font-bold border-amber-200 focus:border-amber-500" /></div>
+                              <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-400 font-black">Advance Amount (AUD)</Label><Input type="number" value={inputs.mezzAmount} onChange={e => setInputs({ mezzAmount: parseFloat(e.target.value) || 0 })} className="h-10 font-black font-mono border-amber-200 focus:border-amber-500 bg-amber-50/10" /></div>
+                              <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-400 font-black">Interest Rate (p.a.)</Label><Input type="number" step="0.001" value={inputs.mezzInterestRate} onChange={e => setInputs({ mezzInterestRate: parseFloat(e.target.value) || 0 })} className="h-10 font-bold border-amber-200" /></div>
+                              <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-400 font-black">Application Fee (%)</Label><Input type="number" step="0.001" value={inputs.mezzAppFeeRate} onChange={e => setInputs({ mezzAppFeeRate: parseFloat(e.target.value) || 0 })} className="h-10 font-bold border-amber-200" /></div>
+                              <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-400 font-black">Broker Fee (%)</Label><Input type="number" step="0.001" value={inputs.mezzBrokerFeeRate} onChange={e => setInputs({ mezzBrokerFeeRate: parseFloat(e.target.value) || 0 })} className="h-10 font-bold border-amber-200" /></div>
+                              <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-400 font-black">Legal Fees (Fixed $)</Label><Input type="number" value={inputs.mezzLegalFees} onChange={e => setInputs({ mezzLegalFees: parseFloat(e.target.value) || 0 })} className="h-10 font-bold border-amber-200" /></div>
+                          </div>
+                        )}
+                    </div>
+                </AccordionContent>
+            </AccordionItem>
           </Accordion>
         </div>
 

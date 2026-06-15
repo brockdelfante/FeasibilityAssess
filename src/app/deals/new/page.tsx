@@ -14,10 +14,15 @@ export default function NewDealWizard() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<any>({
     deal_type: "construction",
     customer_group: "",
     project_address: "",
+    address_street: "",
+    address_city: "",
+    address_state: "",
+    address_postcode: "",
+    address_country: "",
     start_date: new Date().toISOString().split('T')[0],
     loan_term_months: 18,
   });
@@ -41,6 +46,18 @@ export default function NewDealWizard() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleAddressSelect = (p: any) => {
+    setFormData({
+      ...formData,
+      project_address: [p.name, p.housenumber, p.street, p.city || p.town, p.state, p.country].filter(Boolean).join(", "),
+      address_street: [p.housenumber, p.street].filter(Boolean).join(" "),
+      address_city: p.city || p.town || "",
+      address_state: p.state || "",
+      address_postcode: p.postcode || "",
+      address_country: p.country || ""
+    });
   };
 
   return (
@@ -93,6 +110,7 @@ export default function NewDealWizard() {
                     <AddressAutocomplete
                         value={formData.project_address}
                         onChange={(val) => setFormData({...formData, project_address: val})}
+                        onSelect={handleAddressSelect}
                         placeholder="Start typing project address..."
                         className="h-12"
                     />
@@ -111,7 +129,7 @@ export default function NewDealWizard() {
           </CardContent>
           <CardFooter className="flex justify-between border-t bg-gray-50/50 p-6">
             <Button variant="ghost" onClick={() => step === 1 ? router.push('/') : setStep(s => s - 1)} disabled={isSubmitting} className="font-bold uppercase text-[11px] tracking-widest">Back</Button>
-            <Button onClick={() => step === 3 ? handleSubmit() : setStep(s => s + 1)} disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 px-8 text-white font-black uppercase text-[11px] tracking-widest shadow-lg shadow-blue-900/20">
+            <Button onClick={() => step === 3 ? handleSubmit() : setStep(s => s + 1)} disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 px-8 font-black uppercase text-[11px] tracking-widest shadow-lg shadow-blue-900/20 text-white border-0">
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {step === 3 ? "Create Assessment" : "Next"}
             </Button>

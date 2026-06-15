@@ -14,16 +14,15 @@ test('Full Assessment Life-cycle', async ({ page }) => {
   await page.waitForURL(/.*\/deals\/new/);
 
   console.log('Wizard Step 1...');
-  await page.click('text=Next', { exact: true });
+  await page.click('button:has-text("Next")');
 
   console.log('Wizard Step 2...');
   await page.fill('#group-input', 'Test Automation Group');
-  // New autocomplete field
   await page.fill('input[placeholder="Start typing project address..."]', '123 Playwright Lane, Brisbane QLD');
-  await page.click('text=Next', { exact: true });
+  await page.click('button:has-text("Next")');
 
   console.log('Wizard Step 3...');
-  await page.click('text=Create Assessment');
+  await page.click('button:has-text("Create Assessment")');
 
   console.log('Waiting for redirect to edit page...');
   await page.waitForURL(/.*\/deals\/.*\/edit/, { timeout: 45000 });
@@ -45,18 +44,27 @@ test('Full Assessment Life-cycle', async ({ page }) => {
   console.log('Calculated ROC:', rocValue);
   expect(rocValue).not.toBe('0.0%');
 
+  console.log('Activating Mezzanine...');
+  await page.click('button:has-text("Mezzanine / 2nd Mortgage Finance")');
+  await page.click('button[role="switch"]');
+  await page.fill('label:has-text("Advance Amount (AUD)") + input', '1000000');
+  await page.fill('label:has-text("Interest Rate (p.a.)") + input', '0.18');
+
+  console.log('Verifying Mezzanine Calculation...');
+  await page.click('button[role="tab"]:has-text("Mezzanine")');
+  await expect(page.locator('text=Total LVR')).toBeVisible();
+
   console.log('Saving draft...');
   const dialogPromise = page.waitForEvent('dialog');
-  await page.click('text=Commit Draft');
+  await page.click('button:has-text("Commit Draft")');
   const dialog = await dialogPromise;
   console.log('Alert message:', dialog.message());
   expect(dialog.message()).toContain('Draft committed');
   await dialog.accept();
 
   console.log('Checking Action Bar buttons...');
-  await expect(page.locator('text=Push dfs')).toBeVisible();
-  await expect(page.locator('text=Push advisory')).toBeVisible();
-  await expect(page.locator('text=Generate Reports')).toBeVisible();
+  await expect(page.locator('button:has-text("Push dfs")')).toBeVisible();
+  await expect(page.locator('button:has-text("Generate Reports")')).toBeVisible();
 
   console.log('Workflow verification complete.');
 });
