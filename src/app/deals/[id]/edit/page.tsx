@@ -1,7 +1,7 @@
 "use client";
 
 import { useDealStore } from "@/lib/store";
-import { useEffect, useState, useCallback, use } from "react";
+import { useEffect, useState, useCallback, use, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -14,7 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { AlertCircle, CheckCircle2, TrendingUp, Save, Share2, Calculator, FileText, History, Wallet, Loader2, ArrowLeft, Plus, Trash2, MapPin, Info, ArrowUpRight, FileSpreadsheet, ShieldCheck, Scale, Trash, ChevronDown, Search, RefreshCcw, Terminal, PieChart, Landmark, Shield, BarChart3 } from "lucide-react";
+import { AlertCircle, CheckCircle2, TrendingUp, Save, Share2, Calculator, FileText, History, Wallet, Loader2, ArrowLeft, Plus, Trash2, MapPin, Info, ArrowUpRight, FileSpreadsheet, ShieldCheck, Scale, Trash, ChevronDown, Search, RefreshCcw, Terminal, PieChart, Landmark, Shield, BarChart3, Percent } from "lucide-react";
 import { BreachAlerts } from "@/components/OutputPanel/BreachAlerts";
 import { CashflowChart } from "@/components/OutputPanel/CashflowChart";
 import { SensitivityMatrix } from "@/components/OutputPanel/SensitivityMatrix";
@@ -44,6 +44,29 @@ export default function DealEditPage({ params }: { params: Promise<{ id: string 
   const [isPushingAdv, setIsPushingAdv] = useState(false);
   const [isIntelligenceLoading, setIsIntelligenceLoading] = useState(false);
   const [dealInfo, setDealInfo] = useState<any>(null);
+
+  // Auto-calculation refs to prevent feedback loops
+  const prevConstruction = useRef(inputs.construction);
+  const prevSeniorFunding = useRef(results.seniorFunding);
+
+  useEffect(() => {
+    // Construction Contingency Auto-Default (5%)
+    if (inputs.construction !== prevConstruction.current && inputs.construction > 0) {
+        setInputs({ constructionContingency: Math.round(inputs.construction * 0.05) });
+        prevConstruction.current = inputs.construction;
+    }
+  }, [inputs.construction, setInputs]);
+
+  useEffect(() => {
+    // Establishment Fee Auto-Default (1.5% of Senior Funding)
+    if (results.seniorFunding !== prevSeniorFunding.current && results.seniorFunding > 0) {
+        // We only auto-set if it's currently 0 or we just loaded
+        if (inputs.establishmentFees === 0 || prevSeniorFunding.current === 0) {
+            setInputs({ establishmentFees: Math.round(results.seniorFunding * 0.015) });
+        }
+        prevSeniorFunding.current = results.seniorFunding;
+    }
+  }, [results.seniorFunding, inputs.establishmentFees, setInputs]);
 
   const fetchIntelligence = useCallback(async (address: string) => {
     if (!address) return;
@@ -507,13 +530,27 @@ export default function DealEditPage({ params }: { params: Promise<{ id: string 
                             <div className="space-y-2 border-l-4 border-blue-500 pl-6"><Label className="text-[10px] font-black uppercase text-gray-500">Site Value (inc land)</Label><Input id="site-value-input" type="number" value={inputs.siteValue} onChange={e => setInputs({ siteValue: parseFloat(e.target.value) || 0 })} className="h-12 text-lg font-black font-mono border-gray-300 bg-blue-50/10 focus:bg-white" /></div>
                             <div className="space-y-2 border-l-4 border-blue-500 pl-6"><Label className="text-[10px] font-black uppercase text-gray-500">{isSubdivision ? "Civil Works Estimate" : "Vertical Construction Estimate"}</Label><Input id="construction-cost-input" type="number" value={inputs.construction} onChange={e => setInputs({ construction: parseFloat(e.target.value) || 0 })} className="h-12 text-lg font-black font-mono border-gray-300 bg-blue-50/10 focus:bg-white" /></div>
                             <div className="space-y-2 pl-7"><Label className="text-[10px] font-black uppercase text-gray-400">Preliminaries</Label><Input type="number" value={inputs.preliminaries} onChange={e => setInputs({ preliminaries: parseFloat(e.target.value) || 0 })} className="h-11 font-bold border-gray-300" /></div>
-                            <div className="space-y-2 pl-7"><Label className="text-[10px] font-black uppercase text-gray-400">Construction Contingency</Label><Input type="number" value={inputs.constructionContingency} onChange={e => setInputs({ constructionContingency: parseFloat(e.target.value) || 0 })} className="h-11 font-bold border-gray-300" /></div>
+                            <div className="space-y-2 pl-7">
+                                <Label className="text-[10px] font-black uppercase text-gray-400">Construction Contingency</Label>
+                                <Input type="number" value={inputs.constructionContingency} onChange={e => setInputs({ constructionContingency: parseFloat(e.target.value) || 0 })} className="h-11 font-bold border-gray-300" />
+                                <div className="flex items-center space-x-1 text-[9px] font-black text-blue-500 uppercase tracking-tighter mt-1">
+                                    <Percent className="h-3 w-3" />
+                                    <span>Defaults to 5.0% of construction</span>
+                                </div>
+                            </div>
                         </div>
                         <div className="space-y-6">
                             <div className="space-y-2 pl-7"><Label className="text-[10px] font-black uppercase text-gray-400">Professional Fees</Label><Input type="number" value={inputs.professionalFees} onChange={e => setInputs({ professionalFees: parseFloat(e.target.value) || 0 })} className="h-11 font-bold border-gray-300" /></div>
                             <div className="space-y-2 pl-7"><Label className="text-[10px] font-black uppercase text-gray-400">Council Contributions</Label><Input type="number" value={inputs.councilContributions} onChange={e => setInputs({ councilContributions: parseFloat(e.target.value) || 0 })} className="h-11 font-bold border-gray-300" /></div>
                             <div className="space-y-2 pl-7"><Label className="text-[10px] font-black uppercase text-gray-400">Authority Fees & Charges</Label><Input type="number" value={inputs.authorityFees} onChange={e => setInputs({ authorityFees: parseFloat(e.target.value) || 0 })} className="h-11 font-bold border-gray-300" /></div>
-                            <div className="space-y-2 pl-7"><Label className="text-[10px] font-black uppercase text-gray-400">Establishment Fees (LAF $)</Label><Input type="number" value={inputs.establishmentFees} onChange={e => setInputs({ establishmentFees: parseFloat(e.target.value) || 0 })} className="h-11 font-bold border-gray-300" /></div>
+                            <div className="space-y-2 pl-7">
+                                <Label className="text-[10px] font-black uppercase text-gray-400">Establishment Fees (LAF $)</Label>
+                                <Input type="number" value={inputs.establishmentFees} onChange={e => setInputs({ establishmentFees: parseFloat(e.target.value) || 0 })} className="h-11 font-bold border-gray-300" />
+                                <div className="flex items-center space-x-1 text-[9px] font-black text-blue-500 uppercase tracking-tighter mt-1">
+                                    <Percent className="h-3 w-3" />
+                                    <span>Defaults to 1.5% of senior debt</span>
+                                </div>
+                            </div>
                             <div className="space-y-2 pl-7"><Label className="text-[10px] font-black uppercase text-gray-400">Legal Fees (Senior)</Label><Input type="number" value={inputs.legalFees} onChange={e => setInputs({ legalFees: parseFloat(e.target.value) || 0 })} className="h-11 font-bold border-gray-300" /></div>
                             <div className="space-y-2 pl-7 border-t pt-4 mt-4 border-gray-100"><Label className="text-[10px] font-black uppercase text-gray-400 text-blue-600">Development Contingency</Label><Input type="number" value={inputs.developmentContingency} onChange={e => setInputs({ developmentContingency: parseFloat(e.target.value) || 0 })} className="h-11 font-black font-mono border-blue-100 bg-blue-50/20" /></div>
                         </div>

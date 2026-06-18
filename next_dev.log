@@ -291,3 +291,4 @@ POST /api/deals body: {
  GET /api/deals 200 in 1638ms (next.js: 224ms, application-code: 1414ms)
  GET /deals/new 200 in 73ms (next.js: 37ms, application-code: 36ms)
  GET /api/address-autocomplete?q=100%20Queen%20St 200 in 1378ms (next.js: 370ms, application-code: 1008ms)
+[?25h
