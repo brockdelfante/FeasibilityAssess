@@ -16,6 +16,7 @@ interface DealState {
     buildTermMonths: number
     startDate: Date
     interestRate: number
+    interestMargin: number
     lineFeeRate: number
     lafRate: number
     gstMethod: 'standard' | 'margin_scheme'
@@ -43,17 +44,25 @@ interface DealState {
     mezzBrokerFeeRate: number
     mezzLegalFees: number
 
+    // Indirect
+    marketingSellingCost: number
+    legalFeesIndirect: number
+    ratesTaxes: number
+    financeCostsIndirect: number
+    otherIndirectCosts: number
+
+    // Finance Features
+    interestCapitalizationEnabled: boolean
+    gstOverdraftLimit: number
+    targetRoc: number
+    ownerBuilder: boolean
+
     developerExperienceYears: number
     developerProjectsCompleted: number
     developerTnw: number
     developerLiquidity: number
     developerNotes: string
     delayContingencyMonths: number
-    marketingSellingCost: number
-    legalFeesIndirect: number
-    ratesTaxes: number
-    financeCostsIndirect: number
-    otherIndirectCosts: number
     indirectCostNotes: string
     additionalSecurityFmv: number
     additionalSecurityExtended: number
@@ -114,6 +123,7 @@ const defaultInputs: DealState['inputs'] = {
   buildTermMonths: 12,
   startDate: new Date(),
   interestRate: 0.0999,
+  interestMargin: 0,
   lineFeeRate: 0,
   lafRate: 0.015,
   gstMethod: 'standard',
@@ -141,17 +151,25 @@ const defaultInputs: DealState['inputs'] = {
   mezzBrokerFeeRate: 0.010,
   mezzLegalFees: 6600,
 
+  // Indirect
+  marketingSellingCost: 0,
+  legalFeesIndirect: 0,
+  ratesTaxes: 0,
+  financeCostsIndirect: 0,
+  otherIndirectCosts: 0,
+
+  // Finance Features
+  interestCapitalizationEnabled: true,
+  gstOverdraftLimit: 0,
+  targetRoc: 0.20,
+  ownerBuilder: false,
+
   developerExperienceYears: 0,
   developerProjectsCompleted: 0,
   developerTnw: 0,
   developerLiquidity: 0,
   developerNotes: '',
   delayContingencyMonths: 0,
-  marketingSellingCost: 0,
-  legalFeesIndirect: 0,
-  ratesTaxes: 0,
-  financeCostsIndirect: 0,
-  otherIndirectCosts: 0,
   indirectCostNotes: '',
   additionalSecurityFmv: 0,
   additionalSecurityExtended: 0,
@@ -277,6 +295,7 @@ export const useDealStore = create<DealState>((set) => ({
         buildTermMonths: deal.build_term_months || 12,
         startDate: deal.start_date ? new Date(deal.start_date) : new Date(),
         interestRate: Number(deal.interest_rate) || 0.0999,
+        interestMargin: Number(deal.interest_margin) || 0,
         lineFeeRate: Number(deal.line_fee_rate) || 0,
         lafRate: Number(deal.laf_rate) || 0.015,
         gstMethod: deal.gst_method || 'standard',
@@ -304,17 +323,25 @@ export const useDealStore = create<DealState>((set) => ({
         mezzBrokerFeeRate: Number(deal.mezz_broker_fee_rate) || 0.010,
         mezzLegalFees: Number(deal.mezz_legal_fees) || 6600,
 
+        // Indirect
+        marketingSellingCost: Number(deal.marketing_selling_cost) || 0,
+        legalFeesIndirect: Number(deal.legal_fees_indirect) || 0,
+        ratesTaxes: Number(deal.rates_taxes) || 0,
+        financeCostsIndirect: Number(deal.finance_costs_indirect) || 0,
+        otherIndirectCosts: Number(deal.other_indirect_costs) || 0,
+
+        // Finance Features
+        interestCapitalizationEnabled: deal.interest_capitalization_enabled ?? true,
+        gstOverdraftLimit: Number(deal.gst_overdraft_limit) || 0,
+        targetRoc: Number(deal.target_roc) || 0.20,
+        ownerBuilder: deal.owner_builder ?? false,
+
         developerExperienceYears: deal.developer_experience_years || 0,
         developerProjectsCompleted: deal.developer_projects_completed || 0,
         developerTnw: Number(deal.developer_tnw) || 0,
         developerLiquidity: Number(deal.developer_liquidity) || 0,
         developerNotes: deal.developer_notes || '',
         delayContingencyMonths: deal.delay_contingency_months || 0,
-        marketingSellingCost: Number(deal.marketing_selling_cost) || 0,
-        legalFeesIndirect: Number(deal.legal_fees_indirect) || 0,
-        ratesTaxes: Number(deal.rates_taxes) || 0,
-        financeCostsIndirect: Number(deal.finance_costs_indirect) || 0,
-        otherIndirectCosts: Number(deal.other_indirect_costs) || 0,
         indirectCostNotes: deal.indirect_cost_notes || '',
         additionalSecurityFmv: Number(deal.additional_security_fmv) || 0,
         additionalSecurityExtended: Number(deal.additional_security_extended) || 0,

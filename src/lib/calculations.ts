@@ -1,6 +1,6 @@
 import { addMonths } from 'date-fns'
 
-export interface DealProduct {
+export interface Product {
   numLots: number
   description: string
   areaSqm: number
@@ -11,17 +11,22 @@ export interface DealProduct {
 
 export interface DealInputs {
   dealType: 'construction' | 'subdivision'
-  products: DealProduct[]
+  customerGroup: string
+  projectAddress: string
+  products: Product[]
   loanTermMonths: number
   buildTermMonths: number
   startDate: Date
   interestRate: number
+  interestMargin: number
   lineFeeRate: number
   lafRate: number
   gstMethod: 'standard' | 'margin_scheme'
   salesCommissionRate: number
   presaleCommissionRate: number
   landAcquisitionCost: number
+
+  // Costs
   siteValue: number
   preliminaries: number
   construction: number
@@ -33,29 +38,45 @@ export interface DealInputs {
   legalFees: number
   developmentContingency: number
   customerCashEquity: number
-  mezzAmount: number
+
+  // Finance
+  interestCapitalizationEnabled: boolean
+  gstOverdraftLimit: number
+  targetRoc?: number
+
+  // Mezzanine
   mezzEnabled: boolean
+  mezzAmount: number
   mezzInterestRate: number
   mezzAppFeeRate: number
   mezzBrokerFeeRate: number
   mezzLegalFees: number
-  mezzProvider?: string
-  marketingSellingCost?: number
-  legalFeesIndirect?: number
-  ratesTaxes?: number
-  financeCostsIndirect?: number
-  otherIndirectCosts?: number
-  targetRoc?: number
+
+  // Indirect
+  marketingSellingCost: number
+  legalFeesIndirect: number
+  ratesTaxes: number
+  financeCostsIndirect: number
+  otherIndirectCosts: number
+
+  // Security
+  additionalSecurityFmv: number
+  additionalSecurityExtended: number
 }
 
 export interface MonthlyRow {
   month: number
   date: Date
   draws: number
+  gstIncurred: number
+  gstReturns: number
   interestCharge: number
+  lineFee: number
   repayment: number
   openingBalance: number
   closingBalance: number
+  gstOverdraftOpening: number
+  gstOverdraftClosing: number
 }
 
 export interface CalculationResults {
@@ -67,10 +88,13 @@ export interface CalculationResults {
   sellingCosts: number
   totalSellingCosts: number
   netRealisations: number
+  netRealisationsPerSqm: number
   peakDebt: number
   totalInterest: number
+  totalLineFees: number
   averagePDFBalance: number
   totalDirectCosts: number
+  totalIndirectCosts: number
   totalDevelopmentCosts: number
   seniorFunding: number
   ltc: number
@@ -80,10 +104,18 @@ export interface CalculationResults {
   roe: number
   profitAmount: number
   profitMargin: number
+
+  // Exit Scenarios
   residualANZDebt: number
+  residualLVRBase: number
+  residualLVRWithSecurity: number
+  residualLVRWithGSTOD: number
+
+  // For UI compatibility
   grossResidualValue: number
   netResidualValue: number
   residualLVR: number
+
   salesToRepay: number
   qualifyingPresalesCover: number
   allPresalesCover: number
@@ -98,6 +130,7 @@ export interface CalculationResults {
   mezzLVR?: number
   mezzLTC?: number
   cashflow: MonthlyRow[]
+  fundingTable: any[]
 }
 
 export interface ScenarioAdjustment {
@@ -142,9 +175,9 @@ function monthlyDraw(month: number, buildTerm: number, totalCost: number): numbe
 }
 
 export function calculateAll(inputs: DealInputs): CalculationResults {
-  const grv = inputs.products.reduce((sum, p) => sum + p.numLots * p.grossAICValuation, 0)
-  const totalLots = inputs.products.reduce((sum, p) => sum + p.numLots, 0)
-  const totalGFA = inputs.products.reduce((sum, p) => sum + p.numLots * p.areaSqm, 0)
+  const grv = (inputs.products || []).reduce((sum, p) => sum + p.numLots * p.grossAICValuation, 0)
+  const totalLots = (inputs.products || []).reduce((sum, p) => sum + p.numLots, 0)
+  const totalGFA = (inputs.products || []).reduce((sum, p) => sum + p.numLots * p.areaSqm, 0)
 
   let gst = 0
   if (inputs.gstMethod === 'standard') {
@@ -155,35 +188,46 @@ export function calculateAll(inputs: DealInputs): CalculationResults {
   const nrv = grv - gst
 
   const sellingCosts = nrv * inputs.salesCommissionRate
-  const qualifyingPresales = inputs.products.reduce((sum, p) => sum + (Number(p.qualifyingPresaleValue) || 0), 0)
-  const nonQualifyingPresales = inputs.products.reduce((sum, p) => sum + (Number(p.nonQualifyingPresaleValue) || 0), 0)
+  const qualifyingPresales = (inputs.products || []).reduce((sum, p) => sum + (Number(p.qualifyingPresaleValue) || 0), 0)
+  const nonQualifyingPresales = (inputs.products || []).reduce((sum, p) => sum + (Number(p.nonQualifyingPresaleValue) || 0), 0)
   const totalPresales = qualifyingPresales + nonQualifyingPresales
   const presaleSellingCosts = totalPresales * inputs.presaleCommissionRate
   const totalSellingCosts = sellingCosts + presaleSellingCosts
   const netRealisations = nrv - totalSellingCosts
+  const netRealisationsPerSqm = totalGFA > 0 ? netRealisations / totalGFA : 0
 
   const cashflow: MonthlyRow[] = []
   let balance = 0
-  const monthlyRate = (inputs.interestRate || 0) / 12
+  let gstOverdraftBalance = 0
+  const totalInterestRate = (Number(inputs.interestRate) || 0) + (Number(inputs.interestMargin) || 0)
+  const monthlyRate = totalInterestRate / 12
+  const lineFeeRate = (inputs.lineFeeRate || 0) / 12
   let totalInterest = 0
+  let totalLineFees = 0
 
   for (let m = 1; m <= inputs.loanTermMonths; m++) {
     const opening = balance
+    const gstOpening = gstOverdraftBalance
     let draws = 0
+    let gstIncurred = 0
+
+    const constDraw = monthlyDraw(m, inputs.buildTermMonths, inputs.construction || 0)
+    const prelimsDraw = m === 1 ? (inputs.preliminaries || 0) : 0
+    const contingencyDraw = monthlyDraw(m, inputs.buildTermMonths, inputs.constructionContingency || 0)
 
     draws += m === 1 ? (inputs.siteValue || 0) : 0
-    draws += m === 1 ? (inputs.preliminaries || 0) : 0
-    draws += monthlyDraw(m, inputs.buildTermMonths, inputs.construction || 0)
-    draws += monthlyDraw(m, inputs.buildTermMonths, inputs.constructionContingency || 0)
+    draws += prelimsDraw
+    draws += constDraw
+    draws += contingencyDraw
 
+    let profFeesDraw = 0
     if (m === 1) {
-      draws += (inputs.professionalFees || 0) * 0.5
-      if (inputs.buildTermMonths > 0) {
-        draws += ((inputs.professionalFees || 0) * 0.5) / inputs.buildTermMonths
-      }
+      profFeesDraw += (inputs.professionalFees || 0) * 0.5
+      if (inputs.buildTermMonths > 0) profFeesDraw += ((inputs.professionalFees || 0) * 0.5) / inputs.buildTermMonths
     } else if (m <= inputs.buildTermMonths) {
-      draws += ((inputs.professionalFees || 0) * 0.5) / inputs.buildTermMonths
+      profFeesDraw += ((inputs.professionalFees || 0) * 0.5) / inputs.buildTermMonths
     }
+    draws += profFeesDraw
 
     draws += m === 1 ? (inputs.councilContributions || 0) : 0
     draws += m === 1 ? (inputs.authorityFees || 0) : 0
@@ -191,18 +235,44 @@ export function calculateAll(inputs: DealInputs): CalculationResults {
     draws += m === 1 ? (inputs.legalFees || 0) : 0
     draws += (inputs.developmentContingency || 0) / Math.max(1, inputs.loanTermMonths)
 
+    gstIncurred = (constDraw + prelimsDraw + contingencyDraw + profFeesDraw) * 0.1
+    let gstReturns = 0
+    if (m > 3 && (m - 1) % 3 === 0) {
+        gstReturns = cashflow.slice(m-4, m-1).reduce((s, r) => s + r.gstIncurred, 0)
+    }
+
     const interest = opening * monthlyRate
+    const lineFee = (opening + draws) * lineFeeRate
+
     totalInterest += interest
-    balance = opening + draws + interest
+    totalLineFees += lineFee
+
+    if (inputs.interestCapitalizationEnabled) {
+        balance = opening + draws + interest + lineFee
+    } else {
+        balance = opening + draws
+    }
+
+    gstOverdraftBalance = Math.max(0, gstOpening + gstIncurred - gstReturns)
+    if (gstOverdraftBalance > (inputs.gstOverdraftLimit || 0)) {
+        const excess = gstOverdraftBalance - (inputs.gstOverdraftLimit || 0)
+        balance += excess
+        gstOverdraftBalance = inputs.gstOverdraftLimit || 0
+    }
 
     cashflow.push({
       month: m,
       date: addMonths(inputs.startDate, m - 1),
       draws,
+      gstIncurred,
+      gstReturns,
       interestCharge: interest,
+      lineFee,
       repayment: m === inputs.loanTermMonths ? -balance : 0,
       openingBalance: opening,
-      closingBalance: balance
+      closingBalance: balance,
+      gstOverdraftOpening: gstOpening,
+      gstOverdraftClosing: gstOverdraftBalance
     })
   }
 
@@ -212,7 +282,7 @@ export function calculateAll(inputs: DealInputs): CalculationResults {
   const totalDirectCosts = (inputs.siteValue || 0) + (inputs.preliminaries || 0) + (inputs.construction || 0) +
     (inputs.constructionContingency || 0) + (inputs.professionalFees || 0) + (inputs.councilContributions || 0) +
     (inputs.authorityFees || 0) + (inputs.establishmentFees || 0) + (inputs.legalFees || 0) +
-    (inputs.developmentContingency || 0) + totalInterest
+    (inputs.developmentContingency || 0) + totalInterest + totalLineFees
 
   const totalIndirectCosts = (inputs.marketingSellingCost || 0) + (inputs.legalFeesIndirect || 0) + (inputs.ratesTaxes || 0) + (inputs.financeCostsIndirect || 0) + (inputs.otherIndirectCosts || 0)
   const totalDevelopmentCosts = totalDirectCosts + totalIndirectCosts
@@ -228,10 +298,14 @@ export function calculateAll(inputs: DealInputs): CalculationResults {
   const profitMargin = netRealisations > 0 ? profitAmount / netRealisations : 0
   const roe = (inputs.customerCashEquity || 0) > 0 ? profitAmount / (inputs.customerCashEquity || 0) : 0
 
+  // Residual Position Analysis
   const residualANZDebt = seniorFunding
-  const grossResidualValue = grv
-  const netResidualValue = netRealisations
-  const residualLVR = netRealisations > 0 ? residualANZDebt / netRealisations : 0
+  const residualLVRBase = netRealisations > 0 ? residualANZDebt / netRealisations : 0
+
+  const netResidualValueWithSecurity = netRealisations + (Number(inputs.additionalSecurityFmv) || 0);
+  const residualLVRWithSecurity = netResidualValueWithSecurity > 0 ? residualANZDebt / netResidualValueWithSecurity : 0;
+
+  const residualLVRWithGSTOD = netRealisations > 0 ? (residualANZDebt + (inputs.gstOverdraftLimit || 0)) / netRealisations : 0;
 
   const avgSalePriceNetOfCosts = totalLots > 0 ? (netRealisations / totalLots) : 0
   const salesToRepay = avgSalePriceNetOfCosts > 0 ? Math.ceil(residualANZDebt / avgSalePriceNetOfCosts) : 0
@@ -245,17 +319,49 @@ export function calculateAll(inputs: DealInputs): CalculationResults {
   const totalCostsExLand = totalDirectCosts - (inputs.siteValue || 0)
   const rlv = (netRealisations - totalCostsExLand * (1 + targetROC)) / (1 + targetROC)
 
-  const profit = netRealisations - totalDevelopmentCosts;
-  const profitPerUnit = totalLots > 0 ? profit / totalLots : 0;
-  const costPerUnit = totalLots > 0 ? totalDevelopmentCosts / totalLots : 0;
+  const profitPerUnit = totalLots > 0 ? profitAmount / totalLots : 0
+  const costPerUnit = totalLots > 0 ? totalDevelopmentCosts / totalLots : 0
+
+  const costLines = [
+      { label: 'Site Value', amount: inputs.siteValue || 0 },
+      { label: 'Preliminaries', amount: inputs.preliminaries || 0 },
+      { label: 'Construction', amount: inputs.construction || 0 },
+      { label: 'Construction Contingency', amount: inputs.constructionContingency || 0 },
+      { label: 'Professional Fees', amount: inputs.professionalFees || 0 },
+      { label: 'Council Contributions', amount: inputs.councilContributions || 0 },
+      { label: 'Authority Fees', amount: inputs.authorityFees || 0 },
+      { label: 'Establishment/LAF', amount: inputs.establishmentFees || 0 },
+      { label: 'Legal Fees', amount: inputs.legalFees || 0 },
+      { label: 'Dev Contingency', amount: inputs.developmentContingency || 0 },
+      { label: 'Financing Costs', amount: totalInterest + totalLineFees },
+      { label: 'Indirect Costs', amount: totalIndirectCosts }
+  ];
+
+  const fundingTable = costLines.map(line => {
+      const pctOfTotal = totalDevelopmentCosts > 0 ? line.amount / totalDevelopmentCosts : 0;
+      const anzFunding = line.amount * ltc;
+      const equity = line.amount - anzFunding;
+      const lcr = line.amount > 0 ? anzFunding / line.amount : 0;
+      const costPerSqm = totalGFA > 0 ? line.amount / totalGFA : 0;
+      return {
+          ...line,
+          pctOfTotal,
+          anzFunding,
+          equity,
+          lcr,
+          costPerSqm
+      };
+  });
 
   const results: CalculationResults = {
-    grv, totalLots, totalGFA, gst, nrv, sellingCosts, totalSellingCosts, netRealisations,
-    peakDebt, totalInterest, averagePDFBalance, totalDirectCosts, totalDevelopmentCosts, seniorFunding,
+    grv, totalLots, totalGFA, gst, nrv, sellingCosts, totalSellingCosts, netRealisations, netRealisationsPerSqm,
+    peakDebt, totalInterest, totalLineFees, averagePDFBalance, totalDirectCosts, totalDevelopmentCosts, totalIndirectCosts, seniorFunding,
     ltc, lvrGross, lvrNet, roc, roe, profitAmount, profitMargin,
-    residualANZDebt, grossResidualValue, netResidualValue, residualLVR, salesToRepay,
+    residualANZDebt, residualLVRBase, residualLVRWithSecurity, residualLVRWithGSTOD,
+    grossResidualValue: grv, netResidualValue: netRealisations, residualLVR: residualLVRBase, salesToRepay,
     qualifyingPresalesCover, allPresalesCover, constructionCostPerSqm, rlv, blendedRate: 0, profitPerUnit, costPerUnit,
-    cashflow
+    cashflow,
+    fundingTable
   }
 
   if (inputs.mezzEnabled && (inputs.mezzAmount || 0) > 0) {
@@ -278,7 +384,7 @@ export function calculateAll(inputs: DealInputs): CalculationResults {
 
   const totalActualDebt = seniorFunding + (inputs.mezzEnabled ? (inputs.mezzAmount || 0) : 0);
   results.blendedRate = totalActualDebt > 0 ?
-    (seniorFunding * (inputs.interestRate || 0) + (inputs.mezzEnabled ? (inputs.mezzAmount || 0) * (inputs.mezzInterestRate || 0) : 0)) / totalActualDebt : 0;
+    (seniorFunding * totalInterestRate + (inputs.mezzEnabled ? (inputs.mezzAmount || 0) * (inputs.mezzInterestRate || 0) : 0)) / totalActualDebt : 0;
 
   return results
 }
@@ -286,7 +392,7 @@ export function calculateAll(inputs: DealInputs): CalculationResults {
 export function runScenario(baseInputs: DealInputs, adjustment: ScenarioAdjustment): CalculationResults {
   const adjusted = {
     ...baseInputs,
-    products: baseInputs.products.map(p => ({
+    products: (baseInputs.products || []).map(p => ({
       ...p,
       grossAICValuation: p.grossAICValuation * (1 + adjustment.grvAdjustment)
     })),

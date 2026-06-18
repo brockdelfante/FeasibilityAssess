@@ -14,7 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { AlertCircle, CheckCircle2, TrendingUp, Save, Share2, Calculator, FileText, History, Wallet, Loader2, ArrowLeft, Plus, Trash2, MapPin, Info, ArrowUpRight, FileSpreadsheet, ShieldCheck, Scale, Trash, ChevronDown, Search, RefreshCcw, Terminal } from "lucide-react";
+import { AlertCircle, CheckCircle2, TrendingUp, Save, Share2, Calculator, FileText, History, Wallet, Loader2, ArrowLeft, Plus, Trash2, MapPin, Info, ArrowUpRight, FileSpreadsheet, ShieldCheck, Scale, Trash, ChevronDown, Search, RefreshCcw, Terminal, PieChart, Landmark, Shield, BarChart3 } from "lucide-react";
 import { BreachAlerts } from "@/components/OutputPanel/BreachAlerts";
 import { CashflowChart } from "@/components/OutputPanel/CashflowChart";
 import { SensitivityMatrix } from "@/components/OutputPanel/SensitivityMatrix";
@@ -121,6 +121,8 @@ export default function DealEditPage({ params }: { params: Promise<{ id: string 
             build_term_months: inputs.buildTermMonths,
             start_date: inputs.startDate,
             interest_rate: inputs.interestRate,
+            interest_margin: inputs.interestMargin,
+            line_fee_rate: inputs.lineFeeRate,
             laf_rate: inputs.lafRate,
             gst_method: inputs.gstMethod,
             site_value: inputs.siteValue,
@@ -162,6 +164,19 @@ export default function DealEditPage({ params }: { params: Promise<{ id: string 
             assumptions_construction_basis: inputs.assumptionsConstructionBasis,
             assumptions_programme_basis: inputs.assumptionsProgrammeBasis,
             assumptions_other: inputs.assumptionsOther,
+
+            // Comprehensive Fields
+            owner_builder: inputs.ownerBuilder,
+            sales_commission_rate: inputs.salesCommissionRate,
+            presale_commission_rate: inputs.presaleCommissionRate,
+            interest_capitalization_enabled: inputs.interestCapitalizationEnabled,
+            gst_overdraft_limit: inputs.gstOverdraftLimit,
+            target_roc: inputs.targetRoc,
+            additional_security_fmv: inputs.additionalSecurityFmv,
+            additional_security_extended: inputs.additionalSecurityExtended,
+            sponsor_recourse: inputs.sponsorRecourse,
+            tangible_net_worth: inputs.tangibleNetWorth,
+
             calc_grv: results.grv,
             calc_roc: results.roc,
             calc_lvr_gross: results.lvrGross,
@@ -170,7 +185,7 @@ export default function DealEditPage({ params }: { params: Promise<{ id: string 
             calc_net_realisations: results.netRealisations,
             calc_senior_funding: results.seniorFunding,
             calc_peak_debt: results.peakDebt,
-            calc_covenant_breach: results.roc < 0.15 || results.lvrGross > 0.7,
+            calc_covenant_breach: results.roc < (inputs.targetRoc || 0.2) || results.lvrGross > 0.7,
             products: inputs.products,
             presales: inputs.presales,
 
@@ -394,7 +409,7 @@ export default function DealEditPage({ params }: { params: Promise<{ id: string 
             <PropertyIntelligence />
           </div>
 
-          <Accordion type="multiple" defaultValue={["customer", "products", "costs", "mezzanine", "risk"]} className="w-full space-y-6">
+          <Accordion type="multiple" defaultValue={["customer", "products", "costs", "mezzanine", "risk", "finance"]} className="w-full space-y-6">
              {/* Customer & Project Section */}
              <AccordionItem value="customer" className="bg-white border rounded-2xl px-8 shadow-sm overflow-visible border-gray-100">
                 <AccordionTrigger className="hover:no-underline py-6 font-black uppercase tracking-[0.2em] text-[11px] text-gray-900">Customer & Project Details</AccordionTrigger>
@@ -431,6 +446,13 @@ export default function DealEditPage({ params }: { params: Promise<{ id: string 
                           <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-400 font-black">State</Label><Input value={inputs.addressState} onChange={e => setInputs({ addressState: e.target.value })} className="h-10 border-gray-300" /></div>
                           <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-400 font-black">Postcode</Label><Input value={inputs.addressPostcode} onChange={e => setInputs({ addressPostcode: e.target.value })} className="h-10 border-gray-300" /></div>
                           <div className="space-y-2 col-span-2"><Label className="text-[10px] uppercase text-gray-400 font-black">Country</Label><Input value={inputs.addressCountry} onChange={e => setInputs({ addressCountry: e.target.value })} className="h-10 border-gray-300" /></div>
+                      </div>
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
+                          <div className="space-y-0.5">
+                              <Label className="text-[11px] font-black uppercase text-gray-700">Owner Builder</Label>
+                              <p className="text-[10px] text-gray-400">Project is managed as owner-builder</p>
+                          </div>
+                          <Switch checked={inputs.ownerBuilder} onCheckedChange={v => setInputs({ ownerBuilder: v })} />
                       </div>
                     </div>
                 </AccordionContent>
@@ -519,6 +541,61 @@ export default function DealEditPage({ params }: { params: Promise<{ id: string 
                 </AccordionContent>
             </AccordionItem>
 
+            {/* Finance & Pricing Section */}
+            <AccordionItem value="finance" className="bg-white border rounded-2xl px-8 shadow-sm overflow-hidden border-gray-100">
+                <AccordionTrigger className="hover:no-underline py-6 font-black uppercase tracking-[0.2em] text-[11px] text-gray-900">Finance & Pricing</AccordionTrigger>
+                <AccordionContent className="pb-8 text-gray-900">
+                    <div className="grid grid-cols-3 gap-8">
+                        <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-400 font-black">Base Interest Rate (p.a.)</Label><Input type="number" step="0.001" value={inputs.interestRate} onChange={e => setInputs({ interestRate: parseFloat(e.target.value) || 0 })} className="h-10 font-bold border-gray-300" /></div>
+                        <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-400 font-black">Margin (p.a.)</Label><Input type="number" step="0.001" value={inputs.interestMargin} onChange={e => setInputs({ interestMargin: parseFloat(e.target.value) || 0 })} className="h-10 font-bold border-gray-300" /></div>
+                        <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-400 font-black">Line Fee (%)</Label><Input type="number" step="0.001" value={inputs.lineFeeRate} onChange={e => setInputs({ lineFeeRate: parseFloat(e.target.value) || 0 })} className="h-10 font-bold border-gray-300" /></div>
+
+                        <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-400 font-black">LAF Rate (%)</Label><Input type="number" step="0.001" value={inputs.lafRate} onChange={e => setInputs({ lafRate: parseFloat(e.target.value) || 0 })} className="h-10 font-bold border-gray-300" /></div>
+                        <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-400 font-black">Sales Commission (%)</Label><Input type="number" step="0.001" value={inputs.salesCommissionRate} onChange={e => setInputs({ salesCommissionRate: parseFloat(e.target.value) || 0 })} className="h-10 font-bold border-gray-300" /></div>
+                        <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-400 font-black">Presale Commission (%)</Label><Input type="number" step="0.001" value={inputs.presaleCommissionRate} onChange={e => setInputs({ presaleCommissionRate: parseFloat(e.target.value) || 0 })} className="h-10 font-bold border-gray-300" /></div>
+
+                        <div className="space-y-2"><Label className="text-[10px] uppercase text-gray-400 font-black">Target ROC (%)</Label><Input type="number" step="0.001" value={inputs.targetRoc} onChange={e => setInputs({ targetRoc: parseFloat(e.target.value) || 0.2 })} className="h-10 font-bold border-gray-300" /></div>
+
+                        <div className="col-span-3 grid grid-cols-2 gap-8 pt-4">
+                            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
+                                <div className="space-y-0.5">
+                                    <Label className="text-[11px] font-black uppercase text-gray-700">Capitalise Interest</Label>
+                                    <p className="text-[10px] text-gray-400">Roll interest into the facility balance</p>
+                                </div>
+                                <Switch checked={inputs.interestCapitalizationEnabled} onCheckedChange={v => setInputs({ interestCapitalizationEnabled: v })} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-[10px] uppercase text-gray-400 font-black">GST Overdraft Limit (AUD)</Label>
+                                <Input type="number" value={inputs.gstOverdraftLimit} onChange={e => setInputs({ gstOverdraftLimit: parseFloat(e.target.value) || 0 })} className="h-11 font-bold border-gray-300" />
+                            </div>
+                        </div>
+                    </div>
+                </AccordionContent>
+            </AccordionItem>
+
+            {/* Additional Security & Recourse Section */}
+            <AccordionItem value="security" className="bg-white border rounded-2xl px-8 shadow-sm overflow-hidden border-gray-100">
+                <AccordionTrigger className="hover:no-underline py-6 font-black uppercase tracking-[0.2em] text-[11px] text-gray-900">Security & Recourse</AccordionTrigger>
+                <AccordionContent className="pb-8 text-gray-900">
+                    <div className="grid grid-cols-2 gap-x-16 gap-y-8">
+                        <div className="space-y-6">
+                            <div className="space-y-2"><Label className="text-[10px] uppercase font-bold text-gray-400">Add. Security FMV (Net)</Label><Input type="number" value={inputs.additionalSecurityFmv} onChange={e => setInputs({ additionalSecurityFmv: parseFloat(e.target.value) || 0 })} className="h-11 border-gray-300" /></div>
+                            <div className="space-y-2"><Label className="text-[10px] uppercase font-bold text-gray-400">Add. Security Extended (Net)</Label><Input type="number" value={inputs.additionalSecurityExtended} onChange={e => setInputs({ additionalSecurityExtended: parseFloat(e.target.value) || 0 })} className="h-11 border-gray-300" /></div>
+                        </div>
+                        <div className="space-y-6">
+                            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
+                                <div className="space-y-0.5">
+                                    <Label className="text-[11px] font-black uppercase text-gray-700">Sponsor Recourse</Label>
+                                    <p className="text-[10px] text-gray-400">Personal/Corporate guarantee enabled</p>
+                                </div>
+                                <Switch checked={inputs.sponsorRecourse} onCheckedChange={v => setInputs({ sponsorRecourse: v })} />
+                            </div>
+                            <div className="space-y-2"><Label className="text-[10px] uppercase font-bold text-gray-400">Tangible Net Worth (Recourse)</Label><Input type="number" value={inputs.tangibleNetWorth} onChange={e => setInputs({ tangibleNetWorth: parseFloat(e.target.value) || 0 })} className="h-11 border-gray-300" /></div>
+                        </div>
+                    </div>
+                </AccordionContent>
+            </AccordionItem>
+
             {/* Mezzanine Section */}
             <AccordionItem value="mezzanine" className="bg-white border rounded-2xl px-8 shadow-sm overflow-hidden border-gray-100">
                 <AccordionTrigger className="hover:no-underline py-6 font-black uppercase tracking-[0.2em] text-[11px] flex items-center text-gray-900">
@@ -569,10 +646,11 @@ export default function DealEditPage({ params }: { params: Promise<{ id: string 
             <div className="p-4 bg-gray-50/80 border-b">
                 <TabsList className="grid grid-cols-3 gap-2 bg-transparent h-auto p-0">
                     <TabsTrigger value="summary" className="text-[9px] uppercase font-black data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm rounded-xl py-3 border border-gray-200 transition-all">Gearing</TabsTrigger>
+                    <TabsTrigger value="funding" className="text-[9px] uppercase font-black data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm rounded-xl py-3 border border-gray-200 transition-all">Funding</TabsTrigger>
                     <TabsTrigger value="mezz" className="text-[9px] uppercase font-black data-[state=active]:bg-white data-[state=active]:text-amber-600 data-[state=active]:shadow-sm rounded-xl py-3 border border-gray-200 transition-all">Mezzanine</TabsTrigger>
-                    <TabsTrigger value="scenarios" className="text-[9px] uppercase font-black data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm rounded-xl py-3 border border-gray-200 transition-all">Sensitivity</TabsTrigger>
                 </TabsList>
-                <TabsList className="grid grid-cols-2 gap-2 bg-transparent h-auto p-0 mt-2">
+                <TabsList className="grid grid-cols-3 gap-2 bg-transparent h-auto p-0 mt-2">
+                    <TabsTrigger value="scenarios" className="text-[9px] uppercase font-black data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm rounded-xl py-3 border border-gray-200 transition-all">Sensitivity</TabsTrigger>
                     <TabsTrigger value="exit" className="text-[9px] uppercase font-black data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm rounded-xl py-3 border border-gray-200 transition-all">Exit Strategy</TabsTrigger>
                     <TabsTrigger value="audit" className="text-[9px] uppercase font-black data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm rounded-xl py-3 border border-gray-200 transition-all">Calc Audit</TabsTrigger>
                 </TabsList>
@@ -583,8 +661,8 @@ export default function DealEditPage({ params }: { params: Promise<{ id: string 
                     <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100 shadow-inner group hover:border-blue-200 transition-colors">
                         <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-1.5 flex items-center group-hover:text-blue-600 transition-colors"><Scale className="h-3 w-3 mr-1.5" /> Return on Cost</p>
                         <div className="flex items-baseline space-x-2">
-                            <p className={`text-3xl font-mono font-black ${results.roc >= 0.2 ? 'text-green-600' : 'text-red-600'}`}>{formatPercent(results.roc)}</p>
-                            <span className="text-[9px] font-black text-gray-300 uppercase">Target 20%</span>
+                            <p className={`text-3xl font-mono font-black ${results.roc >= (inputs.targetRoc || 0.2) ? 'text-green-600' : 'text-red-600'}`}>{formatPercent(results.roc)}</p>
+                            <span className="text-[9px] font-black text-gray-300 uppercase">Target {(inputs.targetRoc * 100).toFixed(0)}%</span>
                         </div>
                     </div>
                     <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100 shadow-inner group hover:border-blue-200 transition-colors">
@@ -606,7 +684,7 @@ export default function DealEditPage({ params }: { params: Promise<{ id: string 
                 <div className="space-y-5 text-gray-900">
                     <div className="flex items-center justify-between px-1">
                         <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Policy Breach Alerts</h3>
-                        {results.roc < 0.2 || results.lvrGross > 0.65 ? <Badge className="bg-red-500 text-[9px] font-black border-0 text-white">ACTION REQUIRED</Badge> : <Badge className="bg-green-500 text-[9px] font-black border-0 text-white">COMPLIANT</Badge>}
+                        {results.roc < (inputs.targetRoc || 0.2) || results.lvrGross > 0.65 ? <Badge className="bg-red-500 text-[9px] font-black border-0 text-white">ACTION REQUIRED</Badge> : <Badge className="bg-green-500 text-[9px] font-black border-0 text-white">COMPLIANT</Badge>}
                     </div>
                     <BreachAlerts />
                 </div>
@@ -616,6 +694,59 @@ export default function DealEditPage({ params }: { params: Promise<{ id: string 
 
                 <Separator className="bg-gray-100" />
                 <div className="space-y-5"><h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 px-1">Monthly Peak Debt Projection</h3><CashflowChart results={results} /></div>
+            </TabsContent>
+
+            <TabsContent value="funding" className="flex-1 overflow-auto p-8 m-0 bg-white">
+                <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-black uppercase tracking-tight text-gray-900">Detailed Funding breakdown</h3>
+                        <div className="bg-blue-50 p-2 rounded-lg"><PieChart className="h-5 w-5 text-blue-600" /></div>
+                    </div>
+                    <div className="overflow-x-auto rounded-xl border border-gray-100">
+                        <table className="w-full text-[11px] text-left">
+                            <thead className="bg-gray-50 font-black uppercase text-gray-400">
+                                <tr>
+                                    <th className="px-4 py-3">Cost Line</th>
+                                    <th className="px-4 py-3 text-right">Total</th>
+                                    <th className="px-4 py-3 text-right">ANZ Funded</th>
+                                    <th className="px-4 py-3 text-right">Equity</th>
+                                    <th className="px-4 py-3 text-right">LCR</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-50">
+                                {results.fundingTable?.map((row: any, i: number) => (
+                                    <tr key={i} className="hover:bg-gray-50">
+                                        <td className="px-4 py-3 font-bold text-gray-900">{row.label}</td>
+                                        <td className="px-4 py-3 text-right font-mono">{formatCurrency(row.amount)}</td>
+                                        <td className="px-4 py-3 text-right font-mono text-blue-600">{formatCurrency(row.anzFunding)}</td>
+                                        <td className="px-4 py-3 text-right font-mono text-gray-500">{formatCurrency(row.equity)}</td>
+                                        <td className="px-4 py-3 text-right font-mono text-gray-400">{(row.lcr * 100).toFixed(1)}%</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                            <tfoot className="bg-blue-50/50 font-black text-blue-900 border-t border-blue-100">
+                                <tr>
+                                    <td className="px-4 py-4 uppercase">Total Dev Cost</td>
+                                    <td className="px-4 py-4 text-right font-mono">{formatCurrency(results.totalDevelopmentCosts)}</td>
+                                    <td className="px-4 py-4 text-right font-mono">{formatCurrency(results.seniorFunding)}</td>
+                                    <td className="px-4 py-4 text-right font-mono">{formatCurrency(results.totalDevelopmentCosts - results.seniorFunding)}</td>
+                                    <td className="px-4 py-4 text-right font-mono">{formatPercent(results.ltc)}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                            <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest mb-1">Peak PDF Balance</p>
+                            <p className="text-xl font-mono font-black text-gray-900">{formatCurrency(results.peakDebt)}</p>
+                        </div>
+                        <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                            <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest mb-1">Average PDF Balance</p>
+                            <p className="text-xl font-mono font-black text-gray-900">{formatCurrency(results.averagePDFBalance)}</p>
+                        </div>
+                    </div>
+                </div>
             </TabsContent>
 
             <TabsContent value="mezz" className="flex-1 overflow-auto p-8 m-0 bg-white"><MezzanineAnalysis inputs={inputs} results={results} /></TabsContent>
@@ -634,7 +765,7 @@ export default function DealEditPage({ params }: { params: Promise<{ id: string 
       {/* Primary Global Actions (Sticky) */}
       <div className="fixed bottom-0 left-0 right-0 h-24 bg-[#0F1923] border-t border-white/10 z-50 flex items-center px-12 shadow-[0_-10px_40px_rgba(0,0,0,0.4)] justify-between transition-all overflow-x-auto text-gray-900">
         <div className="flex items-center space-x-12 shrink-0 text-white">
-            <div className="flex flex-col"><span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-1">Projected ROC</span><div className="flex items-center space-x-3"><span className={`text-3xl font-mono font-black ${results.roc >= 0.2 ? 'text-green-400' : 'text-red-400'}`}>{formatPercent(results.roc)}</span>{results.roc >= 0.2 ? <ShieldCheck className="h-6 w-6 text-green-500 fill-green-500/20" /> : <AlertCircle className="h-6 w-6 text-red-500 animate-pulse" />}</div></div>
+            <div className="flex flex-col"><span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-1">Projected ROC</span><div className="flex items-center space-x-3"><span className={`text-3xl font-mono font-black ${results.roc >= (inputs.targetRoc || 0.2) ? 'text-green-400' : 'text-red-400'}`}>{formatPercent(results.roc)}</span>{results.roc >= (inputs.targetRoc || 0.2) ? <ShieldCheck className="h-6 w-6 text-green-500 fill-green-500/20" /> : <AlertCircle className="h-6 w-6 text-red-500 animate-pulse" />}</div></div>
             <div className="h-12 w-px bg-white/10" />
             <div className="flex flex-col"><span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-1">Net Realisation</span><span className="text-2xl font-mono font-black text-white">{formatCurrency(results.netRealisations)}</span></div>
             <div className="h-12 w-px bg-white/10" />
