@@ -14,3 +14,170 @@
  GET /api/deals 200 in 937ms (next.js: 4ms, application-code: 934ms)
  GET /deals/new 200 in 122ms (next.js: 40ms, application-code: 82ms)
  GET /api/address-autocomplete?q=100%20Queen%20St 200 in 1420ms (next.js: 40ms, application-code: 1380ms)
+ GET / 200 in 954ms (next.js: 114ms, application-code: 840ms)
+ GET /api/deals 200 in 1682ms (next.js: 8ms, application-code: 1675ms)
+The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+ GET /deals/ba8a2ff0-5ec2-4c2a-863d-94aa79586b59/edit 200 in 2.5s (next.js: 1557ms, application-code: 985ms)
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+ GET /api/deals/ba8a2ff0-5ec2-4c2a-863d-94aa79586b59 200 in 3.2s (next.js: 2.0s, application-code: 1198ms)
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+Generating report: credit_summary for deal ba8a2ff0-5ec2-4c2a-863d-94aa79586b59
+Rendering PDF to buffer...
+Report generation handler error: TypeError: __TURBOPACK__imported__module__$5b$externals$5d2f40$react$2d$pdf$2f$renderer__$5b$external$5d$__$2840$react$2d$pdf$2f$renderer$2c$__esm_import$2c$__$5b$project$5d2f$node_modules$2f40$react$2d$pdf$2f$renderer$29$__.default.renderToBuffer is not a function
+    at POST (src/app/api/deals/[id]/reports/route.ts:43:35)
+  41 |     console.log("Rendering PDF to buffer...");
+  42 |     // Use renderToBuffer for cleaner server-side handling in App Router
+> 43 |     const buffer = await ReactPDF.renderToBuffer(element);
+     |                                   ^
+  44 |     console.log(`PDF rendered. Size: ${buffer.length} bytes`);
+  45 |
+  46 |     const fileName = `${type}_${Date.now()}.pdf`;
+ POST /api/deals/ba8a2ff0-5ec2-4c2a-863d-94aa79586b59/reports 500 in 4.9s (next.js: 4.6s, application-code: 293ms)
+The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+ GET /deals/ba8a2ff0-5ec2-4c2a-863d-94aa79586b59/edit 200 in 268ms (next.js: 35ms, application-code: 233ms)
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+ GET /api/deals/ba8a2ff0-5ec2-4c2a-863d-94aa79586b59 200 in 1602ms (next.js: 33ms, application-code: 1569ms)
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+Generating report: credit_summary for deal ba8a2ff0-5ec2-4c2a-863d-94aa79586b59
+Rendering PDF to stream...
+PDF rendered. Size: 2015 bytes
+Uploading to storage bucket 'deal-reports' at path: ba8a2ff0-5ec2-4c2a-863d-94aa79586b59/credit_summary_1781853937515.pdf
+Storage upload error: Error [StorageApiError]: new row violates row-level security policy
+    at ignore-listed frames {
+  __isStorageError: true,
+  namespace: 'storage',
+  status: 400,
+  statusCode: '403'
+}
+Report generation handler error: Error: Storage upload failed: new row violates row-level security policy
+    at POST (src/app/api/deals/[id]/reports/route.ts:67:15)
+  65 |     if (uploadError) {
+  66 |         console.error("Storage upload error:", uploadError);
+> 67 |         throw new Error(`Storage upload failed: ${uploadError.message}`);
+     |               ^
+  68 |     }
+  69 |
+  70 |     const { data: { publicUrl } } = supabase.storage
+ POST /api/deals/ba8a2ff0-5ec2-4c2a-863d-94aa79586b59/reports 500 in 961ms (next.js: 33ms, application-code: 928ms)
+The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+ GET /deals/ba8a2ff0-5ec2-4c2a-863d-94aa79586b59/edit 200 in 228ms (next.js: 39ms, application-code: 189ms)
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+ GET /api/deals/ba8a2ff0-5ec2-4c2a-863d-94aa79586b59 200 in 1030ms (next.js: 31ms, application-code: 999ms)
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+Generating report: credit_summary for deal ba8a2ff0-5ec2-4c2a-863d-94aa79586b59
+Rendering PDF to stream...
+PDF rendered. Size: 2015 bytes
+Uploading to storage bucket 'deal-reports' at path: ba8a2ff0-5ec2-4c2a-863d-94aa79586b59/credit_summary_1781854294512.pdf
+Public URL generated: https://gxkxxzezbatgtrfkwofb.supabase.co/storage/v1/object/public/deal-reports/ba8a2ff0-5ec2-4c2a-863d-94aa79586b59/credit_summary_1781854294512.pdf
+ POST /api/deals/ba8a2ff0-5ec2-4c2a-863d-94aa79586b59/reports 200 in 1782ms (next.js: 31ms, application-code: 1752ms)

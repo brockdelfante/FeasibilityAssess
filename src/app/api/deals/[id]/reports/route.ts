@@ -38,16 +38,23 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
             break;
     }
 
-    console.log("Rendering PDF to buffer...");
-    // Use renderToBuffer for cleaner server-side handling in App Router
-    const buffer = await ReactPDF.renderToBuffer(element);
+    console.log("Rendering PDF to stream...");
+    // @ts-ignore
+    const stream = await ReactPDF.renderToStream(element);
+    const chunks: any[] = [];
+
+    // Convert stream to buffer
+    for await (const chunk of stream) {
+        chunks.push(chunk);
+    }
+    const buffer = Buffer.concat(chunks);
     console.log(`PDF rendered. Size: ${buffer.length} bytes`);
 
     const fileName = `${type}_${Date.now()}.pdf`;
     const path = `${id}/${fileName}`;
 
     console.log(`Uploading to storage bucket 'deal-reports' at path: ${path}`);
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    const { error: uploadError } = await supabase.storage
         .from('deal-reports')
         .upload(path, buffer, {
             contentType: 'application/pdf',
