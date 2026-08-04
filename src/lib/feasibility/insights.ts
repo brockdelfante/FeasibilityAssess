@@ -123,7 +123,33 @@ export function buildInsights(
     })
   }
 
-  // --- finance & presales ---
+  // --- presale coverage, which is what gets a facility approved ---
+  if (sellsOnCompletion(inputs.mode) && results.peakDebt > 0) {
+    const cover = safeDiv(inputs.presalesShare * results.grossRevenue, results.peakDebt)
+    if (inputs.presalesShare <= 0) {
+      items.push({
+        severity: 'warning',
+        category: 'presales',
+        title: 'No presales assumed',
+        body: `Most lenders will not fund a residential development facility without presales covering 50–70% of gross realisation. With none, this deal is modelled as fully speculative, which in practice means either a much higher interest rate or no facility at all.`,
+        nextStep:
+          'Add whatever you realistically expect to pre-sell in Step 4 and watch peak debt and IRR respond.',
+      })
+    } else {
+      items.push({
+        severity: cover >= 1 ? 'positive' : 'info',
+        category: 'presales',
+        title: `Presales of ${percent(inputs.presalesShare)} cover ${percent(cover)} of peak debt`,
+        body: `${money(inputs.presalesShare * results.grossRevenue)} of contracted sales against peak debt of ${money(results.peakDebt)}. Lenders test coverage against the facility, not against total cost.`,
+        nextStep:
+          inputs.presalesSettleMonth > 0 && inputs.presalesSettleMonth < inputs.durationMonths
+            ? `Those settlements land in month ${inputs.presalesSettleMonth}, which is already reducing your peak debt and interest.`
+            : 'Settling some of these before practical completion would cut peak debt and interest further.',
+      })
+    }
+  }
+
+  // --- finance ---
   if (results.peakDebt > 0) {
     const coverage = safeDiv(results.peakDebt, results.grossRevenue)
     items.push({

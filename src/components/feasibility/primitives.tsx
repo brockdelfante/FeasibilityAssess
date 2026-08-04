@@ -141,8 +141,12 @@ export function DidYouKnow({
 /**
  * Money input that shows thousands separators while you type.
  *
- * We keep the raw digits in local state so the caret does not jump around as
- * separators are inserted, and only push a number upstream.
+ * Local state holds what the client is typing so the caret does not jump as
+ * separators are inserted, but the displayed value is *derived* rather than
+ * synced from a prop: while focused we show their text, and the moment they
+ * blur we fall back to formatting the real value. That keeps an external change
+ * — a share link loading, or switching goal — visible without an effect fighting
+ * the client mid-keystroke.
  */
 export function MoneyInput({
   value,
@@ -157,14 +161,10 @@ export function MoneyInput({
   placeholder?: string
   disabled?: boolean
 }) {
-  const [text, setText] = React.useState(() => (value ? value.toLocaleString('en-AU') : ''))
+  const [typed, setTyped] = React.useState('')
   const [focused, setFocused] = React.useState(false)
 
-  // Reflect changes that came from elsewhere (a share link, a mode switch)
-  // without fighting the client while they are typing.
-  React.useEffect(() => {
-    if (!focused) setText(value ? Math.round(value).toLocaleString('en-AU') : '')
-  }, [value, focused])
+  const display = focused ? typed : value ? Math.round(value).toLocaleString('en-AU') : ''
 
   return (
     <div className="relative">
@@ -177,15 +177,15 @@ export function MoneyInput({
         disabled={disabled}
         className="pl-7 font-mono tabular-nums"
         placeholder={placeholder}
-        value={text}
-        onFocus={() => setFocused(true)}
-        onBlur={() => {
-          setFocused(false)
-          setText(value ? Math.round(value).toLocaleString('en-AU') : '')
+        value={display}
+        onFocus={() => {
+          setTyped(value ? Math.round(value).toLocaleString('en-AU') : '')
+          setFocused(true)
         }}
+        onBlur={() => setFocused(false)}
         onChange={(e) => {
           const digits = e.target.value.replace(/[^\d]/g, '')
-          setText(digits ? Number(digits).toLocaleString('en-AU') : '')
+          setTyped(digits ? Number(digits).toLocaleString('en-AU') : '')
           onChange(digits ? Number(digits) : 0)
         }}
       />

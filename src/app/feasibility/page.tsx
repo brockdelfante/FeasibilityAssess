@@ -287,10 +287,12 @@ export default function FeasibilityPage() {
   // A share link carries the whole input set in the URL fragment. Read it once
   // on mount and jump straight to the results — whoever opened the link wants
   // to see the numbers, not re-answer the questions.
-  const [hydrated, setHydrated] = React.useState(false)
+  // A ref rather than state: the guard is never rendered, and it has to flip
+  // before the store update to stop a re-render re-reading the hash.
+  const hydrated = React.useRef(false)
   React.useEffect(() => {
-    if (hydrated) return
-    setHydrated(true)
+    if (hydrated.current) return
+    hydrated.current = true
     const hash = window.location.hash.slice(1)
     if (!hash) return
     const decoded = decodeInputs(hash)
@@ -298,7 +300,7 @@ export default function FeasibilityPage() {
       replaceInputs(decoded)
       useFeasibilityStore.getState().goToStep(STEPS.length - 1)
     }
-  }, [hydrated, replaceInputs])
+  }, [replaceInputs])
 
   return (
     <div className="min-h-screen bg-gray-50">

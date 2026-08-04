@@ -20,6 +20,7 @@ import {
   Copy,
   Download,
   FileSpreadsheet,
+  FileText,
   Link2,
   Loader2,
   ScrollText,
@@ -52,8 +53,51 @@ export function ExportPanel() {
   const [copied, setCopied] = React.useState(false)
   const [pushing, setPushing] = React.useState(false)
   const [pushError, setPushError] = React.useState<string | null>(null)
+  const [pdfBusy, setPdfBusy] = React.useState(false)
+  const [pdfError, setPdfError] = React.useState<string | null>(null)
 
   const slug = (inputs.projectName || 'feasibility').replace(/[^a-z0-9]+/gi, '-').toLowerCase()
+
+  /**
+   * Download the branded PDF. Rendering happens on the server because
+   * @react-pdf/renderer is far too heavy to ship to the browser, but nothing is
+   * stored — the response streams straight to a download.
+   */
+  const downloadPdf = async () => {
+    setPdfBusy(true)
+    setPdfError(null)
+    try {
+      const res = await fetch('/api/feasibility/report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          inputs,
+          generatedAt: new Date().toLocaleDateString('en-AU', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          }),
+        }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => null)
+        throw new Error(data?.error ?? 'Could not generate the PDF')
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `${slug}-feasibility.pdf`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      setPdfError(err instanceof Error ? err.message : 'Something went wrong')
+    } finally {
+      setPdfBusy(false)
+    }
+  }
 
   const copyShareLink = async () => {
     const url = buildShareUrl(inputs, window.location.origin, window.location.pathname)
@@ -102,6 +146,14 @@ export function ExportPanel() {
       icon={<Download className="h-4 w-4 text-blue-600" />}
     >
       <div className="flex flex-wrap gap-2">
+        <Button onClick={downloadPdf} disabled={pdfBusy}>
+          {pdfBusy ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <FileText className="h-4 w-4" />
+          )}
+          {pdfBusy ? 'Generating…' : 'Download PDF report'}
+        </Button>
         <Button
           variant="outline"
           onClick={() => downloadCsv(`${slug}-summary.csv`, headlineCsv(inputs, results))}
@@ -122,13 +174,17 @@ export function ExportPanel() {
         </Button>
         <Button variant="outline" onClick={() => window.print()}>
           <ScrollText className="h-4 w-4" />
-          Print / save as PDF
+          Print this page
         </Button>
       </div>
 
+      {pdfError ? <p className="text-xs text-red-600">{pdfError}</p> : null}
+
       <div className="rounded-lg border border-gray-200 bg-gray-50/70 px-4 py-3 text-xs leading-relaxed text-gray-600">
-        The CSVs and the share link are generated entirely in your browser — nothing is uploaded.
-        The link encodes your inputs in the URL, so whoever opens it sees exactly these numbers.
+        The CSVs and the share link are generated entirely in your browser — nothing leaves your
+        device. The link encodes your inputs in the URL, so whoever opens it sees exactly these
+        numbers. The PDF is rendered on our server because the layout engine is too heavy to run in
+        a browser, but no copy is kept.
       </div>
 
       <div className="rounded-xl border border-blue-200 bg-blue-50/50 p-4">

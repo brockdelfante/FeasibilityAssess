@@ -135,6 +135,72 @@ test('switching to owner-occupier swaps the questions and the verdict block', as
   await expect(page.getByText(/Releasable equity/i).first()).toBeVisible()
 })
 
+test('presales that settle early reduce peak debt', async ({ page }) => {
+  await page.goto(`${BASE}/feasibility`)
+  await acceptDisclaimer(page)
+  await page.getByRole('button', { name: /Skip to full results/i }).click()
+
+  // The stat tile labels are uppercased in CSS, so match the DOM casing and
+  // read the value out of the sibling paragraph.
+  const peakDebt = async () => {
+    const value = page.locator(
+      'xpath=//p[normalize-space(.)="Peak debt"]/following-sibling::p[1]'
+    )
+    const text = (await value.first().textContent()) ?? ''
+    return Number(text.replace(/[^\d]/g, ''))
+  }
+
+  const before = await peakDebt()
+  expect(before).toBeGreaterThan(0)
+
+  // Go back to the tax & timing step and set a presale program.
+  await page.getByRole('button', { name: /Back to inputs/i }).click()
+  await expect(page.getByText(/Presales locked in/i)).toBeVisible()
+
+  // Scope both controls to their own labels — this step has more than one
+  // slider and more than one number field.
+  const presalesSlider = page.locator(
+    'xpath=//label[contains(., "Presales locked in")]/following::*[@role="slider"][1]'
+  )
+  await presalesSlider.focus()
+  // Step is 5%, so twelve presses lands on 60%.
+  for (let i = 0; i < 12; i++) await page.keyboard.press('ArrowRight')
+  await expect(page.getByText('60.0%')).toBeVisible()
+
+  // Settle them before the end of the program, which is where the benefit is.
+  const settleMonth = page.locator(
+    'xpath=//label[contains(., "When do those presales settle")]/following::input[1]'
+  )
+  await settleMonth.fill('14')
+
+  await page.getByRole('button', { name: /See my results/i }).click()
+  const after = await peakDebt()
+
+  expect(after).toBeLessThan(before)
+  await expect(page.getByText(/Presales of .* cover .* of peak debt/)).toBeVisible()
+})
+
+test('the PDF report downloads and is a real PDF', async ({ page }) => {
+  await page.goto(`${BASE}/feasibility`)
+  await acceptDisclaimer(page)
+  await page.getByRole('button', { name: /Skip to full results/i }).click()
+
+  const [download] = await Promise.all([
+    page.waitForEvent('download', { timeout: 60_000 }),
+    page.getByRole('button', { name: /Download PDF report/i }).click(),
+  ])
+
+  expect(download.suggestedFilename()).toMatch(/\.pdf$/)
+
+  const stream = await download.createReadStream()
+  const chunks: Buffer[] = []
+  for await (const chunk of stream) chunks.push(Buffer.from(chunk))
+  const pdf = Buffer.concat(chunks)
+
+  expect(pdf.subarray(0, 5).toString()).toBe('%PDF-')
+  expect(pdf.length).toBeGreaterThan(5_000)
+})
+
 test('a share link reproduces the same numbers', async ({ page, context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write'])
 

@@ -75,6 +75,8 @@ export const defaultFeasibilityInputs: FeasibilityInputs = {
   titleType: 'unknown',
   nccClassOverride: null,
   durationMonths: 22,
+  presalesShare: 0,
+  presalesSettleMonth: 0,
   targetMargin: 0.18,
 
   currentHomeValue: 0,
@@ -288,6 +290,9 @@ export function computeCore(inputs: FeasibilityInputs): CoreResult {
     overrun,
     gst: taxesDuties,
     grossRevenue,
+    // Only a scheme that actually sells can have presales.
+    presalesShare: sellsOnCompletion(inputs.mode) ? inputs.presalesShare : 0,
+    presalesSettleMonth: inputs.presalesSettleMonth || undefined,
     interestRate,
     loanToCost,
     establishmentPct: band.establishmentPct,
@@ -548,7 +553,7 @@ export function runFeasibility(inputs: FeasibilityInputs): FeasibilityResults {
   // --- buckets, with traces ---
   const buckets = buildBuckets(inputs, core, cls, statutory)
 
-  const constructionRateTraced = buildConstructionRateTrace(inputs, core)
+  const constructionRateTraced = buildConstructionRateTrace(inputs)
 
   // --- break-even and land headroom ---
   const breakEvenPerDwelling = safeDiv(core.totalDevelopmentCost, inputs.yield)
@@ -615,7 +620,7 @@ export function runFeasibility(inputs: FeasibilityInputs): FeasibilityResults {
 // Trace builders
 // ---------------------------------------------------------------------------
 
-function buildConstructionRateTrace(inputs: FeasibilityInputs, core: CoreResult): Traced {
+function buildConstructionRateTrace(inputs: FeasibilityInputs): Traced {
   const range = R.constructionRate(inputs.devType, inputs.qualityTier, inputs.siteDifficulty)
   const base = traced(range.point, 'medium', {
     range: { low: range.low, high: range.high },

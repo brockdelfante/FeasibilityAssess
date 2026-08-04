@@ -154,6 +154,7 @@ export function runCashflow(req: CashflowRequest): CashflowSummary {
     1,
     Math.min(duration, Math.round(req.presalesSettleMonth ?? duration))
   )
+  const earlyShare = presalesMonth < duration ? presalesShare : 0
 
   const rows: MonthlyCashflowRow[] = []
   let debtBalance = 0
@@ -187,10 +188,15 @@ export function runCashflow(req: CashflowRequest): CashflowSummary {
     costs += safeDiv(req.holding, duration)
 
     // ----- revenue settling this month -----
+    //
+    // Presales only count as an early settlement if they land before the final
+    // month; otherwise they are simply part of the settlement at the end.
+    // Splitting it this way keeps the two branches from both claiming the same
+    // revenue.
     let revenue = 0
-    if (presalesShare > 0 && m === presalesMonth) revenue += req.grossRevenue * presalesShare
+    if (earlyShare > 0 && m === presalesMonth) revenue += req.grossRevenue * earlyShare
     if (m === duration) {
-      revenue += req.grossRevenue * (1 - (presalesMonth === duration ? 0 : presalesShare))
+      revenue += req.grossRevenue * (1 - earlyShare)
       // Selling costs and GST are settled out of the sale proceeds.
       costs += req.marketingSelling + req.gst
     }

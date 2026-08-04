@@ -826,6 +826,52 @@ export function StepMoney() {
           </Field>
         </FieldGrid>
 
+        {sells ? (
+          <>
+            <FieldGrid>
+              <Field
+                label="Presales locked in"
+                hint="Share of your gross realisation already under unconditional contract. Lenders typically want 50–70% before they will fund, and presales that settle early repay debt sooner — which cuts both peak debt and total interest."
+              >
+                <PercentSlider
+                  value={inputs.presalesShare}
+                  onChange={(presalesShare) => setInputs({ presalesShare })}
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  marks={[
+                    { at: 0, label: 'None' },
+                    { at: 0.6, label: '60% typical' },
+                    { at: 1, label: 'All' },
+                  ]}
+                />
+              </Field>
+
+              <Field
+                label="When do those presales settle?"
+                hint="Leave at zero and we assume everything settles at the very end, which is the conservative case. Set an earlier month to model staged settlements."
+              >
+                <NumberInput
+                  value={inputs.presalesSettleMonth}
+                  onChange={(presalesSettleMonth) => setInputs({ presalesSettleMonth })}
+                  min={0}
+                  max={inputs.durationMonths}
+                  suffix="month"
+                />
+              </Field>
+            </FieldGrid>
+
+            {inputs.presalesShare > 0 &&
+            (inputs.presalesSettleMonth === 0 ||
+              inputs.presalesSettleMonth >= inputs.durationMonths) ? (
+              <div className="rounded-lg border border-gray-200 bg-gray-50/70 px-4 py-3 text-xs text-gray-600">
+                Your presales are set to settle at the end of the program, so they do not reduce
+                peak debt. Set an earlier settlement month to see the benefit.
+              </div>
+            ) : null}
+          </>
+        ) : null}
+
         {!sells ? (
           <div className="rounded-lg border border-gray-200 bg-gray-50/70 px-4 py-3 text-xs text-gray-600">
             <Target className="mr-1.5 inline h-3 w-3" />

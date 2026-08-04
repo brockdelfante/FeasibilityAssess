@@ -38,7 +38,7 @@ import { useFeasibilityStore } from '@/lib/feasibility/store'
 import { money, percent, safeDiv } from '@/lib/feasibility/trace'
 import type { BucketKey, FeasibilityOverrides, TradeKey } from '@/lib/feasibility/types'
 
-import { MoneyInput, SectionCard, StatTile } from './primitives'
+import { SectionCard, StatTile } from './primitives'
 
 // ---------------------------------------------------------------------------
 // Cost overrides
@@ -56,15 +56,19 @@ function OverrideCell({
   onChange: (value: number | null) => void
   format?: 'money' | 'percent' | 'rate'
 }) {
-  const [text, setText] = React.useState(() =>
-    override === null ? '' : format === 'percent' ? String(override * 100) : String(Math.round(override))
-  )
+  // Same derive-don't-sync approach as MoneyInput: show what the client is
+  // typing while the cell has focus, otherwise render the stored override. That
+  // keeps "Reset to Quick" able to clear the cell without an effect racing it.
+  const [typed, setTyped] = React.useState('')
+  const [focused, setFocused] = React.useState(false)
 
-  React.useEffect(() => {
-    setText(
-      override === null ? '' : format === 'percent' ? String(override * 100) : String(Math.round(override))
-    )
-  }, [override, format])
+  const stored =
+    override === null
+      ? ''
+      : format === 'percent'
+        ? String(Number((override * 100).toFixed(4)))
+        : String(Math.round(override))
+  const display = focused ? typed : stored
 
   const active = override !== null
   const activeValue = override ?? quickValue
@@ -77,16 +81,21 @@ function OverrideCell({
       </TableCell>
       <TableCell>
         <Input
-          value={text}
+          value={display}
           placeholder="—"
           inputMode="decimal"
           className={cn(
             'h-8 text-right font-mono text-xs tabular-nums',
             active && 'border-emerald-400 bg-emerald-50/60'
           )}
+          onFocus={() => {
+            setTyped(stored)
+            setFocused(true)
+          }}
+          onBlur={() => setFocused(false)}
           onChange={(e) => {
             const raw = e.target.value.replace(/[^\d.]/g, '')
-            setText(raw)
+            setTyped(raw)
             if (raw === '') {
               onChange(null)
               return

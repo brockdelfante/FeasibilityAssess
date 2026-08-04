@@ -172,6 +172,16 @@ export interface FeasibilityInputs {
   nccClassOverride: NccClass | null
   /** Total project duration in months. */
   durationMonths: number
+  /**
+   * Share of gross realisation locked in as presales, as a decimal.
+   *
+   * Presales that settle before the end of the program repay debt earlier,
+   * which cuts both peak debt and total interest — and lenders price the
+   * facility off presale coverage in the first place.
+   */
+  presalesShare: number
+  /** Month those presales settle. Must be before the final month to count. */
+  presalesSettleMonth: number
   /** Target margin on cost, decimal. Drives the feasibility verdict. */
   targetMargin: number
 
