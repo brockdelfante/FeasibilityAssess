@@ -689,6 +689,8 @@ function buildBuckets(
   })
 
   const consultantPct = R.consultantPct(inputs.devType).point
+  const rateRange = R.constructionRate(inputs.devType, inputs.qualityTier, inputs.siteDifficulty)
+  const costPlusFactor = inputs.builderContract === 'cost_plus' ? 1 + R.COST_PLUS_MARGIN : 1
 
   const out: CostBucket[] = [
     withBucketOverride(
@@ -762,6 +764,18 @@ function buildBuckets(
         {
           sourceKey: 'council_contributions',
           verifyWith: 'the relevant council or a town planner',
+          // Contributions swing from $8k to $75k a dwelling, which dominates the
+          // uncertainty in this bucket — so the band is worth showing.
+          range: {
+            low:
+              a.planning_design -
+              statutory.councilContributions.value +
+              (statutory.councilContributions.range?.low ?? 0),
+            high:
+              a.planning_design -
+              statutory.councilContributions.value +
+              (statutory.councilContributions.range?.high ?? 0),
+          },
         }
       ),
       inputs.overrides.planning_design
@@ -799,7 +813,21 @@ function buildBuckets(
                   ]),
               { label: 'Construction cost', value: a.construction, format: 'money' },
             ],
-        { sourceKey: 'construction_rates', verifyWith: 'a builder quote or a QS estimate' }
+        {
+          sourceKey: 'construction_rates',
+          verifyWith: 'a builder quote or a QS estimate',
+          // Carry the rate band up to the bucket, so the client sees what the
+          // construction line could plausibly come in at — not just the point
+          // estimate. Meaningless once a BoQ is driving the figure.
+          ...(inputs.boq.touched || inputs.devType === 'subdivision'
+            ? {}
+            : {
+                range: {
+                  low: core.totalGfaSqm * rateRange.low * costPlusFactor,
+                  high: core.totalGfaSqm * rateRange.high * costPlusFactor,
+                },
+              }),
+        }
       ),
       inputs.overrides.construction
     ),
