@@ -16,17 +16,35 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
 let client: SupabaseClient | null = null
 
+/**
+ * Whether the database is available at all.
+ *
+ * The public assessment tool never touches Supabase — it is entirely
+ * client-side arithmetic — so the site must work with these unset. Only the
+ * internal credit pages need a database, and they should say so plainly rather
+ * than returning a 500 that reads as "the whole app is broken".
+ */
+export function isSupabaseConfigured(): boolean {
+  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+}
+
+/** Thrown when a database-backed route is called without configuration. */
+export class SupabaseNotConfiguredError extends Error {
+  constructor() {
+    super(
+      'This feature needs a database. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your environment. The feasibility assessment does not require it.'
+    )
+    this.name = 'SupabaseNotConfiguredError'
+  }
+}
+
 function getClient(): SupabaseClient {
   if (client) return client
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-  if (!url || !anonKey) {
-    throw new Error(
-      'Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.'
-    )
-  }
+  if (!url || !anonKey) throw new SupabaseNotConfiguredError()
 
   client = createClient(url, anonKey)
   return client

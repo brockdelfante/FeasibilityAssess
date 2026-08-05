@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { SupabaseNotConfiguredError, supabase } from "@/lib/supabase";
 import ReactPDF from '@react-pdf/renderer';
 import { CreditSummaryReport } from "@/lib/pdf/CreditSummary";
 import { MezzanineAssessment } from "@/lib/pdf/MezzanineAssessment";
@@ -86,8 +86,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
 
     return NextResponse.json({ success: true, pdfUrl: publicUrl });
-  } catch (err: any) {
-    console.error("Report generation handler error:", err);
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  } catch (err) {
+    // Keep the {success:false} shape this route's callers expect, but tell a
+    // missing database apart from a real fault.
+    const notConfigured = err instanceof SupabaseNotConfiguredError;
+    if (!notConfigured) console.error("Report generation handler error:", err);
+    return NextResponse.json(
+      { success: false, error: err instanceof Error ? err.message : "Unexpected error" },
+      { status: notConfigured ? 503 : 500 }
+    );
   }
 }

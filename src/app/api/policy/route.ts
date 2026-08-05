@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-error";
 
 export async function GET() {
   try {
@@ -23,8 +24,8 @@ export async function GET() {
         return NextResponse.json(created);
     }
     return NextResponse.json(data);
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err) {
+    return apiError("policy", err);
   }
 }
 
@@ -35,7 +36,7 @@ export async function PATCH(req: NextRequest) {
     const { data, error } = await supabase.from('policy_config').update(updates).eq('id', id).select().single();
     if (error) throw error;
     return NextResponse.json(data);
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err) {
+    return apiError("policy", err);
   }
 }
