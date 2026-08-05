@@ -217,6 +217,22 @@ export interface FeasibilityInputs {
   presalesSettleMonth: number
   /** Target margin on cost, decimal. Drives the feasibility verdict. */
   targetMargin: number
+
+  // --- Funding: can I actually get the money? ---
+  /**
+   * Cash the developer can put in. The funding stage compares this against what
+   * the project needs after senior debt, and the difference is the gap a second
+   * mortgage exists to close.
+   */
+  equityAvailable: number
+  /** Senior LVR ceiling. 0 uses the indicative market cap. */
+  seniorLvrCap: number
+  /** Whether to price a second mortgage over the equity gap. */
+  mezzEnabled: boolean
+  /** Second-mortgage amount. 0 sizes it to exactly cover the gap. */
+  mezzAmount: number
+  /** Second-mortgage rate, decimal. 0 uses the indicative rate. */
+  mezzInterestRate: number
   /**
    * How strongly sale price responds to dwelling size, as an exponent.
    *

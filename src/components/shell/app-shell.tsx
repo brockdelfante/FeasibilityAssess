@@ -12,14 +12,7 @@
 import * as React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import {
-  Calculator,
-  LayoutDashboard,
-  Menu,
-  PlusSquare,
-  Settings,
-  Gauge,
-} from 'lucide-react'
+import { Menu, PlusSquare, Settings } from 'lucide-react'
 
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
@@ -34,42 +27,35 @@ interface NavItem {
   match?: (pathname: string) => boolean
 }
 
+/**
+ * Internal, analyst-facing routes only.
+ *
+ * The public tool at `/` deliberately has no navigation: it is a single-page
+ * assessment on a public website, and a sidebar full of lender tooling is both
+ * confusing to a visitor and not theirs to see. These routes are the credit
+ * team's, reachable by URL, and they keep the shell.
+ */
 const NAV: NavItem[] = [
-  {
-    href: '/',
-    label: 'Dashboard',
-    icon: LayoutDashboard,
-    crumbs: ['Workspace', 'Portfolio'],
-    match: (p) => p === '/',
-  },
-  {
-    href: '/feasibility',
-    label: 'Feasibility',
-    icon: Calculator,
-    crumbs: ['Workspace', 'Development feasibility'],
-  },
   {
     href: '/deals/new',
     label: 'New deal',
     icon: PlusSquare,
-    crumbs: ['Workspace', 'Deals', 'New'],
-    // Every /deals route except the quick test belongs to this section.
-    match: (p) => p.startsWith('/deals') && !p.startsWith('/deals/quick-test'),
-  },
-  {
-    href: '/deals/quick-test',
-    label: 'Quick test',
-    icon: Gauge,
-    crumbs: ['Workspace', 'Quick test'],
+    crumbs: ['Credit', 'Deals', 'New'],
+    match: (p) => p.startsWith('/deals'),
   },
   {
     href: '/settings/policy',
     label: 'Policy config',
     icon: Settings,
-    crumbs: ['Settings', 'Credit policy'],
+    crumbs: ['Credit', 'Policy'],
     match: (p) => p.startsWith('/settings'),
   },
 ]
+
+/** True on the public assessment tool, which renders without any chrome. */
+function isPublicApp(pathname: string): boolean {
+  return pathname === '/' || pathname === '/feasibility'
+}
 
 function isActive(item: NavItem, pathname: string): boolean {
   return item.match ? item.match(pathname) : pathname.startsWith(item.href)
@@ -142,8 +128,31 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? '/'
   const [mobileOpen, setMobileOpen] = React.useState(false)
 
+  // The public tool gets a slim branded bar and nothing else — no sidebar, no
+  // breadcrumb, no account. One page, one job.
+  if (isPublicApp(pathname)) {
+    return (
+      <div className="min-h-screen bg-app">
+        <header className="border-b border-border bg-navy-900">
+          <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
+            <div>
+              <span className="block text-base font-bold tracking-[0.2em] text-brand-400">
+                SIARE
+              </span>
+              <span className="mt-0.5 block text-[9px] uppercase tracking-[0.25em] text-slate-400">
+                Investments
+              </span>
+            </div>
+            <span className="text-xs text-slate-400">Development Feasibility</span>
+          </div>
+        </header>
+        <main>{children}</main>
+      </div>
+    )
+  }
+
   const current = NAV.find((item) => isActive(item, pathname))
-  const crumbs = current?.crumbs ?? ['Workspace']
+  const crumbs = current?.crumbs ?? ['Credit']
 
   return (
     <div className="flex min-h-screen bg-app">
