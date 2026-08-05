@@ -2,57 +2,55 @@
  * NSW statutory costs — stamp duty, land tax, HBCF and GST.
  *
  * These are the lines that most often get left out of a back-of-the-envelope
- * feasibility, and they are large: duty on a $2M site is over $92,000 and land
+ * feasibility, and they are large: duty on a $2M site is over $91,000 and land
  * tax on a $3M site runs about $31,000 a year while you hold it.
  *
  * Every function here returns a `Traced` value so the UI can show the working.
  */
 
+import { NSW } from './jurisdictions/nsw'
+import {
+  dutyBandDescription,
+  dutyFor,
+  dutyForRegime,
+  landTaxFor,
+  warrantyPremiumFor,
+  type DutyRegime,
+} from './jurisdictions/types'
 import { traced } from './trace'
 import type { Traced } from './types'
 
 // ---------------------------------------------------------------------------
-// Transfer (stamp) duty — NSW, 1 July 2025 to 30 June 2026
+// Transfer (stamp) duty — NSW, FY2026/27 (contracts dated from 1 July 2026)
 // ---------------------------------------------------------------------------
 
-interface DutyBracket {
-  /** Upper bound of the bracket. Infinity for the top bracket. */
-  upTo: number
-  /** Duty accumulated at the start of this bracket. */
-  base: number
-  /** Rate per $100 of the amount over `from`. */
-  ratePer100: number
-  from: number
-}
-
 /**
- * Revenue NSW transfer duty schedule for FY2025–26. Thresholds are CPI-indexed
- * every July, so this table needs a review each financial year.
+ * The duty schedule now lives in the NSW jurisdiction profile, transcribed from
+ * Revenue NSW's published FY2026/27 table and verified against their own
+ * $3,870,000 → $194,137 premium anchor.
+ *
+ * These wrappers keep the existing call sites working while the engine migrates
+ * to reading profiles directly. They are the reason the app reports the current
+ * year's duty rather than the superseded FY2025-26 figures this file used to
+ * hardcode.
  */
-const NSW_DUTY_BRACKETS: DutyBracket[] = [
-  { from: 0, upTo: 17_000, base: 0, ratePer100: 1.25 },
-  { from: 17_000, upTo: 37_000, base: 212, ratePer100: 1.5 },
-  { from: 37_000, upTo: 99_000, base: 512, ratePer100: 1.75 },
-  { from: 99_000, upTo: 372_000, base: 1_597, ratePer100: 3.5 },
-  { from: 372_000, upTo: 1_240_000, base: 11_152, ratePer100: 4.5 },
-  { from: 1_240_000, upTo: 3_721_000, base: 50_212, ratePer100: 5.5 },
-  // Premium property duty
-  { from: 3_721_000, upTo: Infinity, base: 186_667, ratePer100: 7.0 },
-]
 
-/** Minimum duty payable on any dutiable transaction. */
-const MIN_DUTY = 10
-
-export const PREMIUM_DUTY_THRESHOLD = 3_721_000
+export const PREMIUM_DUTY_THRESHOLD = NSW.duty.premiumThreshold ?? Infinity
 
 /** Raw duty figure, no trace. Used by solvers that iterate. */
 export function nswStampDutyAmount(dutiableValue: number): number {
-  if (dutiableValue <= 0) return 0
-  const bracket =
-    NSW_DUTY_BRACKETS.find((b) => dutiableValue > b.from && dutiableValue <= b.upTo) ??
-    NSW_DUTY_BRACKETS[NSW_DUTY_BRACKETS.length - 1]
-  const duty = bracket.base + ((dutiableValue - bracket.from) / 100) * bracket.ratePer100
-  return Math.max(MIN_DUTY, Math.round(duty))
+  return dutyFor(NSW.duty, dutiableValue)
+}
+
+/**
+ * Duty on land that is not residential.
+ *
+ * NSW premium property duty is residential-only, so a commercial or industrial
+ * site above $3,870,000 stays on the general 5.5% band. Applying the premium
+ * tier to it would overstate the largest line in the acquisition.
+ */
+export function nswStampDutyAmountFor(dutiableValue: number, regime: DutyRegime): number {
+  return dutyForRegime(NSW, dutiableValue, regime)
 }
 
 export function nswStampDuty(dutiableValue: number): Traced {
@@ -63,17 +61,20 @@ export function nswStampDuty(dutiableValue: number): Traced {
       sourceKey: 'nsw_transfer_duty',
     })
   }
-  const bracket =
-    NSW_DUTY_BRACKETS.find((b) => dutiableValue > b.from && dutiableValue <= b.upTo) ??
-    NSW_DUTY_BRACKETS[NSW_DUTY_BRACKETS.length - 1]
+
   const isPremium = dutiableValue > PREMIUM_DUTY_THRESHOLD
 
   return traced(amount, 'high', {
     steps: [
       { label: 'Dutiable value', value: dutiableValue, format: 'money' },
       {
-        label: isPremium ? 'Premium property band' : 'Standard band',
-        detail: `$${bracket.base.toLocaleString()} + $${bracket.ratePer100.toFixed(2)} per $100 over $${bracket.from.toLocaleString()}`,
+        label: isPremium ? 'Premium property band (residential only)' : 'General band',
+        detail: dutyBandDescription(NSW.duty, dutiableValue),
+      },
+      {
+        label: `Revenue NSW schedule, ${NSW.taxYear}`,
+        detail:
+          'Thresholds are CPI-indexed every 1 July, and the year that applies is set by your contract date, not settlement.',
       },
       { label: 'Transfer duty', value: amount, format: 'money' },
     ],
@@ -82,10 +83,12 @@ export function nswStampDuty(dutiableValue: number): Traced {
 }
 
 // ---------------------------------------------------------------------------
-// Land tax — NSW, FY2025–26
+// Land tax — NSW, 2026 land tax year (taxing date 31 December 2025)
 // ---------------------------------------------------------------------------
 
-export const LAND_TAX_GENERAL_THRESHOLD = 1_075_000
+// Frozen for every land tax year after 2024 by the 2024-25 State Budget, so
+// unlike the duty thresholds these are stable for multi-year modelling.
+export const LAND_TAX_GENERAL_THRESHOLD = NSW.landTax.threshold
 export const LAND_TAX_PREMIUM_THRESHOLD = 6_571_000
 const LAND_TAX_GENERAL_RATE = 0.016
 const LAND_TAX_PREMIUM_RATE = 0.02
@@ -93,14 +96,7 @@ const LAND_TAX_FIXED = 100
 
 /** Raw annual land tax, no trace. */
 export function nswLandTaxAmount(landValue: number, exempt: boolean): number {
-  if (exempt || landValue <= LAND_TAX_GENERAL_THRESHOLD) return 0
-  const generalPortion =
-    Math.min(landValue, LAND_TAX_PREMIUM_THRESHOLD) - LAND_TAX_GENERAL_THRESHOLD
-  let tax = LAND_TAX_FIXED + generalPortion * LAND_TAX_GENERAL_RATE
-  if (landValue > LAND_TAX_PREMIUM_THRESHOLD) {
-    tax += (landValue - LAND_TAX_PREMIUM_THRESHOLD) * LAND_TAX_PREMIUM_RATE
-  }
-  return Math.round(tax)
+  return landTaxFor(NSW.landTax, landValue, exempt)
 }
 
 export function nswLandTax(landValue: number, exempt: boolean): Traced {
@@ -162,8 +158,8 @@ export function nswLandTax(landValue: number, exempt: boolean): Traced {
 // ---------------------------------------------------------------------------
 
 /** HBCF cover is required on residential building work over this value. */
-export const HBCF_THRESHOLD = 20_000
-const HBCF_PCT = 0.007
+export const HBCF_THRESHOLD = NSW.warranty.threshold
+const HBCF_PCT = NSW.warranty.premiumRate
 
 export function nswHbcf(contractValue: number, isResidential: boolean): Traced {
   if (!isResidential || contractValue <= HBCF_THRESHOLD) {
@@ -179,12 +175,20 @@ export function nswHbcf(contractValue: number, isResidential: boolean): Traced {
       sourceKey: 'nsw_hbcf',
     })
   }
-  const amount = Math.round(contractValue * HBCF_PCT)
+  const amount = warrantyPremiumFor(NSW.warranty, contractValue, isResidential)
   return traced(amount, 'medium', {
-    range: { low: Math.round(contractValue * 0.005), high: Math.round(contractValue * 0.01) },
+    range: {
+      low: Math.round(contractValue * NSW.warranty.premiumRange.low),
+      high: Math.round(contractValue * NSW.warranty.premiumRange.high),
+    },
     steps: [
       { label: 'Contract value', value: contractValue, format: 'money' },
-      { label: 'HBCF premium', detail: '0.7% of contract value (indicative)', value: amount, format: 'money' },
+      {
+        label: 'HBCF premium',
+        detail: `${(HBCF_PCT * 100).toFixed(2)}% of contract value (indicative)`,
+        value: amount,
+        format: 'money',
+      },
     ],
     sourceKey: 'nsw_hbcf',
     verifyWith: 'your builder — the actual premium depends on their risk rating',

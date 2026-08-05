@@ -37,6 +37,35 @@ export interface DutyBand {
   rate: number
 }
 
+/**
+ * Which duty regime a transaction falls under.
+ *
+ * This is not a detail. Several jurisdictions charge a completely different
+ * amount — sometimes nothing at all — depending on whether the land is
+ * residential or commercial, and it cannot be inferred from the purchase price:
+ *
+ *  - South Australia has charged NO conveyance duty on non-residential,
+ *    non-primary-production land since 1 July 2018. A $3M commercial site is
+ *    $0, against roughly $158,830 on the residential scale.
+ *  - The ACT commercial scale is nil to $2,100,000 and then a flat 5% of the
+ *    WHOLE value, so $2,100,000 is $0 and $2,100,001 is $105,000.
+ *  - NSW premium duty and Queensland's foreign acquirer duty are
+ *    residential-only.
+ *
+ * So the model has to ask rather than guess. Getting this wrong is a 100% error
+ * on the largest single line in an acquisition, and it fails silently.
+ */
+export type DutyRegime = 'residential' | 'commercial'
+
+/** An extra top tier that applies to residential land only. */
+export interface ResidentialPremium {
+  threshold: number
+  /** Duty accumulated at the threshold. */
+  fixed: number
+  rate: number
+  note: string
+}
+
 export interface DutySchedule {
   bands: DutyBand[]
   /** Minimum duty payable on any dutiable transaction, where one applies. */
@@ -47,7 +76,32 @@ export interface DutySchedule {
    * distinct premium tier.
    */
   premiumThreshold: number | null
+  /**
+   * Most schedules charge their marginal rate "for each $100, or part of $100"
+   * of the excess, which rounds the excess UP to the next whole $100. NSW, QLD,
+   * SA, WA, TAS and ACT do; Victoria does not. Worth only a few dollars, but it
+   * is the difference between matching a revenue office's calculator and not.
+   */
+  roundExcessTo100: boolean
+  /**
+   * True where a band's upper bound is inclusive and the lower exclusive
+   * (`from < v <= upTo`), which is the usual convention. Victoria's land tax
+   * table is the other way round, and mis-applying it mis-prices the exact
+   * boundary values.
+   */
+  upperBoundInclusive: boolean
+  /** Residential-only top tier, where the jurisdiction has one. */
+  residentialPremium: ResidentialPremium | null
 }
+
+/**
+ * How a jurisdiction treats commercial and industrial land for duty.
+ *
+ * 'same' — the residential scale applies (most jurisdictions).
+ * 'nil'  — no conveyance duty at all (South Australia since 1 July 2018).
+ * 'separate' — its own schedule, given in `commercialDuty`.
+ */
+export type CommercialDutyTreatment = 'same' | 'nil' | 'separate'
 
 // ---------------------------------------------------------------------------
 // Land tax
@@ -157,6 +211,12 @@ export interface JurisdictionProfile {
 
   duty: DutySchedule
   dutySourceUrl: string
+  /** How commercial and industrial land is treated for duty here. */
+  commercialDutyTreatment: CommercialDutyTreatment
+  /** Required when commercialDutyTreatment is 'separate'. */
+  commercialDuty: DutySchedule | null
+  /** Plain-English note on the commercial treatment, shown in the trace. */
+  commercialDutyNote: string
   landTax: LandTaxSchedule
   landTaxSourceUrl: string
   warranty: WarrantyScheme
@@ -178,27 +238,78 @@ export interface JurisdictionProfile {
 // Calculators — shared across every jurisdiction
 // ---------------------------------------------------------------------------
 
+function bandFor(schedule: DutySchedule, value: number): DutyBand {
+  const found = schedule.upperBoundInclusive
+    ? schedule.bands.find((b) => value > b.from && value <= b.upTo)
+    : schedule.bands.find((b) => value >= b.from && value < b.upTo)
+  return found ?? schedule.bands[schedule.bands.length - 1]
+}
+
 export function dutyFor(schedule: DutySchedule, dutiableValue: number): number {
   if (dutiableValue <= 0) return 0
 
-  const band =
-    schedule.bands.find((b) => dutiableValue > b.from && dutiableValue <= b.upTo) ??
-    schedule.bands[schedule.bands.length - 1]
+  // A residential premium tier displaces the general top band entirely.
+  const premium = schedule.residentialPremium
+  if (premium && dutiableValue > premium.threshold) {
+    const excess = dutiableValue - premium.threshold
+    const rounded = schedule.roundExcessTo100 ? Math.ceil(excess / 100) * 100 : excess
+    return Math.max(schedule.minimum, Math.round(premium.fixed + rounded * premium.rate))
+  }
 
-  const duty =
-    band.kind === 'flat'
-      ? dutiableValue * band.rate
-      : band.fixed + (dutiableValue - band.from) * band.rate
+  const band = bandFor(schedule, dutiableValue)
 
-  return Math.max(schedule.minimum, Math.round(duty))
+  if (band.kind === 'flat') {
+    // Flat bands apply their rate to the whole dutiable value, so there is no
+    // excess to round.
+    return Math.max(schedule.minimum, Math.round(dutiableValue * band.rate))
+  }
+
+  const excess = dutiableValue - band.from
+  const rounded = schedule.roundExcessTo100 ? Math.ceil(excess / 100) * 100 : excess
+  return Math.max(schedule.minimum, Math.round(band.fixed + rounded * band.rate))
+}
+
+/**
+ * Duty for a transaction, honouring the jurisdiction's treatment of commercial
+ * land. This is the entry point the engine should use — never `dutyFor` on the
+ * residential schedule directly, or a commercial SA site is overstated by its
+ * entire duty line.
+ */
+export function dutyForRegime(profile: JurisdictionProfile, dutiableValue: number, regime: DutyRegime): number {
+  if (dutiableValue <= 0) return 0
+
+  if (regime === 'commercial') {
+    switch (profile.commercialDutyTreatment) {
+      case 'nil':
+        return 0
+      case 'separate':
+        // A jurisdiction declaring 'separate' must supply the schedule; falling
+        // back to the residential scale would silently overstate the duty.
+        if (!profile.commercialDuty) {
+          throw new Error(
+            `${profile.code} declares a separate commercial duty schedule but none is defined.`
+          )
+        }
+        return dutyFor(profile.commercialDuty, dutiableValue)
+      case 'same':
+      default:
+        // The residential premium tier does not apply to commercial land.
+        return dutyFor({ ...profile.duty, residentialPremium: null }, dutiableValue)
+    }
+  }
+
+  return dutyFor(profile.duty, dutiableValue)
 }
 
 /** Describe the band that applied, for the trace. */
 export function dutyBandDescription(schedule: DutySchedule, dutiableValue: number): string {
   if (dutiableValue <= 0) return 'No dutiable acquisition'
-  const band =
-    schedule.bands.find((b) => dutiableValue > b.from && dutiableValue <= b.upTo) ??
-    schedule.bands[schedule.bands.length - 1]
+  const premium = schedule.residentialPremium
+  if (premium && dutiableValue > premium.threshold) {
+    return `$${premium.fixed.toLocaleString()} plus ${(premium.rate * 100).toFixed(2)}% of the value above $${premium.threshold.toLocaleString()} (residential premium tier)`
+  }
+
+  const band = bandFor(schedule, dutiableValue)
 
   if (band.kind === 'flat') {
     return `${(band.rate * 100).toFixed(2)}% of the whole dutiable value (this band is a flat rate, not marginal)`

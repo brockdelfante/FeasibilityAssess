@@ -24,10 +24,13 @@ function check(label: string, actual: number, expected: number, tolerance = 1) {
 
 console.log('\n=== Statutory schedules (independent of the engine) ===\n')
 
-// Revenue NSW FY2025-26: $50,212 + $5.50 per $100 over $1,240,000.
-check('Stamp duty on $2,000,000', nswStampDutyAmount(2_000_000), 92_012)
-// Premium band base, at the threshold exactly.
-check('Stamp duty on $3,721,000', nswStampDutyAmount(3_721_000), 186_667)
+// Revenue NSW FY2026/27: $52,237 + $5.50 per $100 over $1,290,000.
+// The FY2025-26 figure was $92,012; duty thresholds re-index every 1 July.
+check('Stamp duty on $2,000,000', nswStampDutyAmount(2_000_000), 91_287)
+// The only officially published FY2026/27 anchor: Revenue NSW's premium table
+// states duty at the $3,870,000 threshold is $194,137, and the general scale
+// must reproduce it exactly.
+check('Stamp duty at the $3,870,000 premium threshold', nswStampDutyAmount(3_870_000), 194_137)
 // Land tax: $100 + 1.6% of the excess over $1,075,000.
 check('Land tax on $2,000,000', nswLandTaxAmount(2_000_000, false), 14_900)
 // At the premium threshold the general band has accumulated to $88,036.
@@ -95,8 +98,9 @@ console.log(`DBP cost uplift              ${money(results.classification.dbpCost
 console.log(`DBP program impact           ${results.classification.dbpProgramMonths} months`)
 
 console.log('\n--- Reconciliation checks ---\n')
-// Acquisition should be purchase + duty + sundries, exactly.
-check('Acquisition = purchase + duty + $14.5k', core.amounts.acquisition, 2_000_000 + 92_012 + 14_500)
+// Acquisition should be purchase + duty + sundries, exactly. Duty is the
+// FY2026/27 figure — $91,287 — not the superseded FY2025-26 $92,012.
+check('Acquisition = purchase + duty + $14.5k', core.amounts.acquisition, 2_000_000 + 91_287 + 14_500)
 // Professional fees = 4% of construction + 0.7% HBCF.
 check(
   'Professional fees = 4% + HBCF 0.7%',

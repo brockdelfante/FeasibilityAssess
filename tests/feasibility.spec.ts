@@ -57,7 +57,11 @@ test('wizard walks through all steps and produces a verdict', async ({ page }) =
 
   // The NSW statutory lines must actually be present and non-zero.
   await expect(page.getByText('NSW transfer (stamp) duty')).toBeVisible()
-  await expect(page.getByText('$92,012').first()).toBeVisible()
+  // Duty on the default $2,000,000 site under Revenue NSW's FY2026/27 schedule.
+  // The FY2025-26 figure was $92,012 — thresholds re-index every 1 July, so this
+  // assertion is expected to change with the schedule and is the tripwire that
+  // tells us the rate table has gone stale.
+  await expect(page.getByText('$91,287').first()).toBeVisible()
 
   expect(errors, `console/page errors:\n${errors.join('\n')}`).toEqual([])
 })
