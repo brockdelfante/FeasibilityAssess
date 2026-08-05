@@ -31,6 +31,7 @@ import {
 } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
+import { profileFor } from '@/lib/feasibility/jurisdictions'
 import { STEPS, useFeasibilityStore } from '@/lib/feasibility/store'
 import { decodeInputs } from '@/lib/feasibility/share'
 import { money, percent } from '@/lib/feasibility/trace'
@@ -173,8 +174,9 @@ function LiveRail() {
 
       <div className="rounded-xl border border-gray-200 bg-gray-50/70 p-4">
         <p className="text-xs leading-relaxed text-gray-500">
-          These update as you answer. Every assumption you have not given us yet comes from our NSW
-          rate library, so the answer is complete from the first question.
+          These update as you answer. Every assumption you have not given us yet comes from our
+          rate library and your state&rsquo;s own statutory schedules, so the answer is complete
+          from the first question.
         </p>
         <Button
           variant="outline"
@@ -320,14 +322,14 @@ export default function FeasibilityPage() {
               {inputs.projectName ? (
                 <span className="font-medium text-gray-700">{inputs.projectName} · </span>
               ) : null}
-              Property development feasibility, stamp duty, land tax, HBCF, margin and IRR — every
-              number traceable.
+              Property development feasibility, stamp duty, land tax, builder warranty, margin and
+              IRR — every number traceable.
             </p>
           </div>
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="border-blue-200 bg-blue-50 text-blue-700">
               <Sparkles className="mr-1 h-3 w-3" />
-              NSW · 2025–26 rates
+              {inputs.jurisdiction} · {profileFor(inputs.jurisdiction).taxYear} rates
             </Badge>
             <Button variant="ghost" size="sm" onClick={resetAll}>
               <RotateCcw className="h-3 w-3" />

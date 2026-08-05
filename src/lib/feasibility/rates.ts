@@ -1,5 +1,10 @@
 /**
- * NSW 2025–26 rate library.
+ * Australian rate library, base year 2026–27.
+ *
+ * Construction rates are calibrated to SYDNEY METRO. Every other market is
+ * reached by the location factor on the jurisdiction profile, so a Bendigo
+ * townhouse and a Perth apartment are priced off the same library rather than
+ * off separate tables that would drift apart.
  *
  * Everything a client does not know is looked up here, so a nearly-blank form
  * still produces a complete answer. Each rate publishes a plausible range as
@@ -123,8 +128,14 @@ export function consultantPct(devType: DevType): RateRange {
 export const PROFESSIONAL_FEE_PCT: RateRange = { low: 0.02, point: 0.04, high: 0.075 }
 
 /**
- * Council DA fees plus s7.11 / s7.12 contributions, per dwelling. Wildly
+ * Council DA fees plus infrastructure contributions, per dwelling. Wildly
  * variable — this is the lowest-confidence line in the whole model.
+ *
+ * This is the national fallback shape only. The figure the engine actually uses
+ * comes from the jurisdiction profile, because the mechanisms are not comparable
+ * between states: NSW charges s7.11 / s7.12 under the EP&A Act, Victoria can
+ * stack GAIC on top of council contributions, Queensland levies infrastructure
+ * charges under an LGIP.
  */
 export const COUNCIL_CONTRIBUTION_PER_DWELLING: RateRange = {
   low: 8_000,
@@ -132,12 +143,12 @@ export const COUNCIL_CONTRIBUTION_PER_DWELLING: RateRange = {
   high: 75_000,
 }
 
-/** Subdivisions attract contributions per lot too, usually at the higher end. */
-export const SUBDIVISION_CONTRIBUTION_PER_LOT: RateRange = {
-  low: 15_000,
-  point: 38_000,
-  high: 90_000,
-}
+/**
+ * Subdivisions attract contributions per lot at the higher end of the same
+ * schedule, because a lot carries the trunk infrastructure the dwellings later
+ * connect to. Applied to the jurisdiction's per-dwelling range.
+ */
+export const SUBDIVISION_CONTRIBUTION_UPLIFT = 1.35
 
 // ---------------------------------------------------------------------------
 // Acquisition sundries

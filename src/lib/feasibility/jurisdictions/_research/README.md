@@ -46,13 +46,29 @@ VIC $175,000 — a coherent spread with no outlier.
 | Jurisdiction | Duty + land tax | Extras |
 |---|---|---|
 | NSW | **shipped** | held — s7.11/s7.12 figures are indicative |
-| VIC | ready | do not ship — premium rate inferred, gazette unread (403) |
-| QLD | ready | do not ship — snippet-sourced, unresolved figure conflict |
-| SA | ready, **needs a regime gate** | do not ship — three conflicting open-space figures |
-| WA | ready | do not ship — premium rate has no source, self-described estimate |
-| TAS | ready | held — correct today, flips if the 2023 Act is proclaimed |
-| ACT | ready, **needs a regime gate** | do not ship — LVC determinations unread (403) |
+| VIC | **shipped** | indicative — premium rate inferred, gazette unread (403) |
+| QLD | **shipped** | indicative — snippet-sourced, unresolved figure conflict |
+| SA | **shipped** behind the regime gate | indicative — three conflicting open-space figures |
+| WA | **shipped** | indicative — premium rate has no source, self-described estimate |
+| TAS | **shipped** | held — correct today, flips if the 2023 Act is proclaimed |
+| ACT | **shipped** behind the regime gate | indicative — LVC determinations unread (403) |
 | NT | **do not ship** — see below | do not ship — sources conflict 2:1 |
+
+The **duty and land tax schedules** are what shipped. The *extras* — warranty
+premiums, contribution ranges — ship alongside them but are labelled indicative
+in the citation the client reads, because that is what they are.
+
+The regime gate is `DutyRegime`, collected on the tax step and only asked where
+the answer changes the duty. SA and ACT could not ship without it: SA charges
+nothing on non-residential land and the ACT commercial scale is a cliff at
+$2,100,000, so a commercial site would otherwise be wrong by up to the whole
+duty line.
+
+Wiring, not just data: the engine dispatches duty, land tax, warranty,
+contributions, the practitioner regime and the construction location factor on
+`inputs.jurisdiction`. `__verify_states.ts` asserts that — a verified schedule
+the engine never calls is worth nothing, which is exactly the state this
+directory was in before the engine was migrated off its hardcoded NSW table.
 
 Six of eight *extras* blocks were assembled with primary retrieval blocked
 (Firecrawl 402, WebFetch 403). They are search-engine snippets and author

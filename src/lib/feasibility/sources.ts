@@ -2,7 +2,20 @@
  * Citations. Every derived number carries a `sourceKey` pointing at one of
  * these so the client can see where an assumption came from — and how much to
  * trust it.
+ *
+ * The statutory citations are generated from the jurisdiction profiles rather
+ * than written out here, so a citation cannot claim one schedule while the
+ * calculator uses another.
  */
+
+import { LIVE_JURISDICTION_CODES, profileFor } from './jurisdictions'
+import {
+  contributionsSourceKey,
+  dutySourceKey,
+  landTaxSourceKey,
+  practitionerSourceKey,
+  warrantySourceKey,
+} from './statutory'
 
 export interface Source {
   key: string
@@ -13,48 +26,92 @@ export interface Source {
   asAt: string
 }
 
-export const RATE_LIBRARY_VERSION = 'NSW-2025.26'
+export const RATE_LIBRARY_VERSION = 'AU-2026.27'
 
 /** Bump when the rate tables below are revised. */
 export const RATE_LIBRARY_REFRESHED = '2026-07-01'
 
+/** Long profile prose is fine in a trace sheet, but not unbounded. */
+function trim(text: string, max = 420): string {
+  const clean = text.replace(/\s+/g, ' ').trim()
+  return clean.length <= max ? clean : `${clean.slice(0, max - 1).trimEnd()}…`
+}
+
+/**
+ * One duty / land tax / warranty / contributions citation per live jurisdiction,
+ * built straight off the profile so the schedule year and URL always match the
+ * figures the engine used.
+ */
+function jurisdictionSources(): Record<string, Source> {
+  const out: Record<string, Source> = {}
+
+  for (const code of LIVE_JURISDICTION_CODES) {
+    const p = profileFor(code)
+
+    out[dutySourceKey(code)] = {
+      key: dutySourceKey(code),
+      title: `${code} transfer (stamp) duty`,
+      detail: trim(
+        `${p.name} conveyance duty schedule for ${p.taxYear}, transcribed from the revenue office's published table and verified band by band. ${p.commercialDutyNote} The year that applies is set by your contract date, not settlement.`
+      ),
+      url: p.dutySourceUrl,
+      asAt: p.asAt,
+    }
+
+    out[landTaxSourceKey(code)] = {
+      key: landTaxSourceKey(code),
+      title: `${code} land tax`,
+      detail: trim(
+        `${p.name} land tax, ${p.taxYear}. Assessed on ${p.landTax.assessedOn} A development site sitting idle waiting on DA or construction is generally taxable.`
+      ),
+      url: p.landTaxSourceUrl,
+      asAt: p.asAt,
+    }
+
+    out[warrantySourceKey(code)] = {
+      key: warrantySourceKey(code),
+      title: `${code} ${p.warranty.shortName}`,
+      detail: trim(
+        `${p.warranty.name} Cover is compulsory on residential building work over $${p.warranty.threshold.toLocaleString()}. The premium shown is an indicative percentage of contract value — INDICATIVE ONLY, not transcribed from a premium table. The real premium varies with contract value, dwelling count and the builder's risk rating.`
+      ),
+      url: p.warrantySourceUrl ?? undefined,
+      asAt: p.asAt,
+    }
+
+    out[contributionsSourceKey(code)] = {
+      key: contributionsSourceKey(code),
+      title: `${code} infrastructure contributions`,
+      detail: trim(
+        `${p.contributionMechanism} The figure shown is a wide indicative range only — verify with the relevant council or a town planner before you exchange.`
+      ),
+      asAt: p.asAt,
+    }
+
+    // Only jurisdictions with a registered-practitioner regime get a citation
+    // for one. Claiming NSW's DBP Act applies in Victoria would be wrong.
+    if (p.practitioners) {
+      out[practitionerSourceKey(code)] = {
+        key: practitionerSourceKey(code),
+        title: p.practitioners.name,
+        detail: trim(
+          `Class 2 and 9c buildings in ${code} require registered practitioners and regulated design declarations: ${p.practitioners.requiredPractitioners.join('; ')}. Verify every practitioner on the public register before contract.`
+        ),
+        url: p.practitioners.registerUrl ?? undefined,
+        asAt: p.asAt,
+      }
+    }
+  }
+
+  return out
+}
+
 export const SOURCES: Record<string, Source> = {
-  nsw_transfer_duty: {
-    key: 'nsw_transfer_duty',
-    title: 'NSW transfer (stamp) duty',
-    detail:
-      'Schedule for 1 July 2025 – 30 June 2026, from Revenue NSW. Thresholds are CPI-indexed annually under the Duties Act 1997, Chapter 2, Part 3, Division 3, so they re-index every July.',
-    url: 'https://www.revenue.nsw.gov.au/taxes-duties-levies-royalties/transfer-duty',
-    asAt: '2025-07-01',
-  },
-  nsw_land_tax: {
-    key: 'nsw_land_tax',
-    title: 'NSW land tax',
-    detail:
-      'FY2025–26 thresholds. Assessed on 31 December each year on land that is not your principal place of residence — including development sites sitting idle waiting on DA or construction.',
-    url: 'https://www.revenue.nsw.gov.au/taxes-duties-levies-royalties/land-tax',
-    asAt: '2025-07-01',
-  },
-  nsw_hbcf: {
-    key: 'nsw_hbcf',
-    title: 'NSW Home Building Compensation Fund',
-    detail:
-      'HBCF cover is required on residential building work over $20,000. The premium shown is an indicative percentage of contract value — the actual premium varies with contract value, dwelling count and builder risk rating.',
-    url: 'https://www.icare.nsw.gov.au/builders-and-homeowners',
-    asAt: '2025-07-01',
-  },
+  ...jurisdictionSources(),
   construction_rates: {
     key: 'construction_rates',
     title: 'Construction $/m² rates',
     detail:
       'Sydney metro 2025–26 rates, triangulated from published construction cost guides (Rawlinsons, Altus Group, Rider Levett Bucknall) and indicative builder-rate ranges. Replace with a real builder quote for higher confidence.',
-    asAt: RATE_LIBRARY_REFRESHED,
-  },
-  council_contributions: {
-    key: 'council_contributions',
-    title: 'Council & infrastructure contributions',
-    detail:
-      'NSW councils set contributions independently under s7.11 / s7.12 of the Environmental Planning and Assessment Act 1979. The figure shown is a wide indicative range only — verify with the relevant council or a town planner before you exchange.',
     asAt: RATE_LIBRARY_REFRESHED,
   },
   finance_rates: {
@@ -63,14 +120,6 @@ export const SOURCES: Record<string, Source> = {
     detail:
       'Indicative bands for typical Australian residential development finance. Real pricing depends on the lender, leverage, presales, security and project risk — always replace with a lender quote before committing.',
     asAt: RATE_LIBRARY_REFRESHED,
-  },
-  nsw_dbp: {
-    key: 'nsw_dbp',
-    title: 'NSW Design and Building Practitioners Act 2020',
-    detail:
-      'Class 2, 3 and 9c buildings require registered Design and Building Practitioners and regulated design declarations. Verify every practitioner on the NSW Public Register before contract.',
-    url: 'https://www.nsw.gov.au/housing-and-construction/registers',
-    asAt: '2025-07-01',
   },
   ncc_classes: {
     key: 'ncc_classes',

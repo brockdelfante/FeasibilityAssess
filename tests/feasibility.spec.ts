@@ -66,6 +66,69 @@ test('wizard walks through all steps and produces a verdict', async ({ page }) =
   expect(errors, `console/page errors:\n${errors.join('\n')}`).toEqual([])
 })
 
+test('switching state changes the duty, the labels and the build rate', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (err) => errors.push(err.message))
+  page.on('console', (msg) => {
+    if (msg.type() === 'error') errors.push(msg.text())
+  })
+
+  await page.goto(`${BASE}/feasibility`)
+  await acceptDisclaimer(page)
+
+  // Every verified jurisdiction must be selectable, not just NSW.
+  const stateSelect = page.getByRole('combobox').first()
+  await stateSelect.click()
+  for (const name of ['Victoria', 'Queensland', 'South Australia', 'Tasmania']) {
+    await expect(page.getByRole('option', { name: new RegExp(`^${name}$`) })).toBeEnabled()
+  }
+  // NT has no profile, so it must stay unavailable rather than silently
+  // returning $0 duty on a real purchase price.
+  await expect(page.getByRole('option', { name: /Northern Territory/ })).toBeDisabled()
+
+  await page.getByRole('option', { name: /^Victoria$/ }).click()
+
+  // The region list must follow the state.
+  await expect(page.getByText(/Melbourne metro/)).toBeVisible()
+
+  await page.getByRole('button', { name: /Skip to full results/i }).click()
+
+  // Victorian duty on the default $2,000,000 site: the flat 5.5% band.
+  await expect(page.getByText('VIC transfer (stamp) duty')).toBeVisible()
+  await expect(page.getByText('$110,000').first()).toBeVisible()
+  await expect(page.getByText('VIC land tax').first()).toBeVisible()
+  // And no NSW label may survive the switch.
+  await expect(page.getByText(/NSW transfer \(stamp\) duty/)).toHaveCount(0)
+
+  // Victoria has no DBP-equivalent regime, so no compliance uplift is added.
+  await page.getByRole('button', { name: /What's behind the numbers/i }).click()
+  await expect(page.getByText(/No registered-practitioner uplift in this state/)).toBeVisible()
+
+  expect(errors, `console/page errors:\n${errors.join('\n')}`).toEqual([])
+})
+
+test('commercial land in South Australia pays no conveyance duty', async ({ page }) => {
+  await page.goto(`${BASE}/feasibility`)
+  await acceptDisclaimer(page)
+
+  await page.getByRole('combobox').first().click()
+  await page.getByRole('option', { name: /^South Australia$/ }).click()
+
+  await page.getByRole('button', { name: /Skip to full results/i }).click()
+  await page.getByRole('button', { name: /Back to inputs/i }).click()
+
+  // The residential/commercial question only appears where it changes the duty.
+  await expect(page.getByText(/Is this residential or commercial land\?/i)).toBeVisible()
+  await page.getByRole('button', { name: /Commercial \/ industrial land/i }).click()
+
+  await page.getByRole('button', { name: /See my results/i }).click()
+
+  await expect(page.getByText('SA transfer (stamp) duty')).toBeVisible()
+  await expect(
+    page.getByText(/No SA conveyance duty on non-residential land/i)
+  ).toBeVisible()
+})
+
 test('clicking a cost line opens its trace', async ({ page }) => {
   await page.goto(`${BASE}/feasibility`)
   await acceptDisclaimer(page)

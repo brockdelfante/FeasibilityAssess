@@ -13,7 +13,11 @@
  * misstates the single largest one-off cost in an acquisition.
  */
 
-import type { Jurisdiction } from '../types'
+import type { DutyRegime, Jurisdiction } from '../types'
+
+// DutyRegime is declared alongside the other user-facing enumerations because the
+// wizard collects it, but it belongs to this module's vocabulary too.
+export type { DutyRegime }
 
 // ---------------------------------------------------------------------------
 // Duty
@@ -36,26 +40,6 @@ export interface DutyBand {
   /** Rate as a decimal, e.g. 0.055 for 5.5%. */
   rate: number
 }
-
-/**
- * Which duty regime a transaction falls under.
- *
- * This is not a detail. Several jurisdictions charge a completely different
- * amount — sometimes nothing at all — depending on whether the land is
- * residential or commercial, and it cannot be inferred from the purchase price:
- *
- *  - South Australia has charged NO conveyance duty on non-residential,
- *    non-primary-production land since 1 July 2018. A $3M commercial site is
- *    $0, against roughly $158,830 on the residential scale.
- *  - The ACT commercial scale is nil to $2,100,000 and then a flat 5% of the
- *    WHOLE value, so $2,100,000 is $0 and $2,100,001 is $105,000.
- *  - NSW premium duty and Queensland's foreign acquirer duty are
- *    residential-only.
- *
- * So the model has to ask rather than guess. Getting this wrong is a 100% error
- * on the largest single line in an acquisition, and it fails silently.
- */
-export type DutyRegime = 'residential' | 'commercial'
 
 /** An extra top tier that applies to residential land only. */
 export interface ResidentialPremium {

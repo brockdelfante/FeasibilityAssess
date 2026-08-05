@@ -9,7 +9,7 @@
  */
 
 import { computeCore, defaultFeasibilityInputs, runFeasibility } from './engine'
-import { nswLandTaxAmount, nswStampDutyAmount, gstMarginSchemeAmount } from './statutory'
+import { landTaxAmount, stampDutyAmount, gstMarginSchemeAmount } from './statutory'
 import { runScenarios, runSensitivity, runScaleRecommendation, solveAll } from './scenarios'
 import { money, percent } from './trace'
 
@@ -26,17 +26,17 @@ console.log('\n=== Statutory schedules (independent of the engine) ===\n')
 
 // Revenue NSW FY2026/27: $52,237 + $5.50 per $100 over $1,290,000.
 // The FY2025-26 figure was $92,012; duty thresholds re-index every 1 July.
-check('Stamp duty on $2,000,000', nswStampDutyAmount(2_000_000), 91_287)
+check('Stamp duty on $2,000,000', stampDutyAmount('NSW', 2_000_000), 91_287)
 // The only officially published FY2026/27 anchor: Revenue NSW's premium table
 // states duty at the $3,870,000 threshold is $194,137, and the general scale
 // must reproduce it exactly.
-check('Stamp duty at the $3,870,000 premium threshold', nswStampDutyAmount(3_870_000), 194_137)
+check('Stamp duty at the $3,870,000 premium threshold', stampDutyAmount('NSW', 3_870_000), 194_137)
 // Land tax: $100 + 1.6% of the excess over $1,075,000.
-check('Land tax on $2,000,000', nswLandTaxAmount(2_000_000, false), 14_900)
+check('Land tax on $2,000,000', landTaxAmount('NSW', 2_000_000, false), 14_900)
 // At the premium threshold the general band has accumulated to $88,036.
-check('Land tax on $6,571,000', nswLandTaxAmount(6_571_000, false), 88_036)
-check('Land tax below threshold', nswLandTaxAmount(1_000_000, false), 0)
-check('Land tax when exempt', nswLandTaxAmount(5_000_000, true), 0)
+check('Land tax on $6,571,000', landTaxAmount('NSW', 6_571_000, false), 88_036)
+check('Land tax below threshold', landTaxAmount('NSW', 1_000_000, false), 0)
+check('Land tax when exempt', landTaxAmount('NSW', 5_000_000, true), 0)
 // Margin scheme: 1/11 of (revenue - acquisition).
 check('GST margin scheme on $9.6M / $2.0M', gstMarginSchemeAmount(9_600_000, 2_000_000), 690_909, 1)
 

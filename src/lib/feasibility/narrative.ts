@@ -7,6 +7,7 @@
  */
 
 import { sellsOnCompletion } from './engine'
+import { profileFor } from './jurisdictions'
 import { area, money, percent, ratePerSqm, safeDiv } from './trace'
 import * as R from './rates'
 import { CONFIDENCE_LABELS } from './labels'
@@ -18,6 +19,7 @@ export function buildNarrative(
 ): NarrativeSection[] {
   const sections: NarrativeSection[] = []
   const amount = (key: string) => results.buckets.find((b) => b.key === key)?.value ?? 0
+  const profile = profileFor(inputs.jurisdiction)
 
   const unit = inputs.devType === 'subdivision' ? 'lot' : 'dwelling'
   const unitPlural = inputs.devType === 'subdivision' ? 'lots' : 'dwellings'
@@ -79,10 +81,10 @@ export function buildNarrative(
     )
   } else {
     acquisitionBullets.push(
-      `Acquisition totals **${money(amount('acquisition'))}** — the **${money(inputs.purchasePrice)}** purchase plus **${money(amount('acquisition') - inputs.purchasePrice)}** of NSW transfer duty, legals, due diligence and settlement adjustments.`
+      `Acquisition totals **${money(amount('acquisition'))}** — the **${money(inputs.purchasePrice)}** purchase plus **${money(amount('acquisition') - inputs.purchasePrice)}** of ${inputs.jurisdiction} transfer duty, legals, due diligence and settlement adjustments.`
     )
     acquisitionBullets.push(
-      `Transfer duty alone is **${money(results.statutory.stampDuty.value)}**, against the Revenue NSW schedule for **1 July 2025 – 30 June 2026**. The thresholds re-index every July.`
+      `Transfer duty alone is **${money(results.statutory.stampDuty.value)}**, against the ${inputs.jurisdiction} schedule for **${profile.taxYear}**${results.statutory.dutyRegime === 'commercial' ? ' on the non-residential scale' : ''}. The year that applies is set by your contract date, not settlement.`
     )
     if (inputs.buyersAgentEngaged) {
       acquisitionBullets.push(
@@ -99,12 +101,12 @@ export function buildNarrative(
 
   if (results.classification.dbpApplies) {
     softBullets.push(
-      `Because this is a **${results.classification.nccClass === 'class_2' ? 'Class 2' : 'Class 9c'}** building, the NSW DBP Act 2020 applies — an extra **${money(results.classification.dbpCostUplift)}** of registered-practitioner fees and **${results.classification.dbpProgramMonths} months** of program, both included above.`
+      `Because this is a **${results.classification.nccClass === 'class_2' ? 'Class 2' : 'Class 9c'}** building, the ${inputs.jurisdiction} **${results.classification.regimeName}** applies — an extra **${money(results.classification.dbpCostUplift)}** of registered-practitioner fees and **${results.classification.dbpProgramMonths} months** of program, both included above.`
     )
   }
 
   softBullets.push(
-    `Project management, QS, insurance and other professional fees add **${money(amount('professional_fees'))}**${results.statutory.hbcfPremium.value > 0 ? `, including a **${money(results.statutory.hbcfPremium.value)}** HBCF premium` : ''}.`
+    `Project management, QS, insurance and other professional fees add **${money(amount('professional_fees'))}**${results.statutory.hbcfPremium.value > 0 ? `, including a **${money(results.statutory.hbcfPremium.value)}** ${results.statutory.warrantyShortName} premium` : ''}.`
   )
 
   if (amount('marketing_selling') > 0) {

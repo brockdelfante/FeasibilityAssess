@@ -123,10 +123,22 @@ export function headlineCsv(inputs: FeasibilityInputs, results: FeasibilityResul
     ['Total', Math.round(results.totalDevelopmentCost), '', ''],
     [],
     ['Statutory line', 'Amount'],
-    ['NSW transfer duty', Math.round(results.statutory.stampDuty.value)],
-    ['NSW land tax (per year)', Math.round(results.statutory.landTaxPerYear.value)],
-    ['NSW land tax (over project)', Math.round(results.statutory.landTaxOverProject.value)],
-    ['HBCF premium', Math.round(results.statutory.hbcfPremium.value)],
+    [
+      `${inputs.jurisdiction} transfer duty (${results.statutory.dutyRegime})`,
+      Math.round(results.statutory.stampDuty.value),
+    ],
+    [
+      `${inputs.jurisdiction} land tax (per year)`,
+      Math.round(results.statutory.landTaxPerYear.value),
+    ],
+    [
+      `${inputs.jurisdiction} land tax (over project)`,
+      Math.round(results.statutory.landTaxOverProject.value),
+    ],
+    [
+      `${results.statutory.warrantyShortName} premium`,
+      Math.round(results.statutory.hbcfPremium.value),
+    ],
     ['GST on sale', Math.round(results.statutory.gst.value)],
     ['Council contributions', Math.round(results.statutory.councilContributions.value)],
     [],

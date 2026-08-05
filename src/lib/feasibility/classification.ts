@@ -1,42 +1,34 @@
 /**
- * NCC building classification and the NSW Design and Building Practitioners
- * Act 2020 consequences.
+ * NCC building classification and the registered-practitioner consequences.
  *
  * This matters more than most people expect. A strata-titled duplex is a
- * Class 2 building, which drags in registered practitioners and regulated
- * design declarations — roughly $45k–$120k of fees and 1.5–4 months of
- * program that a Torrens-titled duplex simply does not carry.
+ * Class 2 building, which in NSW drags in registered practitioners and
+ * regulated design declarations — roughly $45k–$120k of fees and 1.5–4 months
+ * of program that a Torrens-titled duplex simply does not carry.
+ *
+ * The classification itself is national (the NCC is), but the cost consequence
+ * is not: the uplift comes from the jurisdiction's own practitioner regime, so
+ * it is read off the profile rather than assumed. Applying NSW's DBP Act costs
+ * to a Victorian townhouse would add roughly $60,000 that nobody is charging.
  */
 
+import type { PractitionerRegime } from './jurisdictions/types'
 import type { ClassificationResult, DevType, NccClass, TitleType } from './types'
-
-/** Indicative DBP compliance cost uplift, by scheme scale. */
-const DBP_UPLIFT_BASE = 50_000
-const DBP_UPLIFT_PER_EXTRA_DWELLING = 4_500
-const DBP_UPLIFT_MIN = 45_000
-const DBP_UPLIFT_MAX = 120_000
-
-const DBP_PROGRAM_MONTHS_BASE = 1.5
-const DBP_PROGRAM_MONTHS_MAX = 4
-
-const DBP_PRACTITIONERS = [
-  'Registered Design Practitioner (architect or design lead)',
-  'Principal Design Practitioner (coordinates the design package)',
-  'Registered Building Practitioner (your builder — verify before contract)',
-  'Registered fire-safety practitioner',
-  'Registered structural engineer (DBP-registered)',
-  'Registered hydraulic and mechanical engineers (DBP-registered)',
-]
 
 /**
  * Work out the NCC class from title type and yield, unless the user has set it
- * explicitly.
+ * explicitly, and price the local practitioner regime against it.
+ *
+ * `regime` is the jurisdiction's registered-practitioner scheme, or null where
+ * it has none — in which case a Class 2 scheme still gets classified as Class 2
+ * (it is, under the NCC) but carries no regulated uplift.
  */
 export function classify(
   devType: DevType,
   titleType: TitleType,
   dwellingYield: number,
-  override: NccClass | null
+  override: NccClass | null,
+  regime: PractitionerRegime | null = null
 ): ClassificationResult {
   let nccClass: NccClass
   let inferred = false
@@ -52,21 +44,22 @@ export function classify(
     reasoning = result.reasoning
   }
 
-  const dbpApplies = nccClass === 'class_2' || nccClass === 'class_9c'
+  const isRegulatedClass = nccClass === 'class_2' || nccClass === 'class_9c'
+  const dbpApplies = isRegulatedClass && regime !== null && regime.appliesToClass2
 
   let dbpCostUplift = 0
   let dbpProgramMonths = 0
 
-  if (dbpApplies) {
+  if (dbpApplies && regime) {
     const extra = Math.max(0, dwellingYield - 2)
     dbpCostUplift = Math.min(
-      DBP_UPLIFT_MAX,
-      Math.max(DBP_UPLIFT_MIN, DBP_UPLIFT_BASE + extra * DBP_UPLIFT_PER_EXTRA_DWELLING)
+      regime.costRange.high,
+      Math.max(regime.costRange.low, regime.baseCostUplift + extra * regime.costPerExtraDwelling)
     )
     // Program impact scales with scheme size, capped at the published upper bound.
     dbpProgramMonths = Math.min(
-      DBP_PROGRAM_MONTHS_MAX,
-      DBP_PROGRAM_MONTHS_BASE + Math.max(0, dwellingYield - 2) * 0.15
+      regime.programMonthsMax,
+      regime.programMonthsBase + extra * 0.15
     )
   }
 
@@ -76,8 +69,11 @@ export function classify(
     dbpApplies,
     dbpCostUplift: Math.round(dbpCostUplift),
     dbpProgramMonths: Math.round(dbpProgramMonths * 10) / 10,
-    requiredPractitioners: dbpApplies ? DBP_PRACTITIONERS : [],
+    requiredPractitioners: dbpApplies && regime ? regime.requiredPractitioners : [],
     reasoning,
+    regimeName: regime?.name ?? null,
+    regimeRegisterUrl: regime?.registerUrl ?? null,
+    regimeCostRange: regime?.costRange ?? null,
   }
 }
 
@@ -114,7 +110,7 @@ function inferClass(
     return {
       nccClass: 'class_2',
       reasoning:
-        'Apartments are sole-occupancy units sharing a building — Class 2 under the NCC, so the DBP Act applies.',
+        'Apartments are sole-occupancy units sharing a building — Class 2 under the NCC.',
     }
   }
 
@@ -129,8 +125,7 @@ function inferClass(
   if (titleType === 'torrens') {
     return {
       nccClass: 'class_1a',
-      reasoning:
-        'Torrens title puts each dwelling on its own lot — Class 1a, so the DBP Act does not apply.',
+      reasoning: 'Torrens title puts each dwelling on its own lot — Class 1a.',
     }
   }
 

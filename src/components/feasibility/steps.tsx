@@ -26,10 +26,14 @@ import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
+import { effectiveRegion, locationFactor } from '@/lib/feasibility/engine'
+import { profileFor } from '@/lib/feasibility/jurisdictions'
 import {
   BUILDER_CONTRACTS,
+  costRegionsFor,
   DEAL_MODES,
   DEV_TYPES,
+  DUTY_REGIMES,
   FINANCE_PROFILES,
   JURISDICTIONS,
   LIVE_JURISDICTIONS,
@@ -47,15 +51,14 @@ import {
   FINANCE_BANDS,
 } from '@/lib/feasibility/rates'
 import {
-  LAND_TAX_GENERAL_THRESHOLD,
-  LAND_TAX_PREMIUM_THRESHOLD,
-  nswLandTaxAmount,
-  nswStampDutyAmount,
-  PREMIUM_DUTY_THRESHOLD,
+  dutyRegimeFor,
+  landTaxAmount,
+  premiumDutyThreshold,
+  stampDutyAmount,
 } from '@/lib/feasibility/statutory'
 import { useFeasibilityStore } from '@/lib/feasibility/store'
 import { money, percent, ratePerSqm } from '@/lib/feasibility/trace'
-import type { Jurisdiction } from '@/lib/feasibility/types'
+import type { DutyRegime, Jurisdiction } from '@/lib/feasibility/types'
 
 import {
   ChoiceCards,
@@ -77,9 +80,12 @@ import {
 export function StepIntent() {
   const { inputs, setInputs } = useFeasibilityStore()
 
-  const comingSoon = JURISDICTIONS.map((j) => j.value).filter(
+  const unavailable = JURISDICTIONS.map((j) => j.value).filter(
     (v) => !LIVE_JURISDICTIONS.includes(v)
   )
+  const regions = costRegionsFor(inputs.jurisdiction)
+  const region = effectiveRegion(inputs)
+  const profile = profileFor(inputs.jurisdiction)
 
   return (
     <div className="space-y-6">
@@ -117,12 +123,16 @@ export function StepIntent() {
       >
         <FieldGrid>
           <Field
-            label="Jurisdiction"
-            hint="New South Wales has a complete statutory and rate library. Other states are on the way."
+            label="State or territory"
+            hint="Duty, land tax and builder warranty are all state law, and the differences are large — the same $2M site is tens of thousands apart between states."
           >
             <Select
               value={inputs.jurisdiction}
-              onValueChange={(v) => setInputs({ jurisdiction: v as Jurisdiction })}
+              onValueChange={(v) =>
+                // Regions are per-jurisdiction, so clear the old one rather than
+                // carry a Victorian region into a Queensland project.
+                setInputs({ jurisdiction: v as Jurisdiction, costRegion: '' })
+              }
             >
               <SelectTrigger>
                 <SelectValue />
@@ -132,7 +142,7 @@ export function StepIntent() {
                   <SelectItem
                     key={j.value}
                     value={j.value}
-                    disabled={comingSoon.includes(j.value)}
+                    disabled={unavailable.includes(j.value)}
                   >
                     {j.label}
                   </SelectItem>
@@ -141,6 +151,26 @@ export function StepIntent() {
             </Select>
           </Field>
 
+          <Field
+            label="Where in the state?"
+            hint="Build rates are calibrated to Sydney metro. This applies the local cost factor."
+          >
+            <Select value={region} onValueChange={(costRegion) => setInputs({ costRegion })}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {regions.map((r) => (
+                  <SelectItem key={r.value} value={r.value}>
+                    {r.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+        </FieldGrid>
+
+        <FieldGrid>
           <Field label="Project name" hint="Optional — just so you can tell reports apart.">
             <Input
               placeholder="e.g. Ashfield townhouses"
@@ -148,18 +178,27 @@ export function StepIntent() {
               onChange={(e) => setInputs({ projectName: e.target.value })}
             />
           </Field>
+
+          <Field
+            label="Suburb or address"
+            hint="Used on your report. Contributions and build rates vary by council, so note the suburb even if you do not have an address yet."
+          >
+            <Input
+              placeholder="e.g. Ashfield NSW 2131"
+              value={inputs.suburbOrAddress}
+              onChange={(e) => setInputs({ suburbOrAddress: e.target.value })}
+            />
+          </Field>
         </FieldGrid>
 
-        <Field
-          label="Suburb or address"
-          hint="Used on your report. Council contributions and build rates vary by location, so note the suburb even if you do not have an address yet."
-        >
-          <Input
-            placeholder="e.g. Ashfield NSW 2131"
-            value={inputs.suburbOrAddress}
-            onChange={(e) => setInputs({ suburbOrAddress: e.target.value })}
-          />
-        </Field>
+        <DidYouKnow title={`What we load for ${profile.name}`} tone="blue">
+          {profile.name} duty and land tax are loaded for{' '}
+          <strong>{profile.taxYear}</strong>, verified against{' '}
+          {profile.code === 'NSW' ? 'Revenue NSW' : "the revenue office's"} own published schedule.
+          {locationFactor(inputs) !== 1
+            ? ` Build rates here run about ${Math.abs(Math.round((locationFactor(inputs) - 1) * 100))}% ${locationFactor(inputs) > 1 ? 'above' : 'below'} Sydney metro.`
+            : ''}
+        </DidYouKnow>
       </SectionCard>
     </div>
   )
@@ -178,14 +217,16 @@ export function StepSite() {
   const buysLand = !(isPpr && inputs.pprSubMode === 'knock_down_rebuild') && !isReno
   const unitWord = inputs.devType === 'subdivision' ? 'lots' : 'dwellings'
 
-  const duty = buysLand ? nswStampDutyAmount(inputs.purchasePrice) : 0
+  const regime = dutyRegimeFor(inputs.devType, inputs.dutyRegimeOverride)
+  const duty = buysLand ? stampDutyAmount(inputs.jurisdiction, inputs.purchasePrice, regime) : 0
+  const premiumThreshold = premiumDutyThreshold(inputs.jurisdiction)
 
   return (
     <div className="space-y-6">
       {!isPpr && !isReno ? (
         <SectionCard
           title="What would you build?"
-          blurb="Everything else is assumed from our NSW rate library — you can drill into any of it later."
+          blurb="Everything else is assumed from our rate library — you can drill into any of it later."
           icon={<Building2 className="h-4 w-4 text-blue-600" />}
         >
           <Field label="Development type">
@@ -263,8 +304,10 @@ export function StepSite() {
               label="Purchase price"
               hint={
                 duty > 0
-                  ? `NSW transfer duty on this would be ${money(duty)}${inputs.purchasePrice > PREMIUM_DUTY_THRESHOLD ? ' — above the premium property threshold' : ''}.`
-                  : 'What you would pay for the land or property.'
+                  ? `${inputs.jurisdiction} transfer duty on this would be ${money(duty)}${inputs.purchasePrice > premiumThreshold ? ' — above the premium property threshold' : ''}.`
+                  : regime === 'commercial' && inputs.purchasePrice > 0
+                    ? `No ${inputs.jurisdiction} conveyance duty is payable on non-residential land at this price.`
+                    : 'What you would pay for the land or property.'
               }
             >
               <MoneyInput
@@ -313,7 +356,7 @@ export function StepSite() {
             </Field>
             <Field
               label="Capitalisation rate on completion"
-              hint={`What the market pays for this income. Residential in Sydney metro sits around ${percent(DEFAULT_EXIT_CAP_RATE)}. A lower cap rate means a higher value.`}
+              hint={`What the market pays for this income. Metro residential sits around ${percent(DEFAULT_EXIT_CAP_RATE)}. A lower cap rate means a higher value.`}
             >
               <PercentInput
                 value={inputs.exitCapRate}
@@ -580,7 +623,16 @@ export function StepMoney() {
   const isReno = inputs.mode === 'renovate'
   const sells = inputs.mode === 'develop_to_sell'
   const landValue = inputs.landValueUv ?? inputs.purchasePrice
-  const landTax = nswLandTaxAmount(landValue, inputs.landTaxExempt)
+  const landTax = landTaxAmount(inputs.jurisdiction, landValue, inputs.landTaxExempt)
+  const profile = profileFor(inputs.jurisdiction)
+  const buysLand = !(isPpr && inputs.pprSubMode === 'knock_down_rebuild') && !isReno
+
+  // Only worth asking where the answer changes the duty. In SA it is the whole
+  // line, in the ACT it is a different scale, and in NSW it decides whether the
+  // premium tier applies at all.
+  const regimeMatters =
+    buysLand &&
+    (profile.commercialDutyTreatment !== 'same' || profile.duty.residentialPremium !== null)
 
   return (
     <div className="space-y-6">
@@ -624,24 +676,44 @@ export function StepMoney() {
         blurb="The lines that get left out of most back-of-the-envelope numbers."
         icon={<Landmark className="h-4 w-4 text-blue-600" />}
       >
-        <DidYouKnow title="NSW land tax — most people do not know this exists">
+        <DidYouKnow
+          title={`${inputs.jurisdiction} land tax — most people do not know this applies to a site sitting idle`}
+        >
           <p>
-            If your site’s <strong>unimproved land value</strong> is above{' '}
-            <strong>{money(LAND_TAX_GENERAL_THRESHOLD)}</strong>, you pay{' '}
-            <strong>1.6%</strong> a year on the amount above that, plus a flat $100. Above{' '}
-            <strong>{money(LAND_TAX_PREMIUM_THRESHOLD)}</strong> a premium rate of{' '}
-            <strong>2%</strong> applies on the excess.
+            Land tax is charged on your site’s <strong>unimproved land value</strong> once it
+            passes <strong>{money(profile.landTax.threshold)}</strong> in {inputs.jurisdiction},
+            and it runs every year you hold the land — <strong>including while you wait on a
+            DA</strong>. On a $3M site that is{' '}
+            <strong>
+              {money(landTaxAmount(inputs.jurisdiction, 3_000_000, false))} a year
+            </strong>{' '}
+            here.
           </p>
           <p>
-            It is assessed every 31 December on land that is not your principal place of
-            residence — <strong>including a development site sitting idle waiting on DA</strong>.
-            On a typical $3M Sydney site that is about $31,000 a year while you hold it.
+            It is assessed on <strong>every parcel you own in the state added together</strong>,
+            not site by site, so a new site pushes the rest of your portfolio further up the
+            scale. The figure we show is for this site on its own.
           </p>
           <p>
             Exemptions: your principal place of residence, active primary production, and certain
             charities.
           </p>
         </DidYouKnow>
+
+        {regimeMatters ? (
+          <Field
+            label="Is this residential or commercial land?"
+            hint={profile.commercialDutyNote}
+          >
+            <Segmented
+              options={DUTY_REGIMES.map((o) => ({ value: o.value, label: o.label }))}
+              value={inputs.dutyRegimeOverride ?? 'auto'}
+              onChange={(v) =>
+                setInputs({ dutyRegimeOverride: v === 'auto' ? null : (v as DutyRegime) })
+              }
+            />
+          </Field>
+        ) : null}
 
         <FieldGrid>
           <Field
@@ -692,7 +764,7 @@ export function StepMoney() {
         <FieldGrid>
           <Field
             label="Council rates"
-            hint={`Per year. Sydney metro typically runs ${money(COUNCIL_RATES_PER_YEAR.low)}–${money(COUNCIL_RATES_PER_YEAR.high)}, varying by suburb.`}
+            hint={`Per year. Australian councils typically run ${money(COUNCIL_RATES_PER_YEAR.low)}–${money(COUNCIL_RATES_PER_YEAR.high)}, varying by suburb.`}
           >
             <MoneyInput
               value={inputs.councilRatesPerYear}
@@ -721,7 +793,11 @@ export function StepMoney() {
       {!isPpr && !isReno && inputs.devType !== 'subdivision' ? (
         <SectionCard
           title="Building classification"
-          blurb="Class 1a versus Class 2 decides whether the NSW Design and Building Practitioners Act applies. It is worth $45,000–$120,000 and several months of program."
+          blurb={
+            profile.practitioners
+              ? `Class 1a versus Class 2 decides whether the ${inputs.jurisdiction} ${profile.practitioners.name} applies. It is worth ${money(profile.practitioners.costRange.low)}–${money(profile.practitioners.costRange.high)} and several months of program.`
+              : 'Class 1a versus Class 2 changes what your builder has to certify, and how the building is insured.'
+          }
           icon={<Building2 className="h-4 w-4 text-blue-600" />}
         >
           <DidYouKnow title="Why title type changes your cost" tone="blue">
@@ -730,11 +806,21 @@ export function StepMoney() {
               duplex, for instance. <strong>Class 2</strong> is two or more units sharing a
               building, which covers almost every strata-titled duplex, townhouse and apartment.
             </p>
-            <p>
-              Class 2 triggers the <strong>DBP Act 2020</strong>: your builder must be
-              DBP-registered, every regulated design needs a registered practitioner’s compliance
-              declaration, and a Principal Design Practitioner coordinates the package.
-            </p>
+            {profile.practitioners ? (
+              <p>
+                In {inputs.jurisdiction}, Class 2 triggers the{' '}
+                <strong>{profile.practitioners.name}</strong>: your builder must be registered,
+                every regulated design needs a registered practitioner’s compliance declaration,
+                and a Principal Design Practitioner coordinates the package.
+              </p>
+            ) : (
+              <p>
+                {inputs.jurisdiction} has no registered-practitioner regime of the kind NSW runs,
+                so we do not add a compliance uplift here — but Class 2 still changes your
+                warranty insurance and certification path. Check the local rules before you
+                contract.
+              </p>
+            )}
           </DidYouKnow>
 
           <FieldGrid>

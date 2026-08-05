@@ -3,10 +3,12 @@
  * hint. The wizard reads these directly so the copy lives in one place.
  */
 
+import { LIVE_JURISDICTION_CODES, profileFor } from './jurisdictions'
 import type {
   BuilderContract,
   DealMode,
   DevType,
+  DutyRegime,
   FinanceProfile,
   Jurisdiction,
   NccClass,
@@ -144,19 +146,68 @@ export const NCC_CLASSES: Option<NccClass>[] = [
   { value: 'other', label: 'Other / non-residential' },
 ]
 
-export const JURISDICTIONS: Option<Jurisdiction>[] = [
-  { value: 'NSW', label: 'New South Wales' },
-  { value: 'VIC', label: 'Victoria — coming soon' },
-  { value: 'QLD', label: 'Queensland — coming soon' },
-  { value: 'SA', label: 'South Australia — coming soon' },
-  { value: 'WA', label: 'Western Australia — coming soon' },
-  { value: 'TAS', label: 'Tasmania — coming soon' },
-  { value: 'ACT', label: 'Australian Capital Territory — coming soon' },
-  { value: 'NT', label: 'Northern Territory — coming soon' },
+const JURISDICTION_NAMES: Record<Jurisdiction, string> = {
+  NSW: 'New South Wales',
+  VIC: 'Victoria',
+  QLD: 'Queensland',
+  SA: 'South Australia',
+  WA: 'Western Australia',
+  TAS: 'Tasmania',
+  ACT: 'Australian Capital Territory',
+  NT: 'Northern Territory',
+}
+
+const JURISDICTION_ORDER: Jurisdiction[] = ['NSW', 'VIC', 'QLD', 'SA', 'WA', 'TAS', 'ACT', 'NT']
+
+/**
+ * Which jurisdictions a client can actually select.
+ *
+ * Read off the profile registry rather than maintained by hand, so a state
+ * cannot appear in the selector before its schedules have been transcribed and
+ * verified. A confidently-rendered wrong duty figure is worse than an honest
+ * "not yet available", because it looks exactly like a right one.
+ */
+export const LIVE_JURISDICTIONS: Jurisdiction[] = LIVE_JURISDICTION_CODES
+
+export const JURISDICTIONS: Option<Jurisdiction>[] = JURISDICTION_ORDER.map((value) => {
+  const live = LIVE_JURISDICTIONS.includes(value)
+  return {
+    value,
+    label: live
+      ? JURISDICTION_NAMES[value]
+      : `${JURISDICTION_NAMES[value]} — not yet available`,
+    hint: live ? `Duty and land tax verified for ${profileFor(value).taxYear}` : undefined,
+  }
+})
+
+/**
+ * Land use for duty. Only asked where it changes the answer.
+ *
+ * "Auto" reads it off the development type, which is right for the overwhelming
+ * majority of schemes. The explicit options exist for industrial land, and for a
+ * mixed-use scheme where the revenue office's apportionment is already known.
+ */
+export const DUTY_REGIMES: Option<DutyRegime | 'auto'>[] = [
+  { value: 'auto', label: 'Match my project type', hint: 'Residential unless the scheme is commercial' },
+  { value: 'residential', label: 'Residential land', hint: 'Houses, units, or land zoned for them' },
+  {
+    value: 'commercial',
+    label: 'Commercial / industrial land',
+    hint: 'Changes the duty entirely in SA and the ACT',
+  },
 ]
 
-/** Only NSW has a complete statutory + rate library today. */
-export const LIVE_JURISDICTIONS: Jurisdiction[] = ['NSW']
+/** Cost regions for a jurisdiction, as selectable options with their factor. */
+export function costRegionsFor(code: Jurisdiction): Option<string>[] {
+  return profileFor(code).regions.map((region) => ({
+    value: region.key,
+    label: region.label,
+    hint:
+      region.multiplier === 1
+        ? 'Same as the Sydney metro base rate'
+        : `${Math.abs(Math.round((region.multiplier - 1) * 100))}% ${region.multiplier > 1 ? 'above' : 'below'} the Sydney metro base rate`,
+  }))
+}
 
 export const TRADE_LABELS: Record<TradeKey, string> = {
   preliminaries: 'Preliminaries & site',

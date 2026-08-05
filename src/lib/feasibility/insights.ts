@@ -10,6 +10,8 @@
  */
 
 import { sellsOnCompletion } from './engine'
+import { profileFor } from './jurisdictions'
+import { premiumDutyThreshold } from './statutory'
 import { money, percent, safeDiv } from './trace'
 import * as R from './rates'
 import { DTI_HOT_ZONE } from './rates'
@@ -90,23 +92,40 @@ export function buildInsights(
     items.push({
       severity: 'warning',
       category: 'land tax',
-      title: `NSW land tax of ${money(results.statutory.landTaxPerYear.value)} a year applies while you hold this site`,
-      body: `Land tax is assessed every 31 December on land that is not your principal place of residence — including a development site sitting idle waiting on DA or construction. Over a ${Math.round(results.cashflow.rows.length)}-month program that is ${money(results.statutory.landTaxOverProject.value)}.`,
+      title: `${inputs.jurisdiction} land tax of ${money(results.statutory.landTaxPerYear.value)} a year applies while you hold this site`,
+      body: `Land tax is assessed annually on land that is not your principal place of residence — including a development site sitting idle waiting on DA or construction. Over a ${Math.round(results.cashflow.rows.length)}-month program that is ${money(results.statutory.landTaxOverProject.value)}. It is assessed on every parcel you own in the state added together, so this figure is for the site in isolation.`,
       nextStep:
-        'Confirm the council’s unimproved land value rather than relying on the purchase price as a proxy, and check whether any exemption applies.',
+        'Confirm the valuer-general’s unimproved land value rather than relying on the purchase price as a proxy, and check whether any exemption applies.',
     })
   }
 
   if (results.statutory.stampDuty.value > 0) {
-    const isPremium = inputs.purchasePrice > 3_721_000
+    const isPremium = inputs.purchasePrice > premiumDutyThreshold(inputs.jurisdiction)
     items.push({
       severity: 'info',
       category: 'stamp duty',
       title: `Transfer duty on this purchase is ${money(results.statutory.stampDuty.value)}`,
       body: isPremium
-        ? 'The purchase price is above the premium property duty threshold, so the top marginal rate of $7.00 per $100 applies to the excess. This is the single largest one-off cost after the land itself.'
+        ? 'The purchase price is above the premium property duty threshold, so the top rate applies. This is the single largest one-off cost after the land itself.'
         : 'Duty is payable on settlement and is not financeable in most development facilities — it has to come out of equity.',
-      nextStep: 'Confirm the figure against the current Revenue NSW schedule; thresholds re-index every July.',
+      nextStep: `Confirm the figure against the current ${inputs.jurisdiction} schedule; the year that applies is set by your contract date, not settlement.`,
+    })
+  }
+
+  // Duty of zero on a real purchase is worth calling out, because it looks like
+  // a bug to anyone who has bought land in another state.
+  if (
+    results.statutory.stampDuty.value === 0 &&
+    inputs.purchasePrice > 0 &&
+    results.statutory.dutyRegime === 'commercial'
+  ) {
+    items.push({
+      severity: 'positive',
+      category: 'stamp duty',
+      title: `No ${inputs.jurisdiction} conveyance duty on non-residential land`,
+      body: profileFor(inputs.jurisdiction).commercialDutyNote,
+      nextStep:
+        'Have your conveyancer confirm the land qualifies as non-residential at settlement — the test turns on use and zoning, and getting it wrong is the whole duty line.',
     })
   }
 
@@ -115,11 +134,11 @@ export function buildInsights(
     items.push({
       severity: 'warning',
       category: 'compliance',
-      title: `NSW DBP Act 2020 applies — ${results.classification.nccClass === 'class_2' ? 'Class 2' : 'Class 9c'}`,
-      body: `${results.classification.reasoning} That brings in registered Design and Building Practitioners and regulated design declarations on every regulated design — roughly ${money(results.classification.dbpCostUplift)} of extra fees and ${results.classification.dbpProgramMonths} months of program.`,
+      title: `${inputs.jurisdiction} ${results.classification.regimeName} applies — ${results.classification.nccClass === 'class_2' ? 'Class 2' : 'Class 9c'}`,
+      body: `${results.classification.reasoning} That brings in registered practitioners and regulated design declarations on every regulated design — roughly ${money(results.classification.dbpCostUplift)} of extra fees and ${results.classification.dbpProgramMonths} months of program.`,
       nextStep: results.classification.inferred
         ? 'Set the title type explicitly in your inputs to firm this up — Torrens title would avoid it entirely.'
-        : 'Verify every practitioner on the NSW Public Register before you sign a building contract.',
+        : 'Verify every practitioner on the public register before you sign a building contract.',
     })
   }
 

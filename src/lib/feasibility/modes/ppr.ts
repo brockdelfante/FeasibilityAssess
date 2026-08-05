@@ -12,7 +12,7 @@
  */
 
 import * as R from '../rates'
-import { nswStampDutyAmount } from '../statutory'
+import { stampDutyAmount } from '../statutory'
 import { safeDiv } from '../trace'
 import type { FeasibilityInputs, PprResult } from '../types'
 import type { CoreResult } from '../engine'
@@ -92,7 +92,7 @@ export function derivePpr(inputs: FeasibilityInputs, core: CoreResult): PprResul
 
   // A rebuild avoids acquisition duty entirely — usually the single largest
   // one-off saving versus buying somewhere else.
-  const dutySaved = isRebuild ? nswStampDutyAmount(inputs.currentHomeValue) : 0
+  const dutySaved = isRebuild ? stampDutyAmount(inputs.jurisdiction, inputs.currentHomeValue) : 0
 
   return {
     releasableEquity,
