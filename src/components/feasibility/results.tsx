@@ -61,21 +61,21 @@ const VERDICT_STYLES: Record<
 > = {
   feasible: {
     label: 'Feasible',
-    wrap: 'border-emerald-200 bg-gradient-to-br from-emerald-50 to-white',
-    icon: <CheckCircle2 className="h-6 w-6 text-emerald-600" />,
-    text: 'text-emerald-900',
+    wrap: 'border-positive-200 bg-gradient-to-br from-positive-50 to-white',
+    icon: <CheckCircle2 className="h-6 w-6 text-positive-600" />,
+    text: 'text-positive-900',
   },
   marginal: {
     label: 'Marginal',
-    wrap: 'border-amber-200 bg-gradient-to-br from-amber-50 to-white',
-    icon: <CircleAlert className="h-6 w-6 text-amber-600" />,
-    text: 'text-amber-900',
+    wrap: 'border-caution-200 bg-gradient-to-br from-caution-50 to-white',
+    icon: <CircleAlert className="h-6 w-6 text-caution-600" />,
+    text: 'text-caution-900',
   },
   not_feasible: {
     label: 'Not feasible',
-    wrap: 'border-red-200 bg-gradient-to-br from-red-50 to-white',
-    icon: <XCircle className="h-6 w-6 text-red-600" />,
-    text: 'text-red-900',
+    wrap: 'border-critical-200 bg-gradient-to-br from-critical-50 to-white',
+    icon: <XCircle className="h-6 w-6 text-critical-600" />,
+    text: 'text-critical-900',
   },
 }
 
@@ -95,45 +95,45 @@ export function VerdictBanner({
         <div className="flex items-start gap-4">
           {style.icon}
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
               Feasibility verdict
             </p>
             <p className={cn('mt-0.5 text-2xl font-bold', style.text)}>{style.label}</p>
-            <p className="mt-1 text-sm text-gray-600">{results.verdictReason}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{results.verdictReason}</p>
           </div>
         </div>
 
         {sells ? (
           <div className="flex flex-wrap gap-8">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Net profit
               </p>
               <p
                 className={cn(
                   'font-mono text-2xl font-bold tabular-nums',
-                  results.netProfit >= 0 ? 'text-gray-900' : 'text-red-600'
+                  results.netProfit >= 0 ? 'text-foreground' : 'text-critical-600'
                 )}
               >
                 {money(results.netProfit)}
               </p>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 {percent(results.marginOnCost)} margin on cost
               </p>
             </div>
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Your target
               </p>
-              <p className="font-mono text-2xl font-bold tabular-nums text-gray-400">
+              <p className="font-mono text-2xl font-bold tabular-nums text-muted-foreground">
                 {percent(inputs.targetMargin)}
               </p>
               <p
                 className={cn(
                   'text-xs font-medium',
                   results.marginOnCost >= inputs.targetMargin
-                    ? 'text-emerald-600'
-                    : 'text-red-600'
+                    ? 'text-positive-600'
+                    : 'text-critical-600'
                 )}
               >
                 {results.marginOnCost >= inputs.targetMargin ? '+' : '−'}
@@ -235,24 +235,24 @@ const INSIGHT_STYLES: Record<
   { icon: React.ReactNode; wrap: string; badge: string }
 > = {
   critical: {
-    icon: <ShieldAlert className="h-4 w-4 text-red-600" />,
-    wrap: 'border-red-200 bg-red-50/50',
-    badge: 'border-red-300 bg-red-100 text-red-800',
+    icon: <ShieldAlert className="h-4 w-4 text-critical-600" />,
+    wrap: 'border-critical-200 bg-critical-50/50',
+    badge: 'border-critical-300 bg-critical-100 text-critical-800',
   },
   warning: {
-    icon: <AlertTriangle className="h-4 w-4 text-amber-600" />,
-    wrap: 'border-amber-200 bg-amber-50/50',
-    badge: 'border-amber-300 bg-amber-100 text-amber-800',
+    icon: <AlertTriangle className="h-4 w-4 text-caution-600" />,
+    wrap: 'border-caution-200 bg-caution-50/50',
+    badge: 'border-caution-300 bg-caution-100 text-caution-800',
   },
   info: {
-    icon: <Info className="h-4 w-4 text-blue-600" />,
-    wrap: 'border-blue-200 bg-blue-50/40',
-    badge: 'border-blue-300 bg-blue-100 text-blue-800',
+    icon: <Info className="h-4 w-4 text-brand-600" />,
+    wrap: 'border-brand-200 bg-brand-50/40',
+    badge: 'border-brand-300 bg-brand-100 text-brand-800',
   },
   positive: {
-    icon: <CheckCircle2 className="h-4 w-4 text-emerald-600" />,
-    wrap: 'border-emerald-200 bg-emerald-50/40',
-    badge: 'border-emerald-300 bg-emerald-100 text-emerald-800',
+    icon: <CheckCircle2 className="h-4 w-4 text-positive-600" />,
+    wrap: 'border-positive-200 bg-positive-50/40',
+    badge: 'border-positive-300 bg-positive-100 text-positive-800',
   },
 }
 
@@ -264,9 +264,10 @@ export function InsightList({ results }: { results: FeasibilityResults }) {
 
   return (
     <SectionCard
+      id="insights"
       title="What this deal is telling you"
       blurb="A plain-English read on the current numbers, sorted most urgent first."
-      icon={<Lightbulb className="h-4 w-4 text-blue-600" />}
+      icon={<Lightbulb className="h-4 w-4 text-brand-600" />}
       action={
         <div className="flex flex-wrap gap-1.5">
           {(['critical', 'warning', 'info', 'positive'] as const).map((sev) =>
@@ -288,15 +289,15 @@ export function InsightList({ results }: { results: FeasibilityResults }) {
                 <span className="mt-0.5 shrink-0">{style.icon}</span>
                 <div className="min-w-0 space-y-1.5">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-sm font-semibold text-gray-900">{insight.title}</p>
-                    <span className="rounded bg-white/70 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-gray-500">
+                    <p className="text-sm font-semibold text-foreground">{insight.title}</p>
+                    <span className="rounded bg-white/70 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
                       {insight.category}
                     </span>
                   </div>
-                  <p className="text-xs leading-relaxed text-gray-600">{insight.body}</p>
+                  <p className="text-xs leading-relaxed text-muted-foreground">{insight.body}</p>
                   {insight.nextStep ? (
-                    <p className="flex items-start gap-1.5 text-xs leading-relaxed text-gray-700">
-                      <ArrowRight className="mt-0.5 h-3 w-3 shrink-0 text-gray-400" />
+                    <p className="flex items-start gap-1.5 text-xs leading-relaxed text-muted-foreground">
+                      <ArrowRight className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" />
                       <span>
                         <span className="font-medium">Next step: </span>
                         {insight.nextStep}
@@ -324,16 +325,17 @@ export function CostBreakdown({ results }: { results: FeasibilityResults }) {
   return (
     <>
       <SectionCard
+        id="costs"
         title="Cost breakdown"
         blurb="Click any line to see exactly how it was built, how much to trust it, and where it came from."
-        icon={<FileText className="h-4 w-4 text-blue-600" />}
+        icon={<FileText className="h-4 w-4 text-brand-600" />}
         action={
-          <Badge variant="outline" className="border-gray-300 text-[10px] text-gray-500">
+          <Badge variant="outline" className="border-border text-[10px] text-muted-foreground">
             {RATE_LIBRARY_VERSION} · refreshed {RATE_LIBRARY_REFRESHED}
           </Badge>
         }
       >
-        <div className="divide-y divide-gray-100">
+        <div className="divide-y divide-border">
           {results.buckets.map((bucket) => {
             const share = safeDiv(bucket.value, total)
             return (
@@ -341,33 +343,33 @@ export function CostBreakdown({ results }: { results: FeasibilityResults }) {
                 key={bucket.key}
                 type="button"
                 onClick={() => setOpenBucket(bucket)}
-                className="group flex w-full items-center gap-4 py-3 text-left transition-colors hover:bg-gray-50/70"
+                className="group flex w-full items-center gap-4 py-3 text-left transition-colors hover:bg-muted/40"
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm font-medium text-gray-900">{bucket.label}</span>
+                    <span className="text-sm font-medium text-foreground">{bucket.label}</span>
                     <ConfidenceBadge
                       confidence={bucket.confidence}
                       overridden={bucket.overridden}
                       className="text-[10px]"
                     />
                   </div>
-                  <p className="mt-0.5 truncate text-xs text-gray-500">{bucket.description}</p>
+                  <p className="mt-0.5 truncate text-xs text-muted-foreground">{bucket.description}</p>
                   {/* Share-of-cost bar, so the big lines are obvious at a glance. */}
-                  <div className="mt-1.5 h-1 w-full max-w-xs overflow-hidden rounded-full bg-gray-100">
+                  <div className="mt-1.5 h-1 w-full max-w-xs overflow-hidden rounded-full bg-muted">
                     <div
-                      className="h-full rounded-full bg-blue-500/70"
+                      className="h-full rounded-full bg-brand-500/70"
                       style={{ width: `${Math.min(100, share * 100)}%` }}
                     />
                   </div>
                 </div>
                 <div className="shrink-0 text-right">
-                  <p className="font-mono text-sm font-semibold tabular-nums text-gray-900">
+                  <p className="font-mono text-sm font-semibold tabular-nums text-foreground">
                     {money(bucket.value)}
                   </p>
-                  <p className="text-[11px] text-gray-400">{percent(share, 1)} of cost</p>
+                  <p className="text-[11px] text-muted-foreground">{percent(share, 1)} of cost</p>
                 </div>
-                <Info className="h-3.5 w-3.5 shrink-0 text-gray-300 transition-colors group-hover:text-blue-500" />
+                <Info className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60 transition-colors group-hover:text-brand-600" />
               </button>
             )
           })}
@@ -376,8 +378,8 @@ export function CostBreakdown({ results }: { results: FeasibilityResults }) {
         <Separator />
 
         <div className="flex items-center justify-between pt-1">
-          <span className="text-sm font-semibold text-gray-900">Total development cost</span>
-          <span className="font-mono text-lg font-bold tabular-nums text-gray-900">
+          <span className="text-sm font-semibold text-foreground">Total development cost</span>
+          <span className="font-mono text-lg font-bold tabular-nums text-foreground">
             {money(total)}
           </span>
         </div>
@@ -455,11 +457,12 @@ export function StatutoryPanel({ results }: { results: FeasibilityResults }) {
   return (
     <>
       <SectionCard
+        id="statutory"
         title="Statutory costs & duties"
         blurb="Every figure here comes from a published schedule. These are the lines most often missed entirely."
-        icon={<Landmark className="h-4 w-4 text-blue-600" />}
+        icon={<Landmark className="h-4 w-4 text-brand-600" />}
       >
-        <div className="divide-y divide-gray-100">
+        <div className="divide-y divide-border">
           {lines.map((line) => (
             <button
               key={line.title}
@@ -470,23 +473,23 @@ export function StatutoryPanel({ results }: { results: FeasibilityResults }) {
                   traced: { ...line.traced, key: 'taxes_duties', label: line.title, description: line.note },
                 })
               }
-              className="group flex w-full items-center justify-between gap-4 py-3 text-left transition-colors hover:bg-gray-50/70"
+              className="group flex w-full items-center justify-between gap-4 py-3 text-left transition-colors hover:bg-muted/40"
             >
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-medium text-gray-900">{line.title}</span>
+                  <span className="text-sm font-medium text-foreground">{line.title}</span>
                   <ConfidenceBadge
                     confidence={line.traced.confidence}
                     className="text-[10px]"
                   />
                 </div>
-                <p className="mt-0.5 text-xs text-gray-500">{line.note}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">{line.note}</p>
               </div>
               <div className="flex shrink-0 items-center gap-2">
-                <span className="font-mono text-sm font-semibold tabular-nums text-gray-900">
+                <span className="font-mono text-sm font-semibold tabular-nums text-foreground">
                   {money(line.traced.value)}
                 </span>
-                <Info className="h-3.5 w-3.5 text-gray-300 transition-colors group-hover:text-blue-500" />
+                <Info className="h-3.5 w-3.5 text-muted-foreground/60 transition-colors group-hover:text-brand-600" />
               </div>
             </button>
           ))}
@@ -512,26 +515,27 @@ export function ClassificationPanel({ results }: { results: FeasibilityResults }
 
   return (
     <SectionCard
+      id="classification"
       title="Building classification"
       blurb="What the National Construction Code calls this building, and what that costs you."
-      icon={<ShieldAlert className="h-4 w-4 text-blue-600" />}
+      icon={<ShieldAlert className="h-4 w-4 text-brand-600" />}
       action={
         <Badge
           variant="outline"
           className={
             c.dbpApplies
-              ? 'border-amber-300 bg-amber-50 text-amber-800'
-              : 'border-emerald-300 bg-emerald-50 text-emerald-800'
+              ? 'border-caution-300 bg-caution-50 text-caution-800'
+              : 'border-positive-300 bg-positive-50 text-positive-800'
           }
         >
           {nccClassLabel(c.nccClass)}
         </Badge>
       }
     >
-      <p className="text-sm leading-relaxed text-gray-600">
+      <p className="text-sm leading-relaxed text-muted-foreground">
         {c.reasoning}
         {c.inferred ? (
-          <span className="text-gray-400"> (Inferred — set the title type to firm this up.)</span>
+          <span className="text-muted-foreground"> (Inferred — set the title type to firm this up.)</span>
         ) : null}
       </p>
 
@@ -553,18 +557,18 @@ export function ClassificationPanel({ results }: { results: FeasibilityResults }
           </div>
 
           <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Practitioners that must be registered
             </p>
             <ul className="space-y-1.5">
               {c.requiredPractitioners.map((p) => (
-                <li key={p} className="flex items-start gap-2 text-xs text-gray-600">
-                  <CheckCircle2 className="mt-0.5 h-3 w-3 shrink-0 text-gray-300" />
+                <li key={p} className="flex items-start gap-2 text-xs text-muted-foreground">
+                  <CheckCircle2 className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground/40" />
                   {p}
                 </li>
               ))}
             </ul>
-            <p className="mt-3 text-xs text-gray-500">
+            <p className="mt-3 text-xs text-muted-foreground">
               {c.regimeRegisterUrl ? (
                 <>
                   Verify each one on the{' '}
@@ -572,7 +576,7 @@ export function ClassificationPanel({ results }: { results: FeasibilityResults }
                     href={c.regimeRegisterUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-medium text-blue-600 hover:underline"
+                    className="font-medium text-brand-600 hover:underline"
                   >
                     public register
                   </a>{' '}
@@ -617,23 +621,24 @@ export function ClassificationPanel({ results }: { results: FeasibilityResults }
 export function NarrativePanel({ results }: { results: FeasibilityResults }) {
   return (
     <SectionCard
+      id="narrative"
       title="Here's how the numbers were built"
       blurb="The same model, explained in words. Updates live as you edit anything."
-      icon={<ScrollText className="h-4 w-4 text-blue-600" />}
+      icon={<ScrollText className="h-4 w-4 text-brand-600" />}
     >
       <div className="space-y-5">
         {results.narrative.map((section) => (
           <div key={section.heading}>
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               {section.heading}
             </p>
             <ul className="mt-2 space-y-2">
               {section.bullets.map((bullet, i) => (
                 <li
                   key={i}
-                  className="flex items-start gap-2 text-sm leading-relaxed text-gray-600"
+                  className="flex items-start gap-2 text-sm leading-relaxed text-muted-foreground"
                 >
-                  <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-gray-300" />
+                  <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-border" />
                   <span>
                     <RichText text={bullet} />
                   </span>
@@ -668,7 +673,7 @@ export function ModeBlocks({
             : 'Your build — funding and serviceability'
         }
         blurb="Two numbers decide most owner-occupier builds: whether you can fund it, and whether you can service it afterwards."
-        icon={<Landmark className="h-4 w-4 text-blue-600" />}
+        icon={<Landmark className="h-4 w-4 text-brand-600" />}
       >
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <StatTile
@@ -740,7 +745,7 @@ export function ModeBlocks({
       <SectionCard
         title="Your renovation — is it worth it?"
         blurb="The verdict here is equity gain, not profit: does the work add more value than it costs?"
-        icon={<Landmark className="h-4 w-4 text-blue-600" />}
+        icon={<Landmark className="h-4 w-4 text-brand-600" />}
       >
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <StatTile label="Total spend" value={money(r.spend)} sub="All-in, including soft costs" />
@@ -784,7 +789,7 @@ export function ModeBlocks({
       <SectionCard
         title="Your holding — income and cover"
         blurb="A hold is judged on income, not on a sale."
-        icon={<Landmark className="h-4 w-4 text-blue-600" />}
+        icon={<Landmark className="h-4 w-4 text-brand-600" />}
       >
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <StatTile
@@ -846,13 +851,35 @@ export function ModeBlocks({
 // Composed results view
 // ---------------------------------------------------------------------------
 
+/**
+ * The results outline, so the page can offer jump links.
+ *
+ * Kept next to the sections it describes: an outline maintained somewhere else
+ * silently rots the moment a section is added or made conditional.
+ */
+export function resultsOutline(inputs: FeasibilityInputs): { id: string; label: string }[] {
+  const showsClassification = inputs.mode !== 'renovate' && inputs.devType !== 'subdivision'
+  return [
+    { id: 'verdict', label: 'Verdict' },
+    { id: 'insights', label: 'What it tells you' },
+    { id: 'costs', label: 'Costs' },
+    { id: 'statutory', label: 'Statutory' },
+    ...(showsClassification ? [{ id: 'classification', label: 'Classification' }] : []),
+    { id: 'narrative', label: 'How it was built' },
+    { id: 'advanced', label: 'Advanced' },
+    { id: 'export', label: 'Export' },
+  ]
+}
+
 export function ResultsView() {
   const { inputs, results } = useFeasibilityStore()
 
   return (
     <div className="space-y-6">
-      <VerdictBanner inputs={inputs} results={results} />
-      <HeadlineStats inputs={inputs} results={results} />
+      <div id="verdict" className="scroll-mt-32 space-y-6">
+        <VerdictBanner inputs={inputs} results={results} />
+        <HeadlineStats inputs={inputs} results={results} />
+      </div>
       <ModeBlocks inputs={inputs} results={results} />
       <InsightList results={results} />
       <CostBreakdown results={results} />

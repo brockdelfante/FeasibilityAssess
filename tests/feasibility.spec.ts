@@ -247,6 +247,60 @@ test('presales that settle early reduce peak debt', async ({ page }) => {
   await expect(page.getByText(/Presales of .* cover .* of peak debt/)).toBeVisible()
 })
 
+test('on a phone the live verdict is on screen, not below the fold', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto(`${BASE}/feasibility`)
+  await acceptDisclaimer(page)
+
+  // The whole promise of the wizard is that the answer moves as you answer.
+  // On a narrow screen the rail is a docked bar, and it has to be visible
+  // without scrolling — that was the regression this guards.
+  const dock = page.getByRole('button', { name: /Show the live verdict in full/i })
+  await expect(dock).toBeInViewport()
+  await expect(dock).toContainText(/Feasible|Marginal|Not feasible/)
+
+  // And it opens the same figures the desktop rail shows.
+  await dock.click()
+  const sheet = page.getByRole('dialog')
+  await expect(sheet.getByText('Gross revenue')).toBeVisible()
+  await expect(sheet.getByText('Peak debt')).toBeVisible()
+})
+
+test('the app shell marks the current section and offers mobile navigation', async ({ page }) => {
+  await page.goto(`${BASE}/feasibility`)
+  await acceptDisclaimer(page)
+
+  // The nav used to hard-code Dashboard as active on every route.
+  await expect(page.getByRole('link', { name: 'Feasibility' }).first()).toHaveAttribute(
+    'aria-current',
+    'page'
+  )
+  await expect(page.getByRole('navigation', { name: 'Breadcrumb' })).toContainText(
+    'Development feasibility'
+  )
+
+  // Under lg the sidebar is hidden, so there must be another way out.
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.getByRole('button', { name: /Open navigation/i }).click()
+  await expect(page.getByRole('link', { name: 'Policy config' })).toBeVisible()
+})
+
+test('results keep the verdict and section jumps pinned while scrolling', async ({ page }) => {
+  await page.goto(`${BASE}/feasibility`)
+  await acceptDisclaimer(page)
+  await page.getByRole('button', { name: /Skip to full results/i }).click()
+
+  const nav = page.getByRole('navigation', { name: 'Results sections' })
+  await expect(nav).toBeVisible()
+
+  await page.evaluate(() => window.scrollTo(0, 2000))
+  // Still pinned after a long scroll — that is the point of it.
+  await expect(nav).toBeInViewport()
+
+  await nav.getByRole('link', { name: 'Statutory' }).click()
+  await expect(page.getByText('Statutory costs & duties')).toBeInViewport()
+})
+
 test('the PDF report downloads and is a real PDF', async ({ page }) => {
   await page.goto(`${BASE}/feasibility`)
   await acceptDisclaimer(page)

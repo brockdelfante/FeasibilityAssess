@@ -61,22 +61,22 @@ export default function NewDealWizard() {
   };
 
   return (
-    <div className="flex-1 flex items-center justify-center p-8 bg-gray-50 min-h-screen">
+    <div className="flex-1 flex items-center justify-center p-6 lg:p-8">
       <div className="w-full max-w-2xl">
         <div className="mb-8 flex justify-between items-center px-2">
           {[1, 2, 3].map((i) => (
             <div key={i} className="flex items-center">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-                step === i ? "bg-blue-600 text-white" : step > i ? "bg-green-500 text-white" : "bg-gray-200 text-gray-500"
+                step === i ? "bg-brand-600 text-white" : step > i ? "bg-positive-500 text-white" : "bg-muted text-muted-foreground"
               }`}>
                 {step > i ? <Check className="h-4 w-4" /> : i}
               </div>
-              {i < 3 && <div className={`w-24 h-1 mx-2 ${step > i ? "bg-green-500" : "bg-gray-200"}`} />}
+              {i < 3 && <div className={`w-24 h-1 mx-2 ${step > i ? "bg-positive-500" : "bg-muted"}`} />}
             </div>
           ))}
         </div>
 
-        <Card className="shadow-lg border-t-4 border-t-blue-600">
+        <Card className="shadow-lg border-t-4 border-t-brand-600">
           <CardHeader>
             <CardTitle className="text-2xl font-black uppercase tracking-tight">
               {step === 1 ? "Model Type" : step === 2 ? "Basic Details" : "Finalise"}
@@ -86,15 +86,15 @@ export default function NewDealWizard() {
             {step === 1 && (
               <RadioGroup value={formData.deal_type} onValueChange={(v) => setFormData({...formData, deal_type: v})}>
                 <div className="grid gap-4">
-                  <Label htmlFor="construction" className="flex flex-col border-2 p-5 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors [&:has([data-state=checked])]:border-blue-600 [&:has([data-state=checked])]:bg-blue-50/30">
+                  <Label htmlFor="construction" className="flex flex-col border-2 p-5 rounded-xl cursor-pointer hover:bg-muted/40 transition-colors [&:has([data-state=checked])]:border-brand-600 [&:has([data-state=checked])]:bg-brand-50/30">
                     <RadioGroupItem value="construction" id="construction" className="sr-only" />
                     <span className="font-black uppercase tracking-tight text-lg">Construction</span>
-                    <span className="text-xs text-gray-500 font-medium">Vertical residential or commercial builds</span>
+                    <span className="text-xs text-muted-foreground font-medium">Vertical residential or commercial builds</span>
                   </Label>
-                  <Label htmlFor="subdivision" className="flex flex-col border-2 p-5 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors [&:has([data-state=checked])]:border-blue-600 [&:has([data-state=checked])]:bg-blue-50/30">
+                  <Label htmlFor="subdivision" className="flex flex-col border-2 p-5 rounded-xl cursor-pointer hover:bg-muted/40 transition-colors [&:has([data-state=checked])]:border-brand-600 [&:has([data-state=checked])]:bg-brand-50/30">
                     <RadioGroupItem value="subdivision" id="subdivision" className="sr-only" />
                     <span className="font-black uppercase tracking-tight text-lg">Subdivision</span>
-                    <span className="text-xs text-gray-500 font-medium">Horizontal land division and civil works</span>
+                    <span className="text-xs text-muted-foreground font-medium">Horizontal land division and civil works</span>
                   </Label>
                 </div>
               </RadioGroup>
@@ -102,11 +102,11 @@ export default function NewDealWizard() {
             {step === 2 && (
               <div className="space-y-6">
                 <div className="grid gap-2">
-                    <Label htmlFor="group-input" className="text-[10px] font-black uppercase text-gray-400">Group</Label>
+                    <Label htmlFor="group-input" className="text-[10px] font-black uppercase text-muted-foreground">Group</Label>
                     <Input id="group-input" placeholder="e.g. Siare Holdings" value={formData.customer_group} onChange={e => setFormData({...formData, customer_group: e.target.value})} className="h-12 text-lg font-bold" />
                 </div>
                 <div className="grid gap-2 overflow-visible">
-                    <Label htmlFor="address-input" className="text-[10px] font-black uppercase text-gray-400">Address</Label>
+                    <Label htmlFor="address-input" className="text-[10px] font-black uppercase text-muted-foreground">Address</Label>
                     <AddressAutocomplete
                         value={formData.project_address}
                         onChange={(val) => setFormData({...formData, project_address: val})}
@@ -119,17 +119,17 @@ export default function NewDealWizard() {
             )}
             {step === 3 && (
                 <div className="space-y-4">
-                    <div className="p-6 border-2 border-dashed rounded-2xl bg-blue-50/30 text-blue-900 text-center">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-2">Ready to Initialise</p>
+                    <div className="p-6 border-2 border-dashed rounded-2xl bg-brand-50/30 text-brand-900 text-center">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-brand-400 mb-2">Ready to Initialise</p>
                         <h3 className="text-xl font-black">{formData.project_address || "Unnamed Project"}</h3>
                         <p className="text-sm font-medium opacity-70 mt-1">{formData.customer_group || "Private Group"}</p>
                     </div>
                 </div>
             )}
           </CardContent>
-          <CardFooter className="flex justify-between border-t bg-gray-50/50 p-6">
+          <CardFooter className="flex justify-between border-t bg-muted/40 p-6">
             <Button variant="ghost" onClick={() => step === 1 ? router.push('/') : setStep(s => s - 1)} disabled={isSubmitting} className="font-bold uppercase text-[11px] tracking-widest">Back</Button>
-            <Button onClick={() => step === 3 ? handleSubmit() : setStep(s => s + 1)} disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 px-8 font-black uppercase text-[11px] tracking-widest shadow-lg shadow-blue-900/20 text-white border-0">
+            <Button onClick={() => step === 3 ? handleSubmit() : setStep(s => s + 1)} disabled={isSubmitting} className="bg-brand-600 hover:bg-brand-700 px-8 font-black uppercase text-[11px] tracking-widest shadow-lg shadow-brand-900/20 text-white border-0">
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {step === 3 ? "Create Assessment" : "Next"}
             </Button>

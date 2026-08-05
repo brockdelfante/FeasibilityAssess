@@ -63,7 +63,7 @@ export function ScenarioPanel() {
     <SectionCard
       title="Scenarios — how resilient is this deal?"
       blurb="The conservative case stress-tests the deal; the optimistic case gives it tailwinds. Both re-run the whole model, so knock-on effects are included."
-      icon={<GitCompare className="h-4 w-4 text-blue-600" />}
+      icon={<GitCompare className="h-4 w-4 text-brand-600" />}
     >
       <div className="grid gap-3 sm:grid-cols-3">
         {scenarios.map((s) => {
@@ -74,47 +74,47 @@ export function ScenarioPanel() {
               className={cn(
                 'rounded-xl border p-4',
                 s.key === 'base'
-                  ? 'border-blue-300 bg-blue-50/50 ring-1 ring-blue-200'
-                  : 'border-gray-200 bg-white'
+                  ? 'border-brand-300 bg-brand-50/50 ring-1 ring-brand-200'
+                  : 'border-border bg-background'
               )}
             >
               <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-gray-900">{s.label}</p>
+                <p className="text-sm font-semibold text-foreground">{s.label}</p>
                 <Badge
                   variant="outline"
                   className={
                     meets
-                      ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
-                      : 'border-red-300 bg-red-50 text-red-800'
+                      ? 'border-positive-300 bg-positive-50 text-positive-800'
+                      : 'border-critical-300 bg-critical-50 text-critical-800'
                   }
                 >
                   {meets ? 'Meets target' : 'Below target'}
                 </Badge>
               </div>
-              <p className="mt-3 font-mono text-2xl font-bold tabular-nums text-gray-900">
+              <p className="mt-3 font-mono text-2xl font-bold tabular-nums text-foreground">
                 {percent(s.marginOnCost)}
               </p>
-              <p className="text-xs text-gray-500">margin on cost</p>
+              <p className="text-xs text-muted-foreground">margin on cost</p>
               {s.deltaVsBasePp !== null ? (
                 <p
                   className={cn(
                     'mt-1 text-xs font-medium',
-                    s.deltaVsBasePp >= 0 ? 'text-emerald-600' : 'text-red-600'
+                    s.deltaVsBasePp >= 0 ? 'text-positive-600' : 'text-critical-600'
                   )}
                 >
                   {pp(s.deltaVsBasePp)} vs base
                 </p>
               ) : null}
-              <div className="mt-3 space-y-1 border-t border-gray-100 pt-3 text-xs">
+              <div className="mt-3 space-y-1 border-t border-border pt-3 text-xs">
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Net profit</span>
-                  <span className="font-mono tabular-nums text-gray-900">
+                  <span className="text-muted-foreground">Net profit</span>
+                  <span className="font-mono tabular-nums text-foreground">
                     {money(s.netProfit)}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Total cost</span>
-                  <span className="font-mono tabular-nums text-gray-900">
+                  <span className="text-muted-foreground">Total cost</span>
+                  <span className="font-mono tabular-nums text-foreground">
                     {money(s.totalDevelopmentCost)}
                   </span>
                 </div>
@@ -124,13 +124,13 @@ export function ScenarioPanel() {
         })}
       </div>
 
-      <div className="space-y-1 rounded-lg border border-gray-200 bg-gray-50/70 px-4 py-3 text-xs text-gray-600">
+      <div className="space-y-1 rounded-lg border border-border bg-muted/40 px-4 py-3 text-xs text-muted-foreground">
         <p>
-          <span className="font-semibold text-gray-800">Conservative:</span>{' '}
+          <span className="font-semibold text-foreground">Conservative:</span>{' '}
           {describeScenario('conservative')}
         </p>
         <p>
-          <span className="font-semibold text-gray-800">Optimistic:</span>{' '}
+          <span className="font-semibold text-foreground">Optimistic:</span>{' '}
           {describeScenario('optimistic')}
         </p>
       </div>
@@ -143,9 +143,9 @@ export function ScenarioPanel() {
 // ---------------------------------------------------------------------------
 
 const OUTCOME_CELL: Record<'pass' | 'marginal' | 'fail', string> = {
-  pass: 'bg-emerald-50 text-emerald-800',
-  marginal: 'bg-amber-50 text-amber-800',
-  fail: 'bg-red-50 text-red-800',
+  pass: 'bg-positive-50 text-positive-800',
+  marginal: 'bg-caution-50 text-caution-800',
+  fail: 'bg-critical-50 text-critical-800',
 }
 
 export function SensitivityPanel() {
@@ -157,7 +157,7 @@ export function SensitivityPanel() {
     <SectionCard
       title="Sensitivity — which levers move the needle"
       blurb={`Margin on cost as each input moves, against your ${percent(targetMargin)} target. The steepest row is the one to nail down first.`}
-      icon={<Activity className="h-4 w-4 text-blue-600" />}
+      icon={<Activity className="h-4 w-4 text-brand-600" />}
     >
       <div className="overflow-x-auto">
         <Table>
@@ -174,14 +174,14 @@ export function SensitivityPanel() {
           <TableBody>
             {rows.map((row) => (
               <TableRow key={row.lever}>
-                <TableCell className="font-medium text-gray-800">{row.lever}</TableCell>
+                <TableCell className="font-medium text-foreground">{row.lever}</TableCell>
                 {row.cells.map((cell, i) => (
                   <TableCell
                     key={i}
                     className={cn(
                       'text-center font-mono text-sm tabular-nums',
                       OUTCOME_CELL[cell.meets],
-                      cell.shift === 0 && 'font-bold ring-1 ring-inset ring-blue-300'
+                      cell.shift === 0 && 'font-bold ring-1 ring-inset ring-brand-300'
                     )}
                   >
                     {percent(cell.marginOnCost)}
@@ -203,12 +203,12 @@ export function SensitivityPanel() {
         ).map(([key, label]) => (
           <span key={key} className="flex items-center gap-1.5">
             <span className={cn('h-3 w-3 rounded', OUTCOME_CELL[key])} />
-            <span className="text-gray-500">{label}</span>
+            <span className="text-muted-foreground">{label}</span>
           </span>
         ))}
       </div>
 
-      <p className="text-xs leading-relaxed text-gray-500">
+      <p className="text-xs leading-relaxed text-muted-foreground">
         The overrun buffer row shifts in percentage points rather than proportionally, and clamps
         at zero — a negative buffer is meaningless. That is why its two left-hand columns can read
         the same.
@@ -236,7 +236,7 @@ export function CashflowPanel() {
     <SectionCard
       title="Cashflow & finance"
       blurb="The monthly debt curve, with equity funded first and interest capitalising onto the facility. Peak debt is what gets credit-approved — not an average."
-      icon={<Wallet className="h-4 w-4 text-blue-600" />}
+      icon={<Wallet className="h-4 w-4 text-brand-600" />}
     >
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatTile
@@ -320,9 +320,9 @@ export function CashflowPanel() {
       </div>
 
       {showTable ? (
-        <div className="max-h-96 overflow-auto rounded-lg border border-gray-200">
+        <div className="max-h-96 overflow-auto rounded-lg border border-border">
           <Table>
-            <TableHeader className="sticky top-0 bg-gray-50">
+            <TableHeader className="sticky top-0 bg-muted/40">
               <TableRow>
                 <TableHead>Month</TableHead>
                 <TableHead className="text-right">Costs</TableHead>
@@ -335,7 +335,7 @@ export function CashflowPanel() {
             </TableHeader>
             <TableBody>
               {cf.rows.map((r) => (
-                <TableRow key={r.month} className={r.month === cf.peakDebtMonth ? 'bg-blue-50/60' : ''}>
+                <TableRow key={r.month} className={r.month === cf.peakDebtMonth ? 'bg-brand-50/60' : ''}>
                   <TableCell className="font-medium">{r.month}</TableCell>
                   <TableCell className="text-right font-mono text-xs tabular-nums">
                     {money(r.costs)}
@@ -362,7 +362,7 @@ export function CashflowPanel() {
         </div>
       ) : null}
 
-      <p className="text-xs leading-relaxed text-gray-500">
+      <p className="text-xs leading-relaxed text-muted-foreground">
         Sales are assumed to settle at the end of the program, which is the conservative case. A
         presales schedule that settles earlier would reduce both peak debt and total interest.
       </p>
@@ -402,12 +402,12 @@ function ElasticityControl() {
       : inputs.salePricePerDwelling
 
   return (
-    <div className="space-y-3 rounded-lg border border-gray-200 p-4">
+    <div className="space-y-3 rounded-lg border border-border p-4">
       <div>
-        <p className="text-sm font-medium text-gray-800">
+        <p className="text-sm font-medium text-foreground">
           How does sale price respond to dwelling size?
         </p>
-        <p className="mt-1 text-xs leading-relaxed text-gray-500">
+        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
           Part of a dwelling&apos;s value is fixed whatever its area — the land share, the kitchen,
           the bathrooms, the services. So bigger dwellings fetch more in total but less per square
           metre. This only affects the grid below; everywhere else we use the size and price you
@@ -427,20 +427,20 @@ function ElasticityControl() {
               className={cn(
                 'rounded-lg border px-3 py-2 text-left transition-all',
                 selected
-                  ? 'border-blue-500 bg-blue-50/60 ring-1 ring-blue-500'
-                  : 'border-gray-200 bg-white hover:bg-gray-50'
+                  ? 'border-brand-500 bg-brand-50/60 ring-1 ring-brand-500'
+                  : 'border-border bg-background hover:bg-muted/40'
               )}
             >
               <span
                 className={cn(
                   'block text-xs font-semibold',
-                  selected ? 'text-blue-900' : 'text-gray-900'
+                  selected ? 'text-brand-900' : 'text-foreground'
                 )}
               >
                 {o.label}
               </span>
               <span
-                className={cn('block text-[11px]', selected ? 'text-blue-700/80' : 'text-gray-500')}
+                className={cn('block text-[11px]', selected ? 'text-brand-700/80' : 'text-muted-foreground')}
               >
                 {o.hint}
               </span>
@@ -449,12 +449,12 @@ function ElasticityControl() {
         })}
       </div>
 
-      <p className="text-xs text-gray-500">
+      <p className="text-xs text-muted-foreground">
         On this assumption a{' '}
-        <span className="font-mono font-semibold text-gray-800">100 m²</span> dwelling is priced at{' '}
-        <span className="font-mono font-semibold text-gray-800">{money(priceAt(100))}</span> and a{' '}
-        <span className="font-mono font-semibold text-gray-800">380 m²</span> one at{' '}
-        <span className="font-mono font-semibold text-gray-800">{money(priceAt(380))}</span>, against
+        <span className="font-mono font-semibold text-foreground">100 m²</span> dwelling is priced at{' '}
+        <span className="font-mono font-semibold text-foreground">{money(priceAt(100))}</span> and a{' '}
+        <span className="font-mono font-semibold text-foreground">380 m²</span> one at{' '}
+        <span className="font-mono font-semibold text-foreground">{money(priceAt(380))}</span>, against
         your {inputs.avgDwellingSqm} m² at {money(inputs.salePricePerDwelling)}.
       </p>
     </div>
@@ -477,9 +477,9 @@ export function ScalePanel() {
     <SectionCard
       title="What scale does this site need?"
       blurb="Every combination of yield and dwelling size, run through the full model. Sale price moves with dwelling size, holding your implied price per square metre constant."
-      icon={<Grid3x3 className="h-4 w-4 text-blue-600" />}
+      icon={<Grid3x3 className="h-4 w-4 text-brand-600" />}
     >
-      <div className="rounded-lg border border-gray-200 bg-gray-50/70 p-4 text-sm leading-relaxed text-gray-700">
+      <div className="rounded-lg border border-border bg-muted/40 p-4 text-sm leading-relaxed text-muted-foreground">
         <p>
           You are proposing{' '}
           <span className="font-semibold">
@@ -509,7 +509,7 @@ export function ScalePanel() {
             {scale.headroomPp >= 0 ? 'of headroom above' : 'below'} target.
           </p>
         ) : (
-          <p className="mt-2 text-amber-700">
+          <p className="mt-2 text-caution-700">
             No configuration in the grid reaches your {percent(inputs.targetMargin)} target on
             these inputs. The constraint is more likely the land price or the sale price than the
             scheme size.
@@ -523,11 +523,11 @@ export function ScalePanel() {
         <table className="w-full border-separate border-spacing-0.5 text-[10px]">
           <thead>
             <tr>
-              <th className="sticky left-0 bg-white px-2 py-1 text-left font-semibold text-gray-400">
+              <th className="sticky left-0 bg-background px-2 py-1 text-left font-semibold text-muted-foreground">
                 m² ↓ / units →
               </th>
               {yields.map((y) => (
-                <th key={y} className="px-1 py-1 text-center font-semibold text-gray-400">
+                <th key={y} className="px-1 py-1 text-center font-semibold text-muted-foreground">
                   {y}
                 </th>
               ))}
@@ -536,7 +536,7 @@ export function ScalePanel() {
           <tbody>
             {sizes.map((size) => (
               <tr key={size}>
-                <td className="sticky left-0 bg-white px-2 py-1 text-right font-medium text-gray-500">
+                <td className="sticky left-0 bg-background px-2 py-1 text-right font-medium text-muted-foreground">
                   {size}
                 </td>
                 {yields.map((y) => {
@@ -554,8 +554,8 @@ export function ScalePanel() {
                       className={cn(
                         'px-1 py-1 text-center font-mono tabular-nums',
                         OUTCOME_CELL[cell.outcome],
-                        isCurrent && 'ring-2 ring-inset ring-blue-600 font-bold',
-                        isSmallest && !isCurrent && 'ring-2 ring-inset ring-emerald-600'
+                        isCurrent && 'ring-2 ring-inset ring-brand-600 font-bold',
+                        isSmallest && !isCurrent && 'ring-2 ring-inset ring-positive-600'
                       )}
                     >
                       {(cell.marginOnCost * 100).toFixed(0)}
@@ -570,12 +570,12 @@ export function ScalePanel() {
 
       <div className="flex flex-wrap items-center gap-4 text-xs">
         <span className="flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded ring-2 ring-inset ring-blue-600" />
-          <span className="text-gray-500">Your current scale</span>
+          <span className="h-3 w-3 rounded ring-2 ring-inset ring-brand-600" />
+          <span className="text-muted-foreground">Your current scale</span>
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded ring-2 ring-inset ring-emerald-600" />
-          <span className="text-gray-500">Smallest passing</span>
+          <span className="h-3 w-3 rounded ring-2 ring-inset ring-positive-600" />
+          <span className="text-muted-foreground">Smallest passing</span>
         </span>
         {(
           [
@@ -586,7 +586,7 @@ export function ScalePanel() {
         ).map(([key, label]) => (
           <span key={key} className="flex items-center gap-1.5">
             <span className={cn('h-3 w-3 rounded', OUTCOME_CELL[key])} />
-            <span className="text-gray-500">{label}</span>
+            <span className="text-muted-foreground">{label}</span>
           </span>
         ))}
       </div>
@@ -619,7 +619,7 @@ export function SolverPanel() {
     <SectionCard
       title="What would have to be true?"
       blurb={`Each row solves one input to hit your ${percent(inputs.targetMargin)} target, holding everything else fixed. Solved against the full model, so knock-on effects are included — a higher land price brings more stamp duty with it.`}
-      icon={<Target className="h-4 w-4 text-blue-600" />}
+      icon={<Target className="h-4 w-4 text-brand-600" />}
     >
       <div className="overflow-x-auto">
         <Table>
@@ -637,16 +637,16 @@ export function SolverPanel() {
               const pctChange = s.current !== 0 ? delta / s.current : 0
               return (
                 <TableRow key={s.target}>
-                  <TableCell className="font-medium text-gray-800">{s.label}</TableCell>
-                  <TableCell className="text-right font-mono text-sm tabular-nums text-gray-500">
+                  <TableCell className="font-medium text-foreground">{s.label}</TableCell>
+                  <TableCell className="text-right font-mono text-sm tabular-nums text-muted-foreground">
                     {fmt(s.current, s.unit)}
                   </TableCell>
-                  <TableCell className="text-right font-mono text-sm font-semibold tabular-nums text-gray-900">
+                  <TableCell className="text-right font-mono text-sm font-semibold tabular-nums text-foreground">
                     {s.unreachable ? '—' : fmt(s.solved, s.unit)}
                   </TableCell>
                   <TableCell className="text-right">
                     {s.unreachable ? (
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs text-muted-foreground">
                         Not reachable in a sensible range
                       </span>
                     ) : (
@@ -654,10 +654,10 @@ export function SolverPanel() {
                         className={cn(
                           'font-mono text-sm tabular-nums',
                           Math.abs(pctChange) < 0.001
-                            ? 'text-gray-400'
+                            ? 'text-muted-foreground'
                             : delta > 0
-                              ? 'text-emerald-600'
-                              : 'text-red-600'
+                              ? 'text-positive-600'
+                              : 'text-critical-600'
                         )}
                       >
                         {delta >= 0 ? '+' : '−'}
