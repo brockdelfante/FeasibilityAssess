@@ -184,6 +184,15 @@ export interface FeasibilityInputs {
   presalesSettleMonth: number
   /** Target margin on cost, decimal. Drives the feasibility verdict. */
   targetMargin: number
+  /**
+   * How strongly sale price responds to dwelling size, as an exponent.
+   *
+   * Only used by the scale recommender, which is the one place the model varies
+   * dwelling size on the client's behalf. 0 means price is unaffected by size,
+   * 1 means strictly proportional to it; residential sits around 0.75. See
+   * SIZE_PRICE_ELASTICITY.
+   */
+  sizePriceElasticity: number
 
   // --- Mode-specific: PPR / knock-down rebuild ---
   currentHomeValue: number

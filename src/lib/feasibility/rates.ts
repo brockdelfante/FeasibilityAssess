@@ -275,6 +275,47 @@ export const TRADE_ORDER: TradeKey[] = [
 ]
 
 // ---------------------------------------------------------------------------
+// How sale price responds to dwelling size
+// ---------------------------------------------------------------------------
+
+/**
+ * Elasticity of sale price to dwelling floor area.
+ *
+ *     price = currentPrice × (sqm / currentSqm) ^ elasticity
+ *
+ * A dwelling's price is not proportional to its floor area. Part of the value
+ * is fixed regardless of size — the land share, the kitchen, the bathrooms, the
+ * services, and the simple floor price any dwelling commands — so bigger
+ * dwellings sell for more in total but *less per square metre*.
+ *
+ * The exponent captures that directly, and the two extremes are both wrong:
+ *
+ *   0.0  price is identical whatever the size (implies a 100 m² unit fetches
+ *        the same as a 380 m² house — nonsense, and it makes tiny dwellings
+ *        look wildly profitable)
+ *   1.0  price is strictly proportional to area, i.e. $/m² never varies with
+ *        size (ignores the fixed component, so it understates small dwellings)
+ *   0.75 published hedonic studies of Australian residential put the exponent
+ *        in the 0.6–0.85 band; 0.75 sits mid-range
+ *
+ * Only used where the model varies dwelling size on the client's behalf — the
+ * scale recommender. Wherever the client states both a size and a price, we use
+ * their numbers untouched.
+ */
+export const SIZE_PRICE_ELASTICITY = 0.75
+
+/** Apply the elasticity. Falls back safely on a zero or missing base size. */
+export function priceForSize(
+  currentPrice: number,
+  currentSqm: number,
+  targetSqm: number,
+  elasticity: number = SIZE_PRICE_ELASTICITY
+): number {
+  if (currentSqm <= 0 || targetSqm <= 0 || currentPrice <= 0) return currentPrice
+  return currentPrice * Math.pow(targetSqm / currentSqm, elasticity)
+}
+
+// ---------------------------------------------------------------------------
 // Scenario definitions
 // ---------------------------------------------------------------------------
 

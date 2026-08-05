@@ -78,6 +78,7 @@ export const defaultFeasibilityInputs: FeasibilityInputs = {
   presalesShare: 0,
   presalesSettleMonth: 0,
   targetMargin: 0.18,
+  sizePriceElasticity: R.SIZE_PRICE_ELASTICITY,
 
   currentHomeValue: 0,
   outstandingMortgage: 0,

@@ -2,27 +2,26 @@
  * Wizard state.
  *
  * Results recompute on every input change, which is what makes the assessment
- * feel live. The expensive panels — the scale grid runs 300 full engine passes —
- * are computed lazily and cached, so typing in a field never pays for a panel
- * the client has not opened.
+ * feel live.
+ *
+ * The expensive analyses — the scale grid alone runs 300 full engine passes —
+ * are deliberately NOT computed here. They are memoised inside the panels that
+ * display them, keyed on `inputs`. That gives the same laziness (a panel only
+ * mounts once its accordion section is opened) and the same caching, without a
+ * store write during render, which React rightly warns about.
  */
 
 import { create } from 'zustand'
 import { appendLines, reseedBoq, seedBoq } from './boq'
 import { assemblyToBoqLines } from './assemblies'
 import { computeCore, defaultFeasibilityInputs, runFeasibility } from './engine'
-import { runScaleRecommendation, runScenarios, runSensitivity, solveAll } from './scenarios'
 import type {
   AppliedAssembly,
   BoqLine,
   FeasibilityInputs,
   FeasibilityResults,
   FeasibilityOverrides,
-  ScaleRecommendation,
-  ScenarioResult,
-  SensitivityRow,
 } from './types'
-import type { SolveResult } from './scenarios'
 
 /** The wizard's steps, in order. */
 export const STEPS = [
@@ -55,20 +54,6 @@ export const STEPS = [
 
 export type StepKey = (typeof STEPS)[number]['key']
 
-interface DerivedCache {
-  scenarios: ScenarioResult[] | null
-  sensitivity: SensitivityRow[] | null
-  scale: ScaleRecommendation | null
-  solver: SolveResult[] | null
-}
-
-const EMPTY_CACHE: DerivedCache = {
-  scenarios: null,
-  sensitivity: null,
-  scale: null,
-  solver: null,
-}
-
 interface FeasibilityStore {
   inputs: FeasibilityInputs
   results: FeasibilityResults
@@ -76,7 +61,6 @@ interface FeasibilityStore {
   /** Steps the client has completed, so the stepper can show progress. */
   visited: Set<number>
   disclaimerAccepted: boolean
-  derived: DerivedCache
 
   setInputs: (patch: Partial<FeasibilityInputs>) => void
   setOverride: (key: keyof FeasibilityOverrides, value: number | null) => void
@@ -100,11 +84,6 @@ interface FeasibilityStore {
   removeAppliedAssembly: (id: string) => void
   popAssemblyIntoBoq: (id: string) => void
 
-  // Lazily computed panels
-  scenarios: () => ScenarioResult[]
-  sensitivity: () => SensitivityRow[]
-  scale: () => ScaleRecommendation
-  solver: () => SolveResult[]
 }
 
 let assemblyCounter = 0
@@ -147,7 +126,6 @@ export const useFeasibilityStore = create<FeasibilityStore>((set, get) => ({
   stepIndex: 0,
   visited: new Set([0]),
   disclaimerAccepted: false,
-  derived: EMPTY_CACHE,
 
   setInputs: (patch) =>
     set((state) => {
@@ -155,8 +133,6 @@ export const useFeasibilityStore = create<FeasibilityStore>((set, get) => ({
       return {
         inputs,
         results: runFeasibility(inputs),
-        // Any input change invalidates every derived panel.
-        derived: EMPTY_CACHE,
       }
     }),
 
@@ -166,7 +142,7 @@ export const useFeasibilityStore = create<FeasibilityStore>((set, get) => ({
         ...state.inputs,
         overrides: { ...state.inputs.overrides, [key]: value },
       }
-      return { inputs, results: runFeasibility(inputs), derived: EMPTY_CACHE }
+      return { inputs, results: runFeasibility(inputs) }
     }),
 
   clearAllOverrides: () =>
@@ -176,14 +152,13 @@ export const useFeasibilityStore = create<FeasibilityStore>((set, get) => ({
         overrides: { ...defaultFeasibilityInputs.overrides },
         boq: { ...state.inputs.boq, touched: false },
       }
-      return { inputs, results: runFeasibility(inputs), derived: EMPTY_CACHE }
+      return { inputs, results: runFeasibility(inputs) }
     }),
 
   replaceInputs: (inputs) =>
     set(() => ({
       inputs,
       results: runFeasibility(inputs),
-      derived: EMPTY_CACHE,
     })),
 
   resetAll: () =>
@@ -192,7 +167,6 @@ export const useFeasibilityStore = create<FeasibilityStore>((set, get) => ({
       results: runFeasibility(defaultFeasibilityInputs),
       stepIndex: 0,
       visited: new Set([0]),
-      derived: EMPTY_CACHE,
     })),
 
   goToStep: (index) =>
@@ -221,7 +195,7 @@ export const useFeasibilityStore = create<FeasibilityStore>((set, get) => ({
           ? reseedBoq(state.inputs.boq, construction)
           : seedBoq(construction)
       const inputs = { ...state.inputs, boq }
-      return { inputs, results: runFeasibility(inputs), derived: EMPTY_CACHE }
+      return { inputs, results: runFeasibility(inputs) }
     }),
 
   updateBoqLine: (id, patch) =>
@@ -232,7 +206,7 @@ export const useFeasibilityStore = create<FeasibilityStore>((set, get) => ({
         lines: state.inputs.boq.lines.map((l) => (l.id === id ? { ...l, ...patch } : l)),
       }
       const inputs = { ...state.inputs, boq }
-      return { inputs, results: runFeasibility(inputs), derived: EMPTY_CACHE }
+      return { inputs, results: runFeasibility(inputs) }
     }),
 
   addBoqLine: (trade) =>
@@ -255,7 +229,7 @@ export const useFeasibilityStore = create<FeasibilityStore>((set, get) => ({
         ],
       }
       const inputs = { ...state.inputs, boq }
-      return { inputs, results: runFeasibility(inputs), derived: EMPTY_CACHE }
+      return { inputs, results: runFeasibility(inputs) }
     }),
 
   removeBoqLine: (id) =>
@@ -266,7 +240,7 @@ export const useFeasibilityStore = create<FeasibilityStore>((set, get) => ({
         lines: state.inputs.boq.lines.filter((l) => l.id !== id),
       }
       const inputs = { ...state.inputs, boq }
-      return { inputs, results: runFeasibility(inputs), derived: EMPTY_CACHE }
+      return { inputs, results: runFeasibility(inputs) }
     }),
 
   // --- assemblies ---
@@ -284,7 +258,7 @@ export const useFeasibilityStore = create<FeasibilityStore>((set, get) => ({
         ...state.inputs,
         appliedAssemblies: [...state.inputs.appliedAssemblies, applied],
       }
-      return { inputs, results: runFeasibility(inputs), derived: EMPTY_CACHE }
+      return { inputs, results: runFeasibility(inputs) }
     }),
 
   removeAppliedAssembly: (id) =>
@@ -293,7 +267,7 @@ export const useFeasibilityStore = create<FeasibilityStore>((set, get) => ({
         ...state.inputs,
         appliedAssemblies: state.inputs.appliedAssemblies.filter((a) => a.id !== id),
       }
-      return { inputs, results: runFeasibility(inputs), derived: EMPTY_CACHE }
+      return { inputs, results: runFeasibility(inputs) }
     }),
 
   popAssemblyIntoBoq: (id) =>
@@ -321,40 +295,7 @@ export const useFeasibilityStore = create<FeasibilityStore>((set, get) => ({
           a.id === id ? { ...a, poppedIntoBoq: true } : a
         ),
       }
-      return { inputs, results: runFeasibility(inputs), derived: EMPTY_CACHE }
+      return { inputs, results: runFeasibility(inputs) }
     }),
 
-  // --- lazily computed panels ---
-
-  scenarios: () => {
-    const { derived, inputs } = get()
-    if (derived.scenarios) return derived.scenarios
-    const scenarios = runScenarios(inputs)
-    set({ derived: { ...get().derived, scenarios } })
-    return scenarios
-  },
-
-  sensitivity: () => {
-    const { derived, inputs } = get()
-    if (derived.sensitivity) return derived.sensitivity
-    const sensitivity = runSensitivity(inputs)
-    set({ derived: { ...get().derived, sensitivity } })
-    return sensitivity
-  },
-
-  scale: () => {
-    const { derived, inputs } = get()
-    if (derived.scale) return derived.scale
-    const scale = runScaleRecommendation(inputs)
-    set({ derived: { ...get().derived, scale } })
-    return scale
-  },
-
-  solver: () => {
-    const { derived, inputs } = get()
-    if (derived.solver) return derived.solver
-    const solver = solveAll(inputs, inputs.targetMargin)
-    set({ derived: { ...get().derived, solver } })
-    return solver
-  },
 }))
