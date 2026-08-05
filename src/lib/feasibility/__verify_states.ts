@@ -14,6 +14,7 @@
  */
 
 import { classify } from './classification'
+import { SOURCES } from './sources'
 import { computeCore, defaultFeasibilityInputs, runFeasibility } from './engine'
 import { LIVE_JURISDICTION_CODES, profileFor } from './jurisdictions'
 import { money } from './trace'
@@ -170,8 +171,6 @@ ok('an unknown region falls back to the default', bogus.constructionRate === vic
 console.log('\n=== Every jurisdiction has a citation for every figure it renders ===\n')
 
 for (const code of LIVE_JURISDICTION_CODES) {
-  // Imported lazily so the SOURCES map is built after the registry.
-  const { SOURCES } = require('./sources') as typeof import('./sources')
   const s = byCode.get(code)!.statutory
   const keys = [
     s.stampDuty.sourceKey,

@@ -2,6 +2,7 @@ import React from 'react'
 import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
 
 import { nccClassLabel } from '@/lib/feasibility/classification'
+import { computeFunding } from '@/lib/feasibility/funding'
 import { money, percent, area, ratePerSqm, safeDiv } from '@/lib/feasibility/trace'
 import { RATE_LIBRARY_REFRESHED, RATE_LIBRARY_VERSION, SOURCES } from '@/lib/feasibility/sources'
 import type { FeasibilityInputs, FeasibilityResults } from '@/lib/feasibility/types'
@@ -211,6 +212,7 @@ export function FeasibilityReport({
   generatedAt: string
 }) {
   const verdict = VERDICT_COLOURS[results.verdict]
+  const funding = computeFunding(inputs, results)
   const sells = inputs.mode === 'develop_to_sell'
   const unit = inputs.devType === 'subdivision' ? 'lot' : 'dwelling'
 
@@ -337,6 +339,52 @@ export function FeasibilityReport({
             <T style={styles.totalLabel}>Total development cost</T>
             <T style={styles.totalValue}>{money(results.totalDevelopmentCost)}</T>
           </View>
+        </View>
+
+        <View style={styles.section}>
+          <T style={styles.sectionTitle}>Can it be funded?</T>
+          {[
+            [
+              'Senior debt available',
+              funding.seniorLimit,
+              funding.boundBy === 'value' ? 'Capped by end value' : 'Capped by total cost',
+            ],
+            ['You need to fund', funding.equityRequired, 'Everything the lender will not'],
+            [
+              funding.shortfall > 0 ? 'Gap beyond your cash' : 'Cash surplus',
+              funding.shortfall > 0
+                ? funding.shortfall
+                : Math.max(0, inputs.equityAvailable - funding.equityRequired),
+              funding.shortfall > 0 ? 'Needs covering' : 'Left over',
+            ],
+            ...(funding.mezzUsed
+              ? ([
+                  [
+                    'Second mortgage',
+                    funding.mezzAmount,
+                    `At ${percent(inputs.mezzInterestRate || 0.14)}, blended ${percent(funding.blendedRate)}`,
+                  ],
+                  [
+                    'Cost of the second mortgage',
+                    funding.mezzTotalCost,
+                    `${percent(funding.mezzCostShareOfProfit)} of your profit`,
+                  ],
+                  [
+                    'Profit after it is paid',
+                    funding.profitAfterMezz,
+                    `${percent(funding.marginAfterMezz)} margin on cost`,
+                  ],
+                ] as [string, number, string][])
+              : []),
+          ].map(([label, value, note]) => (
+            <View key={label as string} style={styles.row}>
+              <View style={styles.rowLabel}>
+                <T>{label as string}</T>
+                <T style={styles.rowNote}>{note as string}</T>
+              </View>
+              <T style={styles.rowValue}>{money(value as number)}</T>
+            </View>
+          ))}
         </View>
 
         <View style={styles.section}>

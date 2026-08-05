@@ -86,6 +86,12 @@ export const defaultFeasibilityInputs: FeasibilityInputs = {
   targetMargin: 0.18,
   sizePriceElasticity: R.SIZE_PRICE_ELASTICITY,
 
+  equityAvailable: 0,
+  seniorLvrCap: 0,
+  mezzEnabled: false,
+  mezzAmount: 0,
+  mezzInterestRate: 0,
+
   currentHomeValue: 0,
   outstandingMortgage: 0,
   householdIncome: 0,

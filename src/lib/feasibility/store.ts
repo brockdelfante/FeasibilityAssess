@@ -47,8 +47,18 @@ export const STEPS = [
   },
   {
     key: 'results',
-    title: 'Results',
+    title: 'Does it stack up?',
     blurb: 'Your feasibility, with every number traceable.',
+  },
+  {
+    key: 'funding',
+    title: 'Can I fund it?',
+    blurb: 'What a lender will advance, what you have to find, and how to cover a gap.',
+  },
+  {
+    key: 'report',
+    title: 'Your report',
+    blurb: 'Take the whole assessment away as a PDF.',
   },
 ] as const
 

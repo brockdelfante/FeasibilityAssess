@@ -9,6 +9,7 @@ import { expect, test } from '@playwright/test'
  */
 
 const BASE = 'http://localhost:3000'
+const APP = BASE
 
 /** Dismiss the disclaimer gate that blocks the wizard on first load. */
 async function acceptDisclaimer(page: import('@playwright/test').Page) {
@@ -24,7 +25,7 @@ test('wizard walks through all steps and produces a verdict', async ({ page }) =
     if (msg.type() === 'error') errors.push(msg.text())
   })
 
-  await page.goto(`${BASE}/feasibility`)
+  await page.goto(APP)
   await acceptDisclaimer(page)
 
   await expect(
@@ -45,7 +46,7 @@ test('wizard walks through all steps and produces a verdict', async ({ page }) =
   await page.getByRole('button', { name: /^Continue$/ }).click()
   await expect(page.getByRole('heading', { name: /Tax & timing/i })).toBeVisible()
 
-  await page.getByRole('button', { name: /See my results/i }).click()
+  await page.getByRole('button', { name: /See if it stacks up/i }).click()
 
   // Results
   await expect(page.getByText('Feasibility verdict')).toBeVisible()
@@ -73,7 +74,7 @@ test('switching state changes the duty, the labels and the build rate', async ({
     if (msg.type() === 'error') errors.push(msg.text())
   })
 
-  await page.goto(`${BASE}/feasibility`)
+  await page.goto(APP)
   await acceptDisclaimer(page)
 
   // Every verified jurisdiction must be selectable, not just NSW.
@@ -108,20 +109,20 @@ test('switching state changes the duty, the labels and the build rate', async ({
 })
 
 test('commercial land in South Australia pays no conveyance duty', async ({ page }) => {
-  await page.goto(`${BASE}/feasibility`)
+  await page.goto(APP)
   await acceptDisclaimer(page)
 
   await page.getByRole('combobox').first().click()
   await page.getByRole('option', { name: /^South Australia$/ }).click()
 
   await page.getByRole('button', { name: /Skip to full results/i }).click()
-  await page.getByRole('button', { name: /Back to inputs/i }).click()
+  await page.getByRole('button', { name: /Change my answers/i }).click()
 
   // The residential/commercial question only appears where it changes the duty.
   await expect(page.getByText(/Is this residential or commercial land\?/i)).toBeVisible()
   await page.getByRole('button', { name: /Commercial \/ industrial land/i }).click()
 
-  await page.getByRole('button', { name: /See my results/i }).click()
+  await page.getByRole('button', { name: /See if it stacks up/i }).click()
 
   await expect(page.getByText('SA transfer (stamp) duty')).toBeVisible()
   await expect(
@@ -130,7 +131,7 @@ test('commercial land in South Australia pays no conveyance duty', async ({ page
 })
 
 test('clicking a cost line opens its trace', async ({ page }) => {
-  await page.goto(`${BASE}/feasibility`)
+  await page.goto(APP)
   await acceptDisclaimer(page)
   await page.getByRole('button', { name: /Skip to full results/i }).click()
 
@@ -153,7 +154,7 @@ test('every advanced panel computes without throwing', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(err.message))
 
-  await page.goto(`${BASE}/feasibility`)
+  await page.goto(APP)
   await acceptDisclaimer(page)
   await page.getByRole('button', { name: /Skip to full results/i }).click()
 
@@ -182,7 +183,7 @@ test('every advanced panel computes without throwing', async ({ page }) => {
 })
 
 test('switching to owner-occupier swaps the questions and the verdict block', async ({ page }) => {
-  await page.goto(`${BASE}/feasibility`)
+  await page.goto(APP)
   await acceptDisclaimer(page)
 
   await page.getByRole('button', { name: /Live in it \(PPR\)/i }).click()
@@ -203,7 +204,7 @@ test('switching to owner-occupier swaps the questions and the verdict block', as
 })
 
 test('presales that settle early reduce peak debt', async ({ page }) => {
-  await page.goto(`${BASE}/feasibility`)
+  await page.goto(APP)
   await acceptDisclaimer(page)
   await page.getByRole('button', { name: /Skip to full results/i }).click()
 
@@ -221,7 +222,7 @@ test('presales that settle early reduce peak debt', async ({ page }) => {
   expect(before).toBeGreaterThan(0)
 
   // Go back to the tax & timing step and set a presale program.
-  await page.getByRole('button', { name: /Back to inputs/i }).click()
+  await page.getByRole('button', { name: /Change my answers/i }).click()
   await expect(page.getByText(/Presales locked in/i)).toBeVisible()
 
   // Scope both controls to their own labels — this step has more than one
@@ -240,7 +241,7 @@ test('presales that settle early reduce peak debt', async ({ page }) => {
   )
   await settleMonth.fill('14')
 
-  await page.getByRole('button', { name: /See my results/i }).click()
+  await page.getByRole('button', { name: /See if it stacks up/i }).click()
   const after = await peakDebt()
 
   expect(after).toBeLessThan(before)
@@ -249,7 +250,7 @@ test('presales that settle early reduce peak debt', async ({ page }) => {
 
 test('on a phone the live verdict is on screen, not below the fold', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.goto(`${BASE}/feasibility`)
+  await page.goto(APP)
   await acceptDisclaimer(page)
 
   // The whole promise of the wizard is that the answer moves as you answer.
@@ -266,27 +267,80 @@ test('on a phone the live verdict is on screen, not below the fold', async ({ pa
   await expect(sheet.getByText('Peak debt')).toBeVisible()
 })
 
-test('the app shell marks the current section and offers mobile navigation', async ({ page }) => {
-  await page.goto(`${BASE}/feasibility`)
+test('the public tool has no navigation to get lost in', async ({ page }) => {
+  await page.goto(APP)
   await acceptDisclaimer(page)
 
-  // The nav used to hard-code Dashboard as active on every route.
-  await expect(page.getByRole('link', { name: 'Feasibility' }).first()).toHaveAttribute(
-    'aria-current',
-    'page'
-  )
-  await expect(page.getByRole('navigation', { name: 'Breadcrumb' })).toContainText(
-    'Development feasibility'
-  )
+  // This is a single-page public tool. A sidebar of lender tooling is both
+  // confusing to a visitor and not theirs to see, so there must be none — and
+  // no way to wander off the flow.
+  await expect(page.getByRole('navigation', { name: 'Main' })).toHaveCount(0)
+  await expect(page.getByRole('navigation', { name: 'Breadcrumb' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: /Open navigation/i })).toHaveCount(0)
+  await expect(page.getByRole('link', { name: 'Policy config' })).toHaveCount(0)
 
-  // Under lg the sidebar is hidden, so there must be another way out.
-  await page.setViewportSize({ width: 390, height: 844 })
-  await page.getByRole('button', { name: /Open navigation/i }).click()
-  await expect(page.getByRole('link', { name: 'Policy config' })).toBeVisible()
+  // What it does have is the flow itself, starting at the first question.
+  await expect(page.getByRole('navigation', { name: 'Progress' })).toBeVisible()
+  await expect(page.getByText('What are you doing with this property?')).toBeVisible()
+})
+
+test('a share link created before the move still opens', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+
+  // The tool moved from /feasibility to the site root. The project rides in the
+  // URL fragment, which never reaches the server, so the redirect has to carry
+  // it client-side or the recipient lands on a blank form.
+  await page.goto(APP)
+  await acceptDisclaimer(page)
+  await page.getByRole('button', { name: /Skip to full results/i }).click()
+  await page.getByRole('button', { name: /Save my progress/i }).click()
+
+  const url: string = await page.evaluate(() => navigator.clipboard.readText())
+  const hash = url.slice(url.indexOf('#'))
+
+  await page.goto(`${BASE}/feasibility${hash}`)
+  const gate = page.getByRole('button', { name: /I understand/i })
+  if (await gate.isVisible().catch(() => false)) await gate.click()
+
+  await expect(page).toHaveURL(new RegExp(`^${BASE}/#`))
+  await expect(page.getByText('Feasibility verdict')).toBeVisible()
+})
+
+test('the funding stage prices a second mortgage over the equity gap', async ({ page }) => {
+  await page.goto(APP)
+  await acceptDisclaimer(page)
+  await page.getByRole('button', { name: /Skip to full results/i }).click()
+
+  // The flow continues past the feasibility rather than dead-ending there.
+  await page.getByRole('button', { name: /Now, can I fund it\?/i }).click()
+  await expect(page.getByText('Funding position')).toBeVisible()
+
+  // Before the client says what cash they have there is no gap to report,
+  // only a requirement — announcing a shortfall against an unanswered question
+  // is both alarming and wrong.
+  await expect(page.getByText(/You would need to put in/)).toBeVisible()
+  await expect(page.getByText('Gap to close')).toHaveCount(0)
+
+  // Declare some cash, well short of what is needed, and the gap appears.
+  await page.getByRole('textbox').first().fill('500,000')
+  await expect(page.getByText('Gap to close')).toBeVisible()
+
+  const mezzToggle = page.getByRole('switch', { name: /Price a second mortgage/i })
+  await mezzToggle.click()
+
+  // Sized to the gap, and priced — interest, fees and what it costs in profit.
+  await expect(page.getByText('Second mortgage').first()).toBeVisible()
+  await expect(page.getByText('Blended rate', { exact: true })).toBeVisible()
+  await expect(page.getByText('Profit after it is paid', { exact: true })).toBeVisible()
+  await expect(page.getByText(/Establishment fee/).first()).toBeVisible()
+
+  // And it reaches the report at the end of the flow.
+  await page.getByRole('button', { name: /Get my report/i }).click()
+  await expect(page.getByText(/Export & share/i).first()).toBeVisible()
 })
 
 test('results keep the verdict and section jumps pinned while scrolling', async ({ page }) => {
-  await page.goto(`${BASE}/feasibility`)
+  await page.goto(APP)
   await acceptDisclaimer(page)
   await page.getByRole('button', { name: /Skip to full results/i }).click()
 
@@ -302,9 +356,11 @@ test('results keep the verdict and section jumps pinned while scrolling', async 
 })
 
 test('the PDF report downloads and is a real PDF', async ({ page }) => {
-  await page.goto(`${BASE}/feasibility`)
+  await page.goto(APP)
   await acceptDisclaimer(page)
   await page.getByRole('button', { name: /Skip to full results/i }).click()
+  await page.getByRole('button', { name: /Now, can I fund it\?/i }).click()
+  await page.getByRole('button', { name: /Get my report/i }).click()
 
   const [download] = await Promise.all([
     page.waitForEvent('download', { timeout: 60_000 }),
@@ -325,12 +381,12 @@ test('the PDF report downloads and is a real PDF', async ({ page }) => {
 test('a share link reproduces the same numbers', async ({ page, context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write'])
 
-  await page.goto(`${BASE}/feasibility`)
+  await page.goto(APP)
   await acceptDisclaimer(page)
   await page.getByRole('button', { name: /Skip to full results/i }).click()
 
   // Change an input so the shared state is distinguishable from the default.
-  await page.getByRole('button', { name: /Back to inputs/i }).click()
+  await page.getByRole('button', { name: /Change my answers/i }).click()
   await page.getByRole('button', { name: /^Back$/ }).click()
   await page.getByRole('button', { name: /^Back$/ }).click()
   await page.getByRole('button', { name: /^Back$/ }).click()
@@ -341,7 +397,7 @@ test('a share link reproduces the same numbers', async ({ page, context }) => {
     .first()
     .textContent()
 
-  await page.getByRole('button', { name: /Copy share link/i }).click()
+  await page.getByRole('button', { name: /Save my progress/i }).click()
   const url: string = await page.evaluate(() => navigator.clipboard.readText())
   expect(url).toContain('#f1:')
 
