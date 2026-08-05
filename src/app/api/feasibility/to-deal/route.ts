@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { feasibilityToDealSeed } from '@/lib/feasibility/bridge'
 import { defaultFeasibilityInputs } from '@/lib/feasibility/engine'
 import type { FeasibilityInputs } from '@/lib/feasibility/types'
+import { apiError } from '@/lib/api-error'
 
 /**
  * Create a lender-side assessment seeded from a client feasibility.
@@ -58,8 +59,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ id: deal.id })
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error'
-    console.error('POST /api/feasibility/to-deal error:', message)
-    return NextResponse.json({ error: message }, { status: 500 })
+    return apiError('POST /api/feasibility/to-deal', err)
   }
 }

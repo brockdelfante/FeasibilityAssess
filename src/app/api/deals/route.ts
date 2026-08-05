@@ -1,14 +1,14 @@
 import { supabase } from "@/lib/supabase";
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-error";
 
 export async function GET() {
   try {
     const { data, error } = await supabase.from('deals').select('*').order('updated_at', { ascending: false });
     if (error) throw error;
     return NextResponse.json(data || []);
-  } catch (err: any) {
-    console.error("GET /api/deals error:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err) {
+    return apiError("GET /api/deals error:", err)
   }
 }
 
@@ -46,8 +46,7 @@ export async function POST(req: NextRequest) {
         throw error;
     }
     return NextResponse.json(data);
-  } catch (err: any) {
-    console.error("POST /api/deals error:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err) {
+    return apiError("POST /api/deals error:", err)
   }
 }
