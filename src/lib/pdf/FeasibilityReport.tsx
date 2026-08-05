@@ -342,19 +342,33 @@ export function FeasibilityReport({
         <View style={styles.section}>
           <T style={styles.sectionTitle}>Statutory costs & duties</T>
           {[
-            ['NSW transfer (stamp) duty', results.statutory.stampDuty.value, 'On settlement'],
-            ['NSW land tax (per year)', results.statutory.landTaxPerYear.value, 'While you hold'],
             [
-              'NSW land tax (over the project)',
+              `${results.statutory.jurisdiction} transfer (stamp) duty`,
+              results.statutory.stampDuty.value,
+              results.statutory.dutyRegime === 'commercial'
+                ? 'On settlement, non-residential scale'
+                : 'On settlement',
+            ],
+            [
+              `${results.statutory.jurisdiction} land tax (per year)`,
+              results.statutory.landTaxPerYear.value,
+              'While you hold',
+            ],
+            [
+              `${results.statutory.jurisdiction} land tax (over the project)`,
               results.statutory.landTaxOverProject.value,
               'In holding costs',
             ],
-            ['HBCF premium', results.statutory.hbcfPremium.value, 'Residential building work'],
+            [
+              `${results.statutory.warrantyShortName} premium`,
+              results.statutory.hbcfPremium.value,
+              'Residential building work',
+            ],
             ['GST on sale', results.statutory.gst.value, 'Margin scheme'],
             [
               'Council & infrastructure contributions',
               results.statutory.councilContributions.value,
-              's7.11 / s7.12 — verify with council',
+              'Verify with the council',
             ],
           ].map(([label, value, note]) => (
             <View key={label as string} style={styles.row}>
@@ -407,13 +421,12 @@ export function FeasibilityReport({
             {results.classification.dbpApplies ? (
               <>
                 <T style={[styles.insightNext, { marginTop: 5 }]}>
-                  The NSW DBP Act 2020 applies: {money(results.classification.dbpCostUplift)} of
-                  additional fees and {results.classification.dbpProgramMonths} months of program,
-                  both already included above.
+                  The {results.statutory.jurisdiction} {results.classification.regimeName} applies:{' '}
+                  {money(results.classification.dbpCostUplift)} of additional fees and{' '}
+                  {results.classification.dbpProgramMonths} months of program, both already included
+                  above.
                 </T>
-                <T style={styles.narrativeHeading}>
-                  Practitioners that must be DBP-registered
-                </T>
+                <T style={styles.narrativeHeading}>Practitioners that must be registered</T>
                 {results.classification.requiredPractitioners.map((p) => (
                   <View key={p} style={styles.bullet}>
                     <T style={styles.bulletDot}>•</T>

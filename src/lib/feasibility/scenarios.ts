@@ -9,7 +9,13 @@
  */
 
 import { computeCore, verdictFor } from './engine'
-import { constructionRate, SCENARIO_SHIFTS, type ScenarioShift } from './rates'
+import {
+  constructionRate,
+  priceForSize,
+  SCENARIO_SHIFTS,
+  SIZE_PRICE_ELASTICITY,
+  type ScenarioShift,
+} from './rates'
 import { safeDiv } from './trace'
 import type {
   FeasibilityInputs,
@@ -165,15 +171,20 @@ export function runScaleRecommendation(inputs: FeasibilityInputs): ScaleRecommen
   const target = inputs.targetMargin
   const grid: ScaleCell[] = []
 
-  // Sale price has to move with dwelling size, otherwise the grid concludes
-  // that tiny dwellings are wildly profitable — a 100 m² unit does not fetch
-  // the same price as a 220 m² one. We hold $/m² of sale price constant at
-  // whatever the client's current configuration implies.
-  const salePricePerSqm = safeDiv(inputs.salePricePerDwelling, inputs.avgDwellingSqm)
+  // Sale price has to move with dwelling size, but not proportionally: part of a
+  // dwelling's value is fixed whatever its area, so bigger dwellings fetch more
+  // in total and less per square metre. `priceForSize` applies that elasticity,
+  // anchored on the client's own size and price — so the cell matching their
+  // actual configuration always shows exactly the price they entered.
+  const elasticity = inputs.sizePriceElasticity ?? SIZE_PRICE_ELASTICITY
 
   for (const dwellingSqm of SCALE_DWELLING_SIZES) {
-    const salePrice =
-      salePricePerSqm > 0 ? salePricePerSqm * dwellingSqm : inputs.salePricePerDwelling
+    const salePrice = priceForSize(
+      inputs.salePricePerDwelling,
+      inputs.avgDwellingSqm,
+      dwellingSqm,
+      elasticity
+    )
     for (let y = 1; y <= SCALE_MAX_YIELD; y++) {
       const core = computeCore({
         ...inputs,

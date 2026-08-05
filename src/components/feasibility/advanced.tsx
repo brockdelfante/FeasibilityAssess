@@ -35,7 +35,13 @@ import {
 } from '@/components/ui/table'
 import { cn } from '@/lib/utils'
 
-import { describeScenario } from '@/lib/feasibility/scenarios'
+import {
+  describeScenario,
+  runScaleRecommendation,
+  runScenarios,
+  runSensitivity,
+  solveAll,
+} from '@/lib/feasibility/scenarios'
 import { useFeasibilityStore } from '@/lib/feasibility/store'
 import { money, moneyCompact, percent, pp } from '@/lib/feasibility/trace'
 
@@ -46,8 +52,12 @@ import { SectionCard, StatTile } from './primitives'
 // ---------------------------------------------------------------------------
 
 export function ScenarioPanel() {
-  const scenarios = useFeasibilityStore((s) => s.scenarios)()
-  const targetMargin = useFeasibilityStore((s) => s.inputs.targetMargin)
+  const inputs = useFeasibilityStore((s) => s.inputs)
+  const targetMargin = inputs.targetMargin
+  // Memoised rather than cached in the store: same laziness, no store write
+  // during render. `inputs` is replaced wholesale on every edit, so identity
+  // comparison is exactly the right invalidation key.
+  const scenarios = React.useMemo(() => runScenarios(inputs), [inputs])
 
   return (
     <SectionCard
@@ -139,8 +149,9 @@ const OUTCOME_CELL: Record<'pass' | 'marginal' | 'fail', string> = {
 }
 
 export function SensitivityPanel() {
-  const rows = useFeasibilityStore((s) => s.sensitivity)()
-  const targetMargin = useFeasibilityStore((s) => s.inputs.targetMargin)
+  const inputs = useFeasibilityStore((s) => s.inputs)
+  const targetMargin = inputs.targetMargin
+  const rows = React.useMemo(() => runSensitivity(inputs), [inputs])
 
   return (
     <SectionCard
@@ -363,9 +374,98 @@ export function CashflowPanel() {
 // Scale recommender
 // ---------------------------------------------------------------------------
 
-export function ScalePanel() {
-  const scale = useFeasibilityStore((s) => s.scale)()
+/**
+ * How sale price is assumed to respond to dwelling size.
+ *
+ * Exposed here rather than in the wizard because it only affects this panel, and
+ * because a client answering "what would I build here?" should not have to hold
+ * an opinion about hedonic price elasticity to get an answer. The default is
+ * mid-range for residential; the endpoints are offered because they are the two
+ * assumptions other tools make implicitly, and seeing them move the grid is the
+ * clearest way to understand what the assumption is doing.
+ */
+function ElasticityControl() {
+  const elasticity = useFeasibilityStore((s) => s.inputs.sizePriceElasticity)
+  const setInputs = useFeasibilityStore((s) => s.setInputs)
   const inputs = useFeasibilityStore((s) => s.inputs)
+
+  const options = [
+    { value: 0, label: 'Not at all', hint: 'Price is the same at any size' },
+    { value: 0.75, label: 'Realistic', hint: 'Bigger costs more, less per m²' },
+    { value: 1, label: 'Proportionally', hint: '$/m² identical at every size' },
+  ]
+
+  // Show what the assumption implies at the extremes of the grid.
+  const priceAt = (sqm: number) =>
+    inputs.avgDwellingSqm > 0
+      ? inputs.salePricePerDwelling * Math.pow(sqm / inputs.avgDwellingSqm, elasticity)
+      : inputs.salePricePerDwelling
+
+  return (
+    <div className="space-y-3 rounded-lg border border-gray-200 p-4">
+      <div>
+        <p className="text-sm font-medium text-gray-800">
+          How does sale price respond to dwelling size?
+        </p>
+        <p className="mt-1 text-xs leading-relaxed text-gray-500">
+          Part of a dwelling&apos;s value is fixed whatever its area — the land share, the kitchen,
+          the bathrooms, the services. So bigger dwellings fetch more in total but less per square
+          metre. This only affects the grid below; everywhere else we use the size and price you
+          entered.
+        </p>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {options.map((o) => {
+          const selected = Math.abs(elasticity - o.value) < 0.01
+          return (
+            <button
+              key={o.value}
+              type="button"
+              onClick={() => setInputs({ sizePriceElasticity: o.value })}
+              aria-pressed={selected}
+              className={cn(
+                'rounded-lg border px-3 py-2 text-left transition-all',
+                selected
+                  ? 'border-blue-500 bg-blue-50/60 ring-1 ring-blue-500'
+                  : 'border-gray-200 bg-white hover:bg-gray-50'
+              )}
+            >
+              <span
+                className={cn(
+                  'block text-xs font-semibold',
+                  selected ? 'text-blue-900' : 'text-gray-900'
+                )}
+              >
+                {o.label}
+              </span>
+              <span
+                className={cn('block text-[11px]', selected ? 'text-blue-700/80' : 'text-gray-500')}
+              >
+                {o.hint}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+
+      <p className="text-xs text-gray-500">
+        On this assumption a{' '}
+        <span className="font-mono font-semibold text-gray-800">100 m²</span> dwelling is priced at{' '}
+        <span className="font-mono font-semibold text-gray-800">{money(priceAt(100))}</span> and a{' '}
+        <span className="font-mono font-semibold text-gray-800">380 m²</span> one at{' '}
+        <span className="font-mono font-semibold text-gray-800">{money(priceAt(380))}</span>, against
+        your {inputs.avgDwellingSqm} m² at {money(inputs.salePricePerDwelling)}.
+      </p>
+    </div>
+  )
+}
+
+export function ScalePanel() {
+  const inputs = useFeasibilityStore((s) => s.inputs)
+  // The heaviest analysis in the app — 300 full engine passes. Memoising it here
+  // means it runs once per input change, and only while this panel is open.
+  const scale = React.useMemo(() => runScaleRecommendation(inputs), [inputs])
 
   // Pivot the flat grid into rows by dwelling size for the heat map.
   const sizes = Array.from(new Set(scale.grid.map((c) => c.dwellingSqm)))
@@ -416,6 +516,8 @@ export function ScalePanel() {
           </p>
         )}
       </div>
+
+      <ElasticityControl />
 
       <div className="overflow-x-auto">
         <table className="w-full border-separate border-spacing-0.5 text-[10px]">
@@ -497,8 +599,8 @@ export function ScalePanel() {
 // ---------------------------------------------------------------------------
 
 export function SolverPanel() {
-  const solver = useFeasibilityStore((s) => s.solver)()
   const inputs = useFeasibilityStore((s) => s.inputs)
+  const solver = React.useMemo(() => solveAll(inputs, inputs.targetMargin), [inputs])
 
   const fmt = (value: number, unit: string) => {
     switch (unit) {

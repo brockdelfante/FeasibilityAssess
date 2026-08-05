@@ -279,7 +279,7 @@ export function DisclaimerGate() {
           </p>
           <p>
             <strong className="text-gray-900">Not financial, legal or tax advice.</strong> Stamp
-            duty, land tax, GST, HBCF and every other statutory line is calculated from published
+            duty, land tax, GST, builder warranty and every other statutory line is calculated from published
             rates current at the time of writing. Confirm each one with a qualified accountant,
             conveyancer, solicitor or finance broker before you commit to anything.
           </p>

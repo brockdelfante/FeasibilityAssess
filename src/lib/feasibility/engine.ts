@@ -17,15 +17,19 @@ import { classify } from './classification'
 import { buildInsights } from './insights'
 import { BUCKET_LABELS } from './labels'
 import { buildNarrative } from './narrative'
+import { profileFor, regionMultiplier } from './jurisdictions'
 import * as R from './rates'
 import {
+  contributionsSourceKey,
+  dutyRegimeFor,
   gstMarginSchemeAmount,
   gstOnSale,
-  nswHbcf,
-  nswLandTax,
-  nswLandTaxAmount,
-  nswStampDuty,
-  nswStampDutyAmount,
+  landTax,
+  landTaxAmount,
+  stampDuty,
+  stampDutyAmount,
+  warrantyPremium,
+  warrantyPremiumAmount,
 } from './statutory'
 import { safeDiv, traced, withOverride } from './trace'
 import { deriveHold } from './modes/hold'
@@ -48,6 +52,7 @@ import type {
 
 export const defaultFeasibilityInputs: FeasibilityInputs = {
   jurisdiction: 'NSW',
+  costRegion: '',
   mode: 'develop_to_sell',
   pprSubMode: 'buy_and_build',
   projectName: '',
@@ -74,10 +79,12 @@ export const defaultFeasibilityInputs: FeasibilityInputs = {
   gstTreatment: 'margin_scheme',
   titleType: 'unknown',
   nccClassOverride: null,
+  dutyRegimeOverride: null,
   durationMonths: 22,
   presalesShare: 0,
   presalesSettleMonth: 0,
   targetMargin: 0.18,
+  sizePriceElasticity: R.SIZE_PRICE_ELASTICITY,
 
   currentHomeValue: 0,
   outstandingMortgage: 0,
@@ -130,6 +137,81 @@ export function remitsGst(mode: DealMode, gstTreatment: string): boolean {
 }
 
 // ---------------------------------------------------------------------------
+// Jurisdiction helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * The construction rate range for this site, with the jurisdiction's location
+ * factor applied.
+ *
+ * The rate library is Sydney metro, and the spread is not trivial: Perth and
+ * regional Tasmania sit well under it while Darwin and remote WA sit well over.
+ * Modelling a Bendigo townhouse at a Sydney rate overstates the build by a fifth.
+ */
+export function regionalRate(inputs: FeasibilityInputs): R.RateRange {
+  const base = R.constructionRate(inputs.devType, inputs.qualityTier, inputs.siteDifficulty)
+  const factor = locationFactor(inputs)
+  if (factor === 1) return base
+  return {
+    low: Math.round(base.low * factor),
+    point: Math.round(base.point * factor),
+    high: Math.round(base.high * factor),
+  }
+}
+
+/** The multiplier applied to the Sydney-metro rate library, and its label. */
+export function locationFactor(inputs: FeasibilityInputs): number {
+  return regionMultiplier(inputs.jurisdiction, effectiveRegion(inputs))
+}
+
+/** The chosen cost region, falling back to the jurisdiction's default. */
+export function effectiveRegion(inputs: FeasibilityInputs): string {
+  const regions = profileFor(inputs.jurisdiction).regions
+  if (inputs.costRegion && regions.some((r) => r.key === inputs.costRegion)) {
+    return inputs.costRegion
+  }
+  return (regions.find((r) => r.isDefault) ?? regions[0])?.key ?? ''
+}
+
+/** True where the scheme creates new lots or dwellings, so contributions bite. */
+function attractsContributions(inputs: FeasibilityInputs): boolean {
+  return hasConstruction(inputs.mode) || inputs.devType === 'subdivision'
+}
+
+/** True where the build attracts the local residential warranty insurance. */
+export function isResidentialBuild(inputs: FeasibilityInputs): boolean {
+  return (
+    hasConstruction(inputs.mode) &&
+    inputs.devType !== 'subdivision' &&
+    inputs.devType !== 'commercial'
+  )
+}
+
+/**
+ * Indicative contribution per dwelling or lot, from the jurisdiction's profile.
+ *
+ * The mechanisms are not comparable between states — NSW charges s7.11/s7.12,
+ * Victoria stacks GAIC on top of council contributions, Queensland levies
+ * infrastructure charges under an LGIP — so the range comes from the profile and
+ * the citation names the local mechanism.
+ */
+function contributionPerUnit(inputs: FeasibilityInputs): R.RateRange {
+  if (!attractsContributions(inputs)) return { low: 0, point: 0, high: 0 }
+
+  const base = profileFor(inputs.jurisdiction).contributionPerDwelling
+  if (inputs.devType !== 'subdivision') return base
+
+  // Greenfield lots usually sit at the higher end of the same schedule, because
+  // they carry the trunk infrastructure the dwellings later connect to.
+  const up = R.SUBDIVISION_CONTRIBUTION_UPLIFT
+  return {
+    low: Math.round(base.low * up),
+    point: Math.round(base.point * up),
+    high: Math.round(base.high * up),
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Core computation — cheap enough to run inside solvers and grids
 // ---------------------------------------------------------------------------
 
@@ -161,7 +243,14 @@ export interface CoreResult {
  * Solvers, the sensitivity table and the scale grid all call this directly.
  */
 export function computeCore(inputs: FeasibilityInputs): CoreResult {
-  const cls = classify(inputs.devType, inputs.titleType, inputs.yield, inputs.nccClassOverride)
+  const profile = profileFor(inputs.jurisdiction)
+  const cls = classify(
+    inputs.devType,
+    inputs.titleType,
+    inputs.yield,
+    inputs.nccClassOverride,
+    profile.practitioners
+  )
 
   const totalGfaSqm =
     inputs.devType === 'renovation' || inputs.mode === 'renovate'
@@ -169,7 +258,9 @@ export function computeCore(inputs: FeasibilityInputs): CoreResult {
       : inputs.yield * inputs.avgDwellingSqm
 
   // --- construction ---
-  const rateRange = R.constructionRate(inputs.devType, inputs.qualityTier, inputs.siteDifficulty)
+  // The rate library is calibrated to Sydney metro, so everywhere else gets the
+  // jurisdiction's location factor applied on top.
+  const rateRange = regionalRate(inputs)
   const constructionRate = inputs.overrides.constructionRatePerSqm ?? rateRange.point
 
   let construction = 0
@@ -200,7 +291,8 @@ export function computeCore(inputs: FeasibilityInputs): CoreResult {
   // --- acquisition ---
   const buysLand = !(inputs.mode === 'ppr' && inputs.pprSubMode === 'knock_down_rebuild')
   const purchasePrice = buysLand ? inputs.purchasePrice : 0
-  const duty = buysLand ? nswStampDutyAmount(purchasePrice) : 0
+  const regime = dutyRegimeFor(inputs.devType, inputs.dutyRegimeOverride)
+  const duty = buysLand ? stampDutyAmount(inputs.jurisdiction, purchasePrice, regime) : 0
   let buyersAgent = 0
   if (inputs.buyersAgentEngaged && buysLand) {
     buyersAgent = Math.min(
@@ -214,30 +306,29 @@ export function computeCore(inputs: FeasibilityInputs): CoreResult {
 
   // --- planning & design ---
   const consultants = construction * R.consultantPct(inputs.devType).point
-  const contributions =
-    inputs.devType === 'subdivision'
-      ? inputs.yield * R.SUBDIVISION_CONTRIBUTION_PER_LOT.point
-      : hasConstruction(inputs.mode)
-        ? inputs.yield * R.COUNCIL_CONTRIBUTION_PER_DWELLING.point
-        : 0
+  const contributions = inputs.yield * contributionPerUnit(inputs).point
   const planningDesign =
     inputs.overrides.planning_design ?? consultants + contributions + cls.dbpCostUplift
 
-  // --- professional fees (includes HBCF, which is an insurance premium) ---
-  const isResidentialBuild =
-    hasConstruction(inputs.mode) &&
-    inputs.devType !== 'subdivision' &&
-    inputs.devType !== 'commercial'
-  const hbcf = isResidentialBuild && construction > 20_000 ? construction * 0.007 : 0
+  // --- professional fees (includes builder warranty, an insurance premium) ---
+  const warranty = warrantyPremiumAmount(
+    inputs.jurisdiction,
+    construction,
+    isResidentialBuild(inputs)
+  )
   const professionalFees =
-    inputs.overrides.professional_fees ?? construction * R.PROFESSIONAL_FEE_PCT.point + hbcf
+    inputs.overrides.professional_fees ?? construction * R.PROFESSIONAL_FEE_PCT.point + warranty
 
-  // --- program length: the DBP process adds real months ---
+  // --- program length: the practitioner regime adds real months ---
   const effectiveDurationMonths = Math.max(1, inputs.durationMonths + cls.dbpProgramMonths)
 
   // --- holding ---
   const landValue = inputs.landValueUv ?? inputs.purchasePrice
-  const landTaxPerYear = nswLandTaxAmount(landValue, inputs.landTaxExempt || inputs.mode === 'ppr')
+  const landTaxPerYear = landTaxAmount(
+    inputs.jurisdiction,
+    landValue,
+    inputs.landTaxExempt || inputs.mode === 'ppr'
+  )
   const holdingPerYear =
     landTaxPerYear + inputs.councilRatesPerYear + R.UTILITIES_INSURANCE_PER_YEAR.point
   const holding = inputs.overrides.holding ?? holdingPerYear * (effectiveDurationMonths / 12)
@@ -506,8 +597,15 @@ export function solveMaxSupportablePurchasePrice(inputs: FeasibilityInputs): num
 // ---------------------------------------------------------------------------
 
 export function runFeasibility(inputs: FeasibilityInputs): FeasibilityResults {
+  const profile = profileFor(inputs.jurisdiction)
   const core = computeCore(inputs)
-  const cls = classify(inputs.devType, inputs.titleType, inputs.yield, inputs.nccClassOverride)
+  const cls = classify(
+    inputs.devType,
+    inputs.titleType,
+    inputs.yield,
+    inputs.nccClassOverride,
+    profile.practitioners
+  )
 
   const { verdict, reason } = verdictFor(inputs.mode, core.marginOnCost, inputs.targetMargin)
 
@@ -515,10 +613,14 @@ export function runFeasibility(inputs: FeasibilityInputs): FeasibilityResults {
   const buysLand = !(inputs.mode === 'ppr' && inputs.pprSubMode === 'knock_down_rebuild')
   const landValue = inputs.landValueUv ?? inputs.purchasePrice
   const landTaxExempt = inputs.landTaxExempt || inputs.mode === 'ppr'
-  const landTaxTraced = nswLandTax(landValue, landTaxExempt)
+  const landTaxTraced = landTax(inputs.jurisdiction, landValue, landTaxExempt)
 
   const statutory = {
-    stampDuty: nswStampDuty(buysLand ? inputs.purchasePrice : 0),
+    stampDuty: stampDuty(
+      inputs.jurisdiction,
+      buysLand ? inputs.purchasePrice : 0,
+      dutyRegimeFor(inputs.devType, inputs.dutyRegimeOverride)
+    ),
     landTaxPerYear: landTaxTraced,
     landTaxOverProject: traced(
       landTaxTraced.value * (core.effectiveDurationMonths / 12),
@@ -533,14 +635,13 @@ export function runFeasibility(inputs: FeasibilityInputs): FeasibilityResults {
             format: 'money',
           },
         ],
-        sourceKey: 'nsw_land_tax',
+        sourceKey: landTaxTraced.sourceKey,
       }
     ),
-    hbcfPremium: nswHbcf(
+    hbcfPremium: warrantyPremium(
+      inputs.jurisdiction,
       core.amounts.construction,
-      hasConstruction(inputs.mode) &&
-        inputs.devType !== 'subdivision' &&
-        inputs.devType !== 'commercial'
+      isResidentialBuild(inputs)
     ),
     gst: gstOnSale(
       core.grossRevenue,
@@ -548,6 +649,14 @@ export function runFeasibility(inputs: FeasibilityInputs): FeasibilityResults {
       remitsGst(inputs.mode, inputs.gstTreatment) ? 'margin_scheme' : 'none'
     ),
     councilContributions: buildContributionsTrace(inputs),
+
+    jurisdiction: inputs.jurisdiction,
+    warrantyShortName: profile.warranty.shortName,
+    warrantyName: profile.warranty.name,
+    // The mechanism prose is long by design — the trace sheet shows all of it,
+    // the line note only needs the first sentence.
+    contributionMechanismShort: profile.contributionMechanism.split('.')[0] + '.',
+    dutyRegime: dutyRegimeFor(inputs.devType, inputs.dutyRegimeOverride),
   }
 
   // --- buckets, with traces ---
@@ -621,26 +730,46 @@ export function runFeasibility(inputs: FeasibilityInputs): FeasibilityResults {
 // ---------------------------------------------------------------------------
 
 function buildConstructionRateTrace(inputs: FeasibilityInputs): Traced {
-  const range = R.constructionRate(inputs.devType, inputs.qualityTier, inputs.siteDifficulty)
+  const sydney = R.constructionRate(inputs.devType, inputs.qualityTier, inputs.siteDifficulty)
+  const range = regionalRate(inputs)
+  const factor = locationFactor(inputs)
+  const regionLabel =
+    profileFor(inputs.jurisdiction).regions.find((r) => r.key === effectiveRegion(inputs))?.label ??
+    inputs.jurisdiction
+
+  const steps: Traced['steps'] = [
+    {
+      label: 'Rate library lookup',
+      detail: `Sydney metro ${inputs.qualityTier.replace('_', '-')} ${inputs.devType.replace('_', ' ')} on a ${inputs.siteDifficulty.replace('_', ' ')} site`,
+      value: sydney.point,
+      format: 'rate',
+    },
+    {
+      label: 'Site difficulty multiplier',
+      value: R.SITE_DIFFICULTY_MULTIPLIER[inputs.siteDifficulty],
+      detail: 'Applied on top of the base rate',
+    },
+  ]
+
+  // Only show the location step where it actually moves the number, so a Sydney
+  // job does not carry a line saying "× 1.00".
+  if (factor !== 1) {
+    steps.push({
+      label: `Location factor — ${regionLabel}`,
+      value: factor,
+      detail: `Sydney metro is the base, so this rate is ${Math.abs(Math.round((factor - 1) * 100))}% ${factor > 1 ? 'above' : 'below'} it`,
+    })
+    steps.push({ label: 'Adjusted rate', value: range.point, format: 'rate' })
+  }
+
+  steps.push({
+    label: 'Plausible range',
+    detail: `$${range.low.toLocaleString()}/m² – $${range.high.toLocaleString()}/m²`,
+  })
+
   const base = traced(range.point, 'medium', {
     range: { low: range.low, high: range.high },
-    steps: [
-      {
-        label: 'Rate library lookup',
-        detail: `Sydney metro ${inputs.qualityTier.replace('_', '-')} ${inputs.devType.replace('_', ' ')} on a ${inputs.siteDifficulty.replace('_', ' ')} site`,
-        value: range.point,
-        format: 'rate',
-      },
-      {
-        label: 'Site difficulty multiplier',
-        value: R.SITE_DIFFICULTY_MULTIPLIER[inputs.siteDifficulty],
-        detail: 'Applied on top of the base rate',
-      },
-      {
-        label: 'Plausible range',
-        detail: `$${range.low.toLocaleString()}/m² – $${range.high.toLocaleString()}/m²`,
-      },
-    ],
+    steps,
     sourceKey: 'construction_rates',
     verifyWith: 'a builder quote or a QS estimate',
   })
@@ -649,10 +778,21 @@ function buildConstructionRateTrace(inputs: FeasibilityInputs): Traced {
 
 function buildContributionsTrace(inputs: FeasibilityInputs): Traced {
   const isSub = inputs.devType === 'subdivision'
-  const perUnit = isSub
-    ? R.SUBDIVISION_CONTRIBUTION_PER_LOT
-    : R.COUNCIL_CONTRIBUTION_PER_DWELLING
-  const total = hasConstruction(inputs.mode) ? inputs.yield * perUnit.point : 0
+  const perUnit = contributionPerUnit(inputs)
+  const total = inputs.yield * perUnit.point
+  const profile = profileFor(inputs.jurisdiction)
+
+  if (!attractsContributions(inputs)) {
+    return traced(0, 'high', {
+      steps: [
+        {
+          label: 'No new lots or dwellings',
+          detail: 'Contributions are levied on development consent — buying an existing asset does not attract them.',
+        },
+      ],
+      sourceKey: contributionsSourceKey(inputs.jurisdiction),
+    })
+  }
 
   return traced(total, 'low', {
     range: { low: inputs.yield * perUnit.low, high: inputs.yield * perUnit.high },
@@ -664,9 +804,13 @@ function buildContributionsTrace(inputs: FeasibilityInputs): Traced {
         format: 'money',
         detail: `Range $${perUnit.low.toLocaleString()} – $${perUnit.high.toLocaleString()}`,
       },
+      {
+        label: `How ${profile.code} levies this`,
+        detail: profile.contributionMechanism.split('.')[0] + '.',
+      },
       { label: 'Total contributions', value: total, format: 'money' },
     ],
-    sourceKey: 'council_contributions',
+    sourceKey: contributionsSourceKey(inputs.jurisdiction),
     verifyWith: 'the relevant council or a town planner — this line varies enormously',
   })
 }
@@ -706,7 +850,11 @@ function buildBuckets(
         buysLand
           ? [
               { label: 'Purchase price', value: inputs.purchasePrice, format: 'money' },
-              { label: 'NSW transfer duty', value: statutory.stampDuty.value, format: 'money' },
+              {
+                label: `${inputs.jurisdiction} transfer duty`,
+                value: statutory.stampDuty.value,
+                format: 'money',
+              },
               {
                 label: 'Legals, due diligence, settlement adjustments',
                 value: R.ACQUISITION_SUNDRIES,
@@ -732,7 +880,7 @@ function buildBuckets(
                 detail: 'No purchase price and no acquisition duty on a knock-down rebuild',
               },
             ],
-        { sourceKey: 'nsw_transfer_duty' }
+        { sourceKey: statutory.stampDuty.sourceKey }
       ),
       inputs.overrides.acquisition
     ),
@@ -753,12 +901,12 @@ function buildBuckets(
             label: 'Council & infrastructure contributions',
             value: statutory.councilContributions.value,
             format: 'money',
-            detail: 's7.11 / s7.12 — varies enormously by council',
+            detail: statutory.contributionMechanismShort,
           },
           ...(cls.dbpApplies
             ? [
                 {
-                  label: 'NSW DBP compliance',
+                  label: `${cls.regimeName} compliance`,
                   value: cls.dbpCostUplift,
                   format: 'money' as const,
                   detail: 'Registered practitioners and regulated design declarations',
@@ -767,7 +915,7 @@ function buildBuckets(
             : []),
         ],
         {
-          sourceKey: 'council_contributions',
+          sourceKey: contributionsSourceKey(inputs.jurisdiction),
           verifyWith: 'the relevant council or a town planner',
           // Contributions swing from $8k to $75k a dwelling, which dominates the
           // uncertainty in this bucket — so the band is worth showing.
@@ -852,15 +1000,15 @@ function buildBuckets(
           ...(statutory.hbcfPremium.value > 0
             ? [
                 {
-                  label: 'HBCF premium',
+                  label: `${statutory.warrantyShortName} premium`,
                   value: statutory.hbcfPremium.value,
                   format: 'money' as const,
-                  detail: 'NSW Home Building Compensation Fund',
+                  detail: statutory.warrantyName.split(',')[0].split('(')[0].trim(),
                 },
               ]
             : []),
         ],
-        { sourceKey: 'nsw_hbcf' }
+        { sourceKey: statutory.hbcfPremium.sourceKey }
       ),
       inputs.overrides.professional_fees
     ),
@@ -901,7 +1049,7 @@ function buildBuckets(
         'medium',
         [
           {
-            label: 'NSW land tax',
+            label: `${inputs.jurisdiction} land tax`,
             value: statutory.landTaxOverProject.value,
             format: 'money',
             detail:
@@ -920,7 +1068,7 @@ function buildBuckets(
             format: 'money',
           },
         ],
-        { sourceKey: 'nsw_land_tax' }
+        { sourceKey: statutory.landTaxPerYear.sourceKey }
       ),
       inputs.overrides.holding
     ),

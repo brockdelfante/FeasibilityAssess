@@ -58,6 +58,25 @@ export type GstTreatment = 'margin_scheme' | 'none'
 
 export type Jurisdiction = 'NSW' | 'VIC' | 'QLD' | 'SA' | 'WA' | 'TAS' | 'ACT' | 'NT'
 
+/**
+ * Which duty regime a transaction falls under.
+ *
+ * This is not a detail. Several jurisdictions charge a completely different
+ * amount — sometimes nothing at all — depending on whether the land is
+ * residential or commercial, and it cannot be inferred from the purchase price:
+ *
+ *  - South Australia has charged NO conveyance duty on non-residential,
+ *    non-primary-production land since 1 July 2018. A $3M commercial site is
+ *    $0, against roughly $158,830 on the residential scale.
+ *  - The ACT commercial scale is nil to $2,100,000 and then a flat 5% of the
+ *    WHOLE value, so $2,100,000 is $0 and $2,100,001 is $105,000.
+ *  - NSW premium property duty is residential-only.
+ *
+ * So the model has to be told rather than guess. Getting this wrong is a 100%
+ * error on the largest single line in an acquisition, and it fails silently.
+ */
+export type DutyRegime = 'residential' | 'commercial'
+
 /** Knock-down-rebuild vs a straight purchase changes who pays acquisition duty. */
 export type PprSubMode = 'buy_and_build' | 'knock_down_rebuild' | 'buy_existing'
 
@@ -133,6 +152,14 @@ export interface CostBucket extends Traced {
 export interface FeasibilityInputs {
   // --- Step 1: what are we doing ---
   jurisdiction: Jurisdiction
+  /**
+   * Cost region within the jurisdiction. Construction rates are calibrated to
+   * Sydney metro, and every profile carries location factors off that base —
+   * building in regional Tasmania is not a Sydney price.
+   *
+   * Empty string means "use the jurisdiction's default region".
+   */
+  costRegion: string
   mode: DealMode
   pprSubMode: PprSubMode
   projectName: string
@@ -170,6 +197,12 @@ export interface FeasibilityInputs {
   titleType: TitleType
   /** null = auto-classify from titleType + yield. */
   nccClassOverride: NccClass | null
+  /**
+   * null = infer from devType (commercial → commercial, everything else
+   * residential). Set it explicitly for industrial land, or for a mixed-use
+   * scheme the revenue office would apportion. See DutyRegime.
+   */
+  dutyRegimeOverride: DutyRegime | null
   /** Total project duration in months. */
   durationMonths: number
   /**
@@ -184,6 +217,15 @@ export interface FeasibilityInputs {
   presalesSettleMonth: number
   /** Target margin on cost, decimal. Drives the feasibility verdict. */
   targetMargin: number
+  /**
+   * How strongly sale price responds to dwelling size, as an exponent.
+   *
+   * Only used by the scale recommender, which is the one place the model varies
+   * dwelling size on the client's behalf. 0 means price is unaffected by size,
+   * 1 means strictly proportional to it; residential sits around 0.75. See
+   * SIZE_PRICE_ELASTICITY.
+   */
+  sizePriceElasticity: number
 
   // --- Mode-specific: PPR / knock-down rebuild ---
   currentHomeValue: number
@@ -419,20 +461,42 @@ export interface ClassificationResult {
   nccClass: NccClass
   /** True when the class was inferred rather than set explicitly. */
   inferred: boolean
+  /** True where the jurisdiction's registered-practitioner regime bites. */
   dbpApplies: boolean
   dbpCostUplift: number
   dbpProgramMonths: number
   requiredPractitioners: string[]
   reasoning: string
+
+  /**
+   * The local regime, for labelling. Null where the jurisdiction has none — the
+   * UI must not name NSW's DBP Act on a Victorian project.
+   */
+  regimeName: string | null
+  regimeRegisterUrl: string | null
+  regimeCostRange: { low: number; high: number } | null
 }
 
 export interface StatutoryBreakdown {
   stampDuty: Traced
   landTaxPerYear: Traced
   landTaxOverProject: Traced
+  /** The local residential builder warranty premium — HBCF in NSW, and its own scheme elsewhere. */
   hbcfPremium: Traced
   gst: Traced
   councilContributions: Traced
+
+  // --- labelling, so the UI never says "NSW land tax" about a Victorian site ---
+  /** Which jurisdiction's schedules produced these figures. */
+  jurisdiction: Jurisdiction
+  /** Short name of the local warranty scheme, e.g. "HBCF" or "Home Warranty". */
+  warrantyShortName: string
+  /** Full name of the local warranty scheme, for the note under the line. */
+  warrantyName: string
+  /** One-line description of the local contribution mechanism. */
+  contributionMechanismShort: string
+  /** Which duty regime was applied — residential or commercial. */
+  dutyRegime: DutyRegime
 }
 
 export interface FeasibilityResults {

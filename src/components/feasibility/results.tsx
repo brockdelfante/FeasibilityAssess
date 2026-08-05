@@ -31,7 +31,7 @@ import { cn } from '@/lib/utils'
 
 import { nccClassLabel } from '@/lib/feasibility/classification'
 import { BUCKET_LABELS } from '@/lib/feasibility/labels'
-import { RATE_LIBRARY_REFRESHED, RATE_LIBRARY_VERSION, SOURCES } from '@/lib/feasibility/sources'
+import { RATE_LIBRARY_REFRESHED, RATE_LIBRARY_VERSION } from '@/lib/feasibility/sources'
 import { useFeasibilityStore } from '@/lib/feasibility/store'
 import { area, money, percent, ratePerSqm, safeDiv } from '@/lib/feasibility/trace'
 import type {
@@ -423,20 +423,32 @@ export function StatutoryPanel({ results }: { results: FeasibilityResults }) {
   const [open, setOpen] = React.useState<{ title: string; traced: CostBucket | null } | null>(null)
   const s = results.statutory
 
+  const j = s.jurisdiction
   const lines: { title: string; traced: typeof s.stampDuty; note: string }[] = [
-    { title: 'NSW transfer (stamp) duty', traced: s.stampDuty, note: 'Payable on settlement' },
-    { title: 'NSW land tax', traced: s.landTaxPerYear, note: 'Per year, while you hold' },
     {
-      title: 'NSW land tax over the project',
+      title: `${j} transfer (stamp) duty`,
+      traced: s.stampDuty,
+      note:
+        s.dutyRegime === 'commercial'
+          ? 'Payable on settlement — non-residential scale'
+          : 'Payable on settlement',
+    },
+    { title: `${j} land tax`, traced: s.landTaxPerYear, note: 'Per year, while you hold' },
+    {
+      title: `${j} land tax over the project`,
       traced: s.landTaxOverProject,
       note: 'Included in holding costs',
     },
-    { title: 'HBCF premium', traced: s.hbcfPremium, note: 'Home Building Compensation Fund' },
+    {
+      title: `${s.warrantyShortName} premium`,
+      traced: s.hbcfPremium,
+      note: s.warrantyName.split(',')[0].split('(')[0].trim(),
+    },
     { title: 'GST on sale', traced: s.gst, note: 'Under the margin scheme' },
     {
       title: 'Council & infrastructure contributions',
       traced: s.councilContributions,
-      note: 's7.11 / s7.12 — verify with the council',
+      note: s.contributionMechanismShort,
     },
   ]
 
@@ -527,7 +539,7 @@ export function ClassificationPanel({ results }: { results: FeasibilityResults }
         <>
           <div className="grid gap-3 sm:grid-cols-2">
             <StatTile
-              label="DBP cost uplift"
+              label="Compliance cost uplift"
               value={money(c.dbpCostUplift)}
               tone="warning"
               sub="Included in planning & design"
@@ -542,7 +554,7 @@ export function ClassificationPanel({ results }: { results: FeasibilityResults }
 
           <div>
             <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">
-              Practitioners that must be DBP-registered
+              Practitioners that must be registered
             </p>
             <ul className="space-y-1.5">
               {c.requiredPractitioners.map((p) => (
@@ -553,25 +565,44 @@ export function ClassificationPanel({ results }: { results: FeasibilityResults }
               ))}
             </ul>
             <p className="mt-3 text-xs text-gray-500">
-              Verify each one on the{' '}
-              <a
-                href={SOURCES.nsw_dbp.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-medium text-blue-600 hover:underline"
-              >
-                NSW Public Register
-              </a>{' '}
-              before you sign a building contract.
+              {c.regimeRegisterUrl ? (
+                <>
+                  Verify each one on the{' '}
+                  <a
+                    href={c.regimeRegisterUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-blue-600 hover:underline"
+                  >
+                    public register
+                  </a>{' '}
+                  before you sign a building contract.
+                </>
+              ) : (
+                <>Verify each one on the public register before you sign a building contract.</>
+              )}
             </p>
           </div>
         </>
-      ) : (
-        <DidYouKnow title="The DBP Act does not apply here" tone="blue">
+      ) : c.regimeName ? (
+        <DidYouKnow title={`The ${c.regimeName} does not apply here`} tone="blue">
           <p>
-            That saves roughly $45,000–$120,000 of registered-practitioner fees and one and a half
-            to four months of program compared with a Class 2 scheme. If the title type changes to
-            strata, this changes with it.
+            That saves roughly{' '}
+            {c.regimeCostRange
+              ? `${money(c.regimeCostRange.low)}–${money(c.regimeCostRange.high)}`
+              : 'a substantial sum'}{' '}
+            of registered-practitioner fees and one and a half to four months of program compared
+            with a Class 2 scheme. If the title type changes to strata, this changes with it.
+          </p>
+        </DidYouKnow>
+      ) : (
+        <DidYouKnow title="No registered-practitioner uplift in this state" tone="blue">
+          <p>
+            {results.statutory.jurisdiction} does not run a scheme like the NSW Design and Building
+            Practitioners Act, so we have not added a compliance uplift. The classification still
+            drives your warranty insurance and certification path, and some states impose a
+            developer bond on taller residential buildings instead — check the local rules before
+            you contract.
           </p>
         </DidYouKnow>
       )}

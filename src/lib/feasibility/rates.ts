@@ -1,5 +1,10 @@
 /**
- * NSW 2025–26 rate library.
+ * Australian rate library, base year 2026–27.
+ *
+ * Construction rates are calibrated to SYDNEY METRO. Every other market is
+ * reached by the location factor on the jurisdiction profile, so a Bendigo
+ * townhouse and a Perth apartment are priced off the same library rather than
+ * off separate tables that would drift apart.
  *
  * Everything a client does not know is looked up here, so a nearly-blank form
  * still produces a complete answer. Each rate publishes a plausible range as
@@ -123,8 +128,14 @@ export function consultantPct(devType: DevType): RateRange {
 export const PROFESSIONAL_FEE_PCT: RateRange = { low: 0.02, point: 0.04, high: 0.075 }
 
 /**
- * Council DA fees plus s7.11 / s7.12 contributions, per dwelling. Wildly
+ * Council DA fees plus infrastructure contributions, per dwelling. Wildly
  * variable — this is the lowest-confidence line in the whole model.
+ *
+ * This is the national fallback shape only. The figure the engine actually uses
+ * comes from the jurisdiction profile, because the mechanisms are not comparable
+ * between states: NSW charges s7.11 / s7.12 under the EP&A Act, Victoria can
+ * stack GAIC on top of council contributions, Queensland levies infrastructure
+ * charges under an LGIP.
  */
 export const COUNCIL_CONTRIBUTION_PER_DWELLING: RateRange = {
   low: 8_000,
@@ -132,12 +143,12 @@ export const COUNCIL_CONTRIBUTION_PER_DWELLING: RateRange = {
   high: 75_000,
 }
 
-/** Subdivisions attract contributions per lot too, usually at the higher end. */
-export const SUBDIVISION_CONTRIBUTION_PER_LOT: RateRange = {
-  low: 15_000,
-  point: 38_000,
-  high: 90_000,
-}
+/**
+ * Subdivisions attract contributions per lot at the higher end of the same
+ * schedule, because a lot carries the trunk infrastructure the dwellings later
+ * connect to. Applied to the jurisdiction's per-dwelling range.
+ */
+export const SUBDIVISION_CONTRIBUTION_UPLIFT = 1.35
 
 // ---------------------------------------------------------------------------
 // Acquisition sundries
@@ -273,6 +284,47 @@ export const TRADE_ORDER: TradeKey[] = [
   'external_works',
   'builder_margin',
 ]
+
+// ---------------------------------------------------------------------------
+// How sale price responds to dwelling size
+// ---------------------------------------------------------------------------
+
+/**
+ * Elasticity of sale price to dwelling floor area.
+ *
+ *     price = currentPrice × (sqm / currentSqm) ^ elasticity
+ *
+ * A dwelling's price is not proportional to its floor area. Part of the value
+ * is fixed regardless of size — the land share, the kitchen, the bathrooms, the
+ * services, and the simple floor price any dwelling commands — so bigger
+ * dwellings sell for more in total but *less per square metre*.
+ *
+ * The exponent captures that directly, and the two extremes are both wrong:
+ *
+ *   0.0  price is identical whatever the size (implies a 100 m² unit fetches
+ *        the same as a 380 m² house — nonsense, and it makes tiny dwellings
+ *        look wildly profitable)
+ *   1.0  price is strictly proportional to area, i.e. $/m² never varies with
+ *        size (ignores the fixed component, so it understates small dwellings)
+ *   0.75 published hedonic studies of Australian residential put the exponent
+ *        in the 0.6–0.85 band; 0.75 sits mid-range
+ *
+ * Only used where the model varies dwelling size on the client's behalf — the
+ * scale recommender. Wherever the client states both a size and a price, we use
+ * their numbers untouched.
+ */
+export const SIZE_PRICE_ELASTICITY = 0.75
+
+/** Apply the elasticity. Falls back safely on a zero or missing base size. */
+export function priceForSize(
+  currentPrice: number,
+  currentSqm: number,
+  targetSqm: number,
+  elasticity: number = SIZE_PRICE_ELASTICITY
+): number {
+  if (currentSqm <= 0 || targetSqm <= 0 || currentPrice <= 0) return currentPrice
+  return currentPrice * Math.pow(targetSqm / currentSqm, elasticity)
+}
 
 // ---------------------------------------------------------------------------
 // Scenario definitions
