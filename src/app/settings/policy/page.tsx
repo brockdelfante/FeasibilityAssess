@@ -36,16 +36,16 @@ export default function PolicySettingsPage() {
     }
   };
 
-  if (loading) return <div className="flex h-screen items-center justify-center bg-gray-50"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>
+  if (loading) return <div className="flex h-screen items-center justify-center bg-muted/40"><Loader2 className="h-8 w-8 animate-spin text-brand-600" /></div>
 
   return (
     <div className="p-8 space-y-6 max-w-6xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Policy Configuration</h1>
-          <p className="text-gray-500 mt-1">Global lending thresholds and risk scoring weights applied to new assessments.</p>
+          <h1 className="text-3xl font-bold text-foreground tracking-tight">Policy Configuration</h1>
+          <p className="text-muted-foreground mt-1">Global lending thresholds and risk scoring weights applied to new assessments.</p>
         </div>
-        <Button className="bg-blue-600 shadow-lg text-white" onClick={handleSave} disabled={isSaving}>
+        <Button className="bg-brand-600 shadow-lg text-white" onClick={handleSave} disabled={isSaving}>
           {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
           Update Active Policy
         </Button>
@@ -53,7 +53,7 @@ export default function PolicySettingsPage() {
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card className="shadow-sm">
-          <CardHeader className="bg-gray-50 border-b">
+          <CardHeader className="bg-muted/40 border-b">
             <CardTitle className="text-lg">Lending Thresholds</CardTitle>
             <CardDescription>Hard limits for covenant compliance checks.</CardDescription>
           </CardHeader>
@@ -67,8 +67,8 @@ export default function PolicySettingsPage() {
             ].map(item => (
                 <div key={item.key} className="space-y-4">
                     <div className="flex justify-between items-center">
-                        <Label className="font-bold uppercase text-[11px] text-gray-600">{item.label}</Label>
-                        <span className="font-mono text-sm bg-blue-50 text-blue-700 px-2 py-0.5 rounded">{(policy[item.key] * 100).toFixed(1)}%</span>
+                        <Label className="font-bold uppercase text-[11px] text-muted-foreground">{item.label}</Label>
+                        <span className="font-mono text-sm bg-brand-50 text-brand-700 px-2 py-0.5 rounded">{(policy[item.key] * 100).toFixed(1)}%</span>
                     </div>
                     <Slider
                         value={[policy[item.key]]}
@@ -81,7 +81,7 @@ export default function PolicySettingsPage() {
         </Card>
 
         <Card className="shadow-sm">
-          <CardHeader className="bg-gray-50 border-b">
+          <CardHeader className="bg-muted/40 border-b">
             <CardTitle className="text-lg">Risk Scoring Weights</CardTitle>
             <CardDescription>Must sum to exactly 100%.</CardDescription>
           </CardHeader>
@@ -95,8 +95,8 @@ export default function PolicySettingsPage() {
             ].map(item => (
                 <div key={item.key} className="space-y-4">
                     <div className="flex justify-between items-center">
-                        <Label className="font-bold uppercase text-[11px] text-gray-600">{item.label}</Label>
-                        <span className="font-mono text-sm bg-green-50 text-green-700 px-2 py-0.5 rounded">{(policy[item.key] * 100).toFixed(0)}%</span>
+                        <Label className="font-bold uppercase text-[11px] text-muted-foreground">{item.label}</Label>
+                        <span className="font-mono text-sm bg-positive-50 text-positive-700 px-2 py-0.5 rounded">{(policy[item.key] * 100).toFixed(0)}%</span>
                     </div>
                     <Slider
                         value={[policy[item.key]]}
@@ -107,8 +107,8 @@ export default function PolicySettingsPage() {
             ))}
             <Separator />
             <div className="flex justify-between font-bold items-center">
-              <span className="text-xs uppercase text-gray-500">Total Calculation Weight</span>
-              <span className={`font-mono p-2 rounded ${Math.abs(policy.weight_location + policy.weight_developer_exp + policy.weight_presales + policy.weight_lvr + policy.weight_contingency - 1) < 0.001 ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
+              <span className="text-xs uppercase text-muted-foreground">Total Calculation Weight</span>
+              <span className={`font-mono p-2 rounded ${Math.abs(policy.weight_location + policy.weight_developer_exp + policy.weight_presales + policy.weight_lvr + policy.weight_contingency - 1) < 0.001 ? "bg-positive-100 text-positive-800" : "bg-critical-100 text-critical-800"}`}>
                 {((policy.weight_location + policy.weight_developer_exp + policy.weight_presales + policy.weight_lvr + policy.weight_contingency) * 100).toFixed(0)}%
               </span>
             </div>

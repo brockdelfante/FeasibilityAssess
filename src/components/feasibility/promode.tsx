@@ -75,7 +75,7 @@ function OverrideCell({
 
   return (
     <>
-      <TableCell className="text-right font-mono text-xs tabular-nums text-gray-500">
+      <TableCell className="text-right font-mono text-xs tabular-nums text-muted-foreground">
         {format === 'percent' ? percent(quickValue) : money(quickValue)}
         {format === 'rate' ? '/m²' : ''}
       </TableCell>
@@ -86,7 +86,7 @@ function OverrideCell({
           inputMode="decimal"
           className={cn(
             'h-8 text-right font-mono text-xs tabular-nums',
-            active && 'border-emerald-400 bg-emerald-50/60'
+            active && 'border-positive-400 bg-positive-50/60'
           )}
           onFocus={() => {
             setTyped(stored)
@@ -110,7 +110,7 @@ function OverrideCell({
         <span
           className={cn(
             'font-mono text-xs font-semibold tabular-nums',
-            active ? 'text-emerald-700' : 'text-gray-900'
+            active ? 'text-positive-700' : 'text-foreground'
           )}
         >
           {format === 'percent' ? percent(activeValue) : money(activeValue)}
@@ -180,11 +180,11 @@ export function OverridesPanel() {
     <SectionCard
       title="Override any number"
       blurb="Completely optional. Leave every cell blank and your headline numbers do not change a cent — the Quick answer stays in effect. Use this when you have a real quote."
-      icon={<Sliders className="h-4 w-4 text-blue-600" />}
+      icon={<Sliders className="h-4 w-4 text-brand-600" />}
       action={
         <div className="flex items-center gap-2">
           {activeCount > 0 ? (
-            <Badge variant="outline" className="border-emerald-300 bg-emerald-50 text-emerald-800">
+            <Badge variant="outline" className="border-positive-300 bg-positive-50 text-positive-800">
               {activeCount} pinned
             </Badge>
           ) : null}
@@ -196,7 +196,7 @@ export function OverridesPanel() {
       }
     >
       <div>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Underlying rates
         </p>
         <Table>
@@ -211,7 +211,7 @@ export function OverridesPanel() {
           </TableHeader>
           <TableBody>
             <TableRow>
-              <TableCell className="font-medium text-gray-800">Construction rate</TableCell>
+              <TableCell className="font-medium text-foreground">Construction rate</TableCell>
               <OverrideCell
                 quickValue={quick.constructionRate}
                 override={inputs.overrides.constructionRatePerSqm}
@@ -220,7 +220,7 @@ export function OverridesPanel() {
               />
             </TableRow>
             <TableRow>
-              <TableCell className="font-medium text-gray-800">Interest rate</TableCell>
+              <TableCell className="font-medium text-foreground">Interest rate</TableCell>
               <OverrideCell
                 quickValue={
                   quick.amounts.finance > 0 || true
@@ -233,7 +233,7 @@ export function OverridesPanel() {
               />
             </TableRow>
             <TableRow>
-              <TableCell className="font-medium text-gray-800">Loan-to-cost</TableCell>
+              <TableCell className="font-medium text-foreground">Loan-to-cost</TableCell>
               <OverrideCell
                 quickValue={quickLtc(inputs)}
                 override={inputs.overrides.loanToCost}
@@ -246,7 +246,7 @@ export function OverridesPanel() {
       </div>
 
       <div>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Cost buckets
         </p>
         <Table>
@@ -262,7 +262,7 @@ export function OverridesPanel() {
           <TableBody>
             {bucketRows.map((row) => (
               <TableRow key={row.key}>
-                <TableCell className="font-medium text-gray-800">{row.label}</TableCell>
+                <TableCell className="font-medium text-foreground">{row.label}</TableCell>
                 <OverrideCell
                   quickValue={quick.amounts[row.key]}
                   override={inputs.overrides[row.key]}
@@ -270,15 +270,15 @@ export function OverridesPanel() {
                 />
               </TableRow>
             ))}
-            <TableRow className="bg-gray-50">
-              <TableCell className="font-semibold text-gray-900">
+            <TableRow className="bg-muted/40">
+              <TableCell className="font-semibold text-foreground">
                 Total development cost
               </TableCell>
-              <TableCell className="text-right font-mono text-xs tabular-nums text-gray-500">
+              <TableCell className="text-right font-mono text-xs tabular-nums text-muted-foreground">
                 {money(quick.totalDevelopmentCost)}
               </TableCell>
               <TableCell />
-              <TableCell className="text-right font-mono text-xs font-bold tabular-nums text-gray-900">
+              <TableCell className="text-right font-mono text-xs font-bold tabular-nums text-foreground">
                 {money(results.totalDevelopmentCost)}
               </TableCell>
               <TableCell />
@@ -287,7 +287,7 @@ export function OverridesPanel() {
         </Table>
       </div>
 
-      <p className="text-xs leading-relaxed text-gray-500">
+      <p className="text-xs leading-relaxed text-muted-foreground">
         A pinned cell flips its trust badge to <strong>Yours</strong> and replaces the rate-library
         lookup. Click any number on the results above to see the full trace, including which fields
         are now pinned.
@@ -348,10 +348,10 @@ export function BoqPanel() {
       <SectionCard
         title="Construction breakdown"
         blurb="Split the construction figure across nine trade categories so you can drill in, or type a QS estimate line by line."
-        icon={<Wrench className="h-4 w-4 text-blue-600" />}
+        icon={<Wrench className="h-4 w-4 text-brand-600" />}
       >
-        <div className="rounded-xl border border-dashed border-gray-300 p-8 text-center">
-          <p className="text-sm text-gray-600">
+        <div className="rounded-xl border border-dashed border-border p-8 text-center">
+          <p className="text-sm text-muted-foreground">
             Nothing here yet. Seeding splits your current construction figure across the standard
             trades — it changes nothing until you edit a cell.
           </p>
@@ -367,7 +367,7 @@ export function BoqPanel() {
     <SectionCard
       title="Construction breakdown"
       blurb="Trade-level drill-down. Leave every cell untouched and the Quick construction number stays in effect — this panel only takes over once you edit something."
-      icon={<Wrench className="h-4 w-4 text-blue-600" />}
+      icon={<Wrench className="h-4 w-4 text-brand-600" />}
       action={
         <Button variant="outline" size="sm" onClick={seedBoqFromQuick}>
           <RotateCcw className="h-3 w-3" />
@@ -386,12 +386,12 @@ export function BoqPanel() {
       </div>
 
       {!boq.touched ? (
-        <div className="rounded-lg border border-blue-200 bg-blue-50/60 px-4 py-3 text-xs text-blue-900">
+        <div className="rounded-lg border border-brand-200 bg-brand-50/60 px-4 py-3 text-xs text-brand-900">
           Untouched seed — your Quick construction number is still what drives the model. Edit any
           cell below to make this breakdown take over.
         </div>
       ) : (
-        <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 px-4 py-3 text-xs text-emerald-900">
+        <div className="rounded-lg border border-positive-200 bg-positive-50/60 px-4 py-3 text-xs text-positive-900">
           This breakdown is now driving the construction cost, replacing the rate-library figure.
         </div>
       )}
@@ -403,30 +403,30 @@ export function BoqPanel() {
           const isOpen = expanded.has(trade)
 
           return (
-            <div key={trade} className="rounded-lg border border-gray-200">
+            <div key={trade} className="rounded-lg border border-border">
               <button
                 type="button"
                 onClick={() => toggle(trade)}
-                className="flex w-full items-center justify-between gap-4 px-4 py-3 text-left hover:bg-gray-50"
+                className="flex w-full items-center justify-between gap-4 px-4 py-3 text-left hover:bg-muted/40"
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-gray-900">{TRADE_LABELS[trade]}</span>
-                  <span className="text-xs text-gray-400">
+                  <span className="text-sm font-medium text-foreground">{TRADE_LABELS[trade]}</span>
+                  <span className="text-xs text-muted-foreground">
                     {lines.length} {lines.length === 1 ? 'line' : 'lines'}
                   </span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-xs text-gray-400">
+                  <span className="text-xs text-muted-foreground">
                     {percent(safeDiv(tradeTotal, total))}
                   </span>
-                  <span className="font-mono text-sm font-semibold tabular-nums text-gray-900">
+                  <span className="font-mono text-sm font-semibold tabular-nums text-foreground">
                     {money(tradeTotal)}
                   </span>
                 </div>
               </button>
 
               {isOpen ? (
-                <div className="border-t border-gray-100 p-3">
+                <div className="border-t border-border p-3">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -495,7 +495,7 @@ export function BoqPanel() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-6 w-6 text-gray-400 hover:text-red-600"
+                              className="h-6 w-6 text-muted-foreground hover:text-critical-600"
                               onClick={() => removeBoqLine(line.id)}
                             >
                               <Trash2 className="h-3 w-3" />
@@ -521,7 +521,7 @@ export function BoqPanel() {
         })}
       </div>
 
-      <div className="flex items-center justify-between rounded-lg bg-gray-900 px-4 py-3">
+      <div className="flex items-center justify-between rounded-lg bg-navy-900 px-4 py-3">
         <span className="text-sm font-semibold text-white">Construction total</span>
         <span className="font-mono text-lg font-bold tabular-nums text-white">{money(total)}</span>
       </div>
@@ -545,9 +545,9 @@ export function AssembliesPanel() {
     <SectionCard
       title="Takeoff & assemblies"
       blurb="Most people cannot quote a $/m² rate, but they can tell you how many bathrooms. Pick an assembly, set the quantity, and drop it into the construction breakdown as editable lines."
-      icon={<Layers className="h-4 w-4 text-blue-600" />}
+      icon={<Layers className="h-4 w-4 text-brand-600" />}
     >
-      <p className="rounded-lg border border-gray-200 bg-gray-50/70 px-4 py-3 text-xs text-gray-600">
+      <p className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-xs text-muted-foreground">
         Skip this entirely if you do not want to specify beds, baths and slabs. Nothing here is
         required — your Quick construction figure stays in effect until you apply an assembly and
         add it to the breakdown.
@@ -555,7 +555,7 @@ export function AssembliesPanel() {
 
       <div className="grid gap-4 sm:grid-cols-[2fr_1fr]">
         <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Catalogue</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Catalogue</p>
           <Select value={selected} onValueChange={setSelected}>
             <SelectTrigger>
               <SelectValue />
@@ -569,12 +569,12 @@ export function AssembliesPanel() {
             </SelectContent>
           </Select>
           {assembly ? (
-            <p className="text-xs leading-relaxed text-gray-500">{assembly.description}</p>
+            <p className="text-xs leading-relaxed text-muted-foreground">{assembly.description}</p>
           ) : null}
         </div>
 
         <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             How many {assembly?.driver ?? 'units'}?
           </p>
           <Input
@@ -595,8 +595,8 @@ export function AssembliesPanel() {
       </div>
 
       {assembly ? (
-        <div className="rounded-lg border border-gray-200">
-          <p className="border-b border-gray-100 px-4 py-2 text-xs font-semibold text-gray-500">
+        <div className="rounded-lg border border-border">
+          <p className="border-b border-border px-4 py-2 text-xs font-semibold text-muted-foreground">
             {assembly.name} — {assembly.subItems.length} sub-items, {money(assemblyUnitCost(assembly))} per{' '}
             {assembly.driver}
           </p>
@@ -613,15 +613,15 @@ export function AssembliesPanel() {
             <TableBody>
               {assembly.subItems.map((item) => (
                 <TableRow key={item.label}>
-                  <TableCell className="text-xs text-gray-700">{item.label}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{item.label}</TableCell>
                   <TableCell className="text-right font-mono text-xs tabular-nums">
                     {item.qty}
                   </TableCell>
-                  <TableCell className="text-xs text-gray-500">{item.unit}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{item.unit}</TableCell>
                   <TableCell className="text-right font-mono text-xs tabular-nums">
                     {money(item.rate)}
                   </TableCell>
-                  <TableCell className="text-right font-mono text-xs tabular-nums text-gray-400">
+                  <TableCell className="text-right font-mono text-xs tabular-nums text-muted-foreground">
                     {percent(item.waste, 0)}
                   </TableCell>
                 </TableRow>
@@ -632,11 +632,11 @@ export function AssembliesPanel() {
       ) : null}
 
       <div className="space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Applied ({inputs.appliedAssemblies.length})
         </p>
         {inputs.appliedAssemblies.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-gray-300 px-4 py-6 text-center text-xs text-gray-500">
+          <p className="rounded-lg border border-dashed border-border px-4 py-6 text-center text-xs text-muted-foreground">
             None applied yet. Pick one above, set the quantity, and click Apply.
           </p>
         ) : (
@@ -648,22 +648,22 @@ export function AssembliesPanel() {
               return (
                 <div
                   key={applied.id}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-200 px-4 py-3"
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border px-4 py-3"
                 >
                   <div>
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-sm font-medium text-foreground">
                       {a.name}{' '}
-                      <span className="text-gray-400">
+                      <span className="text-muted-foreground">
                         × {applied.driverQty} {a.driver}
                       </span>
                     </p>
-                    <p className="font-mono text-xs tabular-nums text-gray-500">{money(cost)}</p>
+                    <p className="font-mono text-xs tabular-nums text-muted-foreground">{money(cost)}</p>
                   </div>
                   <div className="flex items-center gap-2">
                     {applied.poppedIntoBoq ? (
                       <Badge
                         variant="outline"
-                        className="border-emerald-300 bg-emerald-50 text-emerald-800"
+                        className="border-positive-300 bg-positive-50 text-positive-800"
                       >
                         In the breakdown
                       </Badge>
@@ -675,7 +675,7 @@ export function AssembliesPanel() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 text-gray-400 hover:text-red-600"
+                      className="h-8 w-8 text-muted-foreground hover:text-critical-600"
                       onClick={() => removeAppliedAssembly(applied.id)}
                     >
                       <Trash2 className="h-3 w-3" />
@@ -688,7 +688,7 @@ export function AssembliesPanel() {
         )}
       </div>
 
-      <p className="text-xs leading-relaxed text-gray-500">
+      <p className="text-xs leading-relaxed text-muted-foreground">
         Adding an assembly to the breakdown imports its sub-items as ordinary editable rows. Once
         imported they behave like any other line — applying the same assembly again appends new
         rows rather than updating the old ones.

@@ -143,7 +143,7 @@ export function ExportPanel() {
     <SectionCard
       title="Export & share"
       blurb="Download the numbers, or copy a link that reopens this exact feasibility for someone else — your lender, your partner, your accountant."
-      icon={<Download className="h-4 w-4 text-blue-600" />}
+      icon={<Download className="h-4 w-4 text-brand-600" />}
     >
       <div className="flex flex-wrap gap-2">
         <Button onClick={downloadPdf} disabled={pdfBusy}>
@@ -169,7 +169,7 @@ export function ExportPanel() {
           Cashflow CSV
         </Button>
         <Button variant="outline" onClick={copyShareLink}>
-          {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Link2 className="h-4 w-4" />}
+          {copied ? <Check className="h-4 w-4 text-positive-600" /> : <Link2 className="h-4 w-4" />}
           {copied ? 'Link copied' : 'Copy share link'}
         </Button>
         <Button variant="outline" onClick={() => window.print()}>
@@ -178,21 +178,21 @@ export function ExportPanel() {
         </Button>
       </div>
 
-      {pdfError ? <p className="text-xs text-red-600">{pdfError}</p> : null}
+      {pdfError ? <p className="text-xs text-critical-600">{pdfError}</p> : null}
 
-      <div className="rounded-lg border border-gray-200 bg-gray-50/70 px-4 py-3 text-xs leading-relaxed text-gray-600">
+      <div className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-xs leading-relaxed text-muted-foreground">
         The CSVs and the share link are generated entirely in your browser — nothing leaves your
         device. The link encodes your inputs in the URL, so whoever opens it sees exactly these
         numbers. The PDF is rendered on our server because the layout engine is too heavy to run in
         a browser, but no copy is kept.
       </div>
 
-      <div className="rounded-xl border border-blue-200 bg-blue-50/50 p-4">
-        <p className="flex items-center gap-2 text-sm font-semibold text-blue-900">
+      <div className="rounded-xl border border-brand-200 bg-brand-50/50 p-4">
+        <p className="flex items-center gap-2 text-sm font-semibold text-brand-900">
           <Upload className="h-4 w-4" />
           Take this into a full lender assessment
         </p>
-        <p className="mt-1 text-xs leading-relaxed text-blue-800/90">
+        <p className="mt-1 text-xs leading-relaxed text-brand-800/90">
           This feasibility is indicative and client-facing. The lender-side assessment adds the
           things a credit team needs: presale registers and cover ratios, mezzanine tranches,
           covenant testing against your policy settings, and credit-committee reports. Your cost
@@ -202,7 +202,7 @@ export function ExportPanel() {
           {pushing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
           {pushing ? 'Creating…' : 'Create lender assessment'}
         </Button>
-        {pushError ? <p className="mt-2 text-xs text-red-600">{pushError}</p> : null}
+        {pushError ? <p className="mt-2 text-xs text-critical-600">{pushError}</p> : null}
       </div>
     </SectionCard>
   )
@@ -217,27 +217,27 @@ export function SourcesPanel() {
     <SectionCard
       title="What's behind the numbers"
       blurb="Transparency by default. Every assumption traces to a published source or a stated indicative range — and you can override any of it."
-      icon={<BookOpen className="h-4 w-4 text-blue-600" />}
+      icon={<BookOpen className="h-4 w-4 text-brand-600" />}
       action={
-        <span className="text-[10px] font-medium text-gray-400">
+        <span className="text-[10px] font-medium text-muted-foreground">
           {RATE_LIBRARY_VERSION} · refreshed {RATE_LIBRARY_REFRESHED}
         </span>
       }
     >
       <div className="space-y-3">
         {Object.values(SOURCES).map((source) => (
-          <div key={source.key} className="rounded-lg border border-gray-200 p-4">
+          <div key={source.key} className="rounded-lg border border-border p-4">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <p className="text-sm font-semibold text-gray-900">{source.title}</p>
-              <span className="text-[10px] text-gray-400">As at {source.asAt}</span>
+              <p className="text-sm font-semibold text-foreground">{source.title}</p>
+              <span className="text-[10px] text-muted-foreground">As at {source.asAt}</span>
             </div>
-            <p className="mt-1 text-xs leading-relaxed text-gray-600">{source.detail}</p>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{source.detail}</p>
             {source.url ? (
               <a
                 href={source.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-2 inline-block text-xs font-medium text-blue-600 hover:underline"
+                className="mt-2 inline-block text-xs font-medium text-brand-600 hover:underline"
               >
                 View the source ↗
               </a>
@@ -261,7 +261,7 @@ export function DisclaimerGate() {
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <ShieldCheck className="h-5 w-5 text-blue-600" />
+            <ShieldCheck className="h-5 w-5 text-brand-600" />
             Before you start
           </DialogTitle>
           <DialogDescription>
@@ -269,22 +269,22 @@ export function DisclaimerGate() {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3 text-sm leading-relaxed text-gray-600">
+        <div className="space-y-3 text-sm leading-relaxed text-muted-foreground">
           <p>
-            <strong className="text-gray-900">Indicative only.</strong> This assessment is built
+            <strong className="text-foreground">Indicative only.</strong> This assessment is built
             from the inputs you provide plus assumed rates from a library that is updated
             periodically. It is not a quote, a guaranteed cost, or a valuation. Real costs move
             with site conditions, builder selection, design choices, market movement and council
             requirements that no model can capture.
           </p>
           <p>
-            <strong className="text-gray-900">Not financial, legal or tax advice.</strong> Stamp
+            <strong className="text-foreground">Not financial, legal or tax advice.</strong> Stamp
             duty, land tax, GST, builder warranty and every other statutory line is calculated from published
             rates current at the time of writing. Confirm each one with a qualified accountant,
             conveyancer, solicitor or finance broker before you commit to anything.
           </p>
           <p>
-            <strong className="text-gray-900">Verify what matters.</strong> If a number materially
+            <strong className="text-foreground">Verify what matters.</strong> If a number materially
             affects a decision you are about to make, check it against a registered quantity
             surveyor, a builder, a town planner or the relevant government source. Construction
             rates drift annually and regulatory thresholds change.
@@ -304,9 +304,9 @@ export function DisclaimerGate() {
 /** Persistent footer disclaimer, always visible alongside the results. */
 export function DisclaimerFooter() {
   return (
-    <div className="rounded-xl border border-gray-200 bg-gray-50/70 p-5">
-      <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Disclaimer</p>
-      <p className="mt-2 text-xs leading-relaxed text-gray-600">
+    <div className="rounded-xl border border-border bg-muted/40 p-5">
+      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Disclaimer</p>
+      <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
         This is a feasibility-modelling tool. The figures it produces are indicative estimates
         based on the inputs you entered and assumed rates from a periodically updated library. It
         does not provide financial, legal, tax, planning, valuation or construction advice, and its

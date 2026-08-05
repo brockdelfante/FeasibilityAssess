@@ -1,6 +1,22 @@
 @import "tailwindcss";
 
+/* ===========================================================================
+   SIARE design system
+   ---------------------------------------------------------------------------
+   One place where the brand is defined, so a screen cannot drift from it.
+
+   The rule: components read TOKENS, never raw palette values. Before this
+   existed the shadcn variables below were untouched shadcn defaults — which
+   meant `--primary` was near-black, every `<Button>` rendered black, and every
+   call site had to override it with `className="bg-blue-600"`. Half of them
+   did, half didn't, and the two halves of the platform stopped matching.
+
+   Pointing the variables at SIARE's own colours makes the default correct, so
+   the overrides can go away.
+   ========================================================================= */
+
 @theme inline {
+  /* --- shadcn contract: every ui/ component reads these --- */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-primary: var(--primary);
@@ -21,57 +37,128 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
+  /* --- SIARE brand ---
+     Navy is the brand ink and the sidebar ground. Blue is the action colour.
+     Both are exposed as utilities: bg-navy, text-brand, border-brand-200. */
+  --color-navy-950: #080e14;
+  --color-navy-900: #0f1923; /* the sidebar, and the brand's darkest ink */
+  --color-navy-800: #16232f;
+  --color-navy-700: #1f3040;
+  --color-navy-600: #2c4155;
+
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-200: #bfdbfe;
+  --color-brand-300: #93c5fd;
+  --color-brand-400: #60a5fa; /* the wordmark, and every accent on navy */
+  --color-brand-500: #3b82f6;
+  --color-brand-600: #2563eb; /* primary actions */
+  --color-brand-700: #1d4ed8;
+  --color-brand-800: #1e40af;
+  --color-brand-900: #1e3a8a;
+
+  /* --- Semantic status ---
+     Four meanings, four colours, used nowhere else. A verdict, a confidence
+     badge and an insight all speak the same language because they read the
+     same tokens. */
+  --color-positive-50: #ecfdf5;
+  --color-positive-100: #d1fae5;
+  --color-positive-200: #a7f3d0;
+  --color-positive-300: #6ee7b7;
+  --color-positive-400: #34d399;
+  --color-positive-500: #10b981;
+  --color-positive-600: #059669;
+  --color-positive-700: #047857;
+  --color-positive-800: #065f46;
+  --color-positive-900: #064e3b;
+
+  --color-caution-50: #fffbeb;
+  --color-caution-100: #fef3c7;
+  --color-caution-200: #fde68a;
+  --color-caution-300: #fcd34d;
+  --color-caution-400: #fbbf24;
+  --color-caution-500: #f59e0b;
+  --color-caution-600: #d97706;
+  --color-caution-700: #b45309;
+  --color-caution-800: #92400e;
+  --color-caution-900: #78350f;
+
+  --color-critical-50: #fef2f2;
+  --color-critical-100: #fee2e2;
+  --color-critical-200: #fecaca;
+  --color-critical-300: #fca5a5;
+  --color-critical-400: #f87171;
+  --color-critical-500: #ef4444;
+  --color-critical-600: #dc2626;
+  --color-critical-700: #b91c1c;
+  --color-critical-800: #991b1b;
+  --color-critical-900: #7f1d1d;
+
+  /* --- Shape and type --- */
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
 
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-mono), ui-monospace, "SFMono-Regular", monospace;
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.129 0.042 264.695);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.129 0.042 264.695);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
-  --primary-foreground: oklch(0.984 0.003 247.858);
-  --secondary: oklch(0.968 0.007 247.896);
-  --secondary-foreground: oklch(0.208 0.042 265.755);
-  --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --radius: 0.5rem;
+  --background: #ffffff;
+  --foreground: #0f1923; /* navy-900: the brand ink, not a generic near-black */
+  --card: #ffffff;
+  --card-foreground: #0f1923;
+  --popover: #ffffff;
+  --popover-foreground: #0f1923;
+
+  /* The single most consequential line in this file: it makes an unstyled
+     <Button> a SIARE button. */
+  --primary: #2563eb;
+  --primary-foreground: #ffffff;
+
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f1923;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #eff6ff;
+  --accent-foreground: #1d4ed8;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #2563eb;
+
+  /* The app's cards are rounded-xl and its controls rounded-lg; this puts the
+     default between them so components stop needing a radius override. */
+  --radius: 0.625rem;
+
+  /* Page ground. The shell and every page read this rather than each picking
+     their own gray, which is how the wizard ended up a different shade from
+     the dashboard it sits inside. */
+  --app-ground: #f6f8fa;
 }
 
 .dark {
-  --background: oklch(0.129 0.042 264.695);
-  --foreground: oklch(0.984 0.003 247.858);
-  --card: oklch(0.129 0.042 264.695);
-  --card-foreground: oklch(0.984 0.003 247.858);
-  --popover: oklch(0.129 0.042 264.695);
-  --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.984 0.003 247.858);
-  --primary-foreground: oklch(0.129 0.042 264.695);
-  --secondary: oklch(0.279 0.041 260.031);
-  --secondary-foreground: oklch(0.984 0.003 247.858);
-  --muted: oklch(0.279 0.041 260.031);
-  --muted-foreground: oklch(0.708 0.015 255.542);
-  --accent: oklch(0.279 0.041 260.031);
-  --accent-foreground: oklch(0.984 0.003 247.858);
-  --destructive: oklch(0.396 0.141 25.723);
-  --destructive-foreground: oklch(0.637 0.237 25.331);
-  --border: oklch(0.279 0.041 260.031);
-  --input: oklch(0.279 0.041 260.031);
-  --ring: oklch(0.446 0.043 257.281);
+  --background: #0f1923;
+  --foreground: #f8fafc;
+  --card: #16232f;
+  --card-foreground: #f8fafc;
+  --popover: #16232f;
+  --popover-foreground: #f8fafc;
+  --primary: #60a5fa;
+  --primary-foreground: #0f1923;
+  --secondary: #1f3040;
+  --secondary-foreground: #f8fafc;
+  --muted: #1f3040;
+  --muted-foreground: #94a3b8;
+  --accent: #1f3040;
+  --accent-foreground: #93c5fd;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #1f3040;
+  --input: #1f3040;
+  --ring: #60a5fa;
+  --app-ground: #080e14;
 }
 
 @layer base {
@@ -80,5 +167,47 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Lining figures so columns of money line up in prose as well as tables. */
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Respect a user's reduced-motion setting rather than animating regardless.
+     The wizard animates on every step change, which is exactly the kind of
+     movement this setting exists for. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* The page ground, used by the shell and by any page that paints its own
+     background. */
+  .bg-app {
+    background-color: var(--app-ground);
+  }
+
+  /* Every derived money figure in the app. Mono, tabular, so digits align in a
+     column and a number that changes does not shift the ones beside it. */
+  .figure {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+  }
+
+  /* Section eyebrow — the small uppercase label above a group. */
+  .eyebrow {
+    font-size: 0.6875rem;
+    line-height: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
   }
 }

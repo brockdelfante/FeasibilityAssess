@@ -42,6 +42,7 @@ export function SectionCard({
   children,
   className,
   action,
+  id,
 }: {
   title: string
   blurb?: string
@@ -49,17 +50,23 @@ export function SectionCard({
   children: React.ReactNode
   className?: string
   action?: React.ReactNode
+  /** Anchor target, so the results nav can jump straight to this section. */
+  id?: string
 }) {
   return (
-    <Card className={cn('border-gray-200/80 shadow-sm', className)}>
+    // scroll-mt clears the sticky header, or a jump lands with the heading
+    // hidden underneath it.
+    <Card id={id} className={cn('scroll-mt-32 border-border shadow-sm', className)}>
       <CardHeader className="pb-4">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1">
-            <CardTitle className="flex items-center gap-2 text-base font-semibold text-gray-900">
+            <CardTitle className="flex items-center gap-2 text-base font-semibold">
               {icon}
               {title}
             </CardTitle>
-            {blurb ? <p className="text-sm leading-relaxed text-gray-500">{blurb}</p> : null}
+            {blurb ? (
+              <p className="text-sm leading-relaxed text-muted-foreground">{blurb}</p>
+            ) : null}
           </div>
           {action}
         </div>
@@ -85,13 +92,13 @@ export function Field({
 }) {
   return (
     <div className="space-y-2">
-      <Label htmlFor={htmlFor} className="text-sm font-medium text-gray-800">
+      <Label htmlFor={htmlFor} className="text-sm font-medium text-foreground">
         {label}
       </Label>
       {children}
-      {hint ? <p className="text-xs leading-relaxed text-gray-500">{hint}</p> : null}
+      {hint ? <p className="text-xs leading-relaxed text-muted-foreground">{hint}</p> : null}
       {warning ? (
-        <p className="flex items-start gap-1.5 text-xs leading-relaxed text-amber-700">
+        <p className="flex items-start gap-1.5 text-xs leading-relaxed text-caution-700">
           <TriangleAlert className="mt-0.5 h-3 w-3 shrink-0" />
           {warning}
         </p>
@@ -116,8 +123,8 @@ export function DidYouKnow({
   tone?: 'amber' | 'blue'
 }) {
   const tones = {
-    amber: 'border-amber-200 bg-amber-50/70 text-amber-900',
-    blue: 'border-blue-200 bg-blue-50/70 text-blue-900',
+    amber: 'border-caution-200 bg-caution-50/70 text-caution-900',
+    blue: 'border-brand-200 bg-brand-50/70 text-brand-900',
   }
   return (
     <div className={cn('rounded-xl border p-4', tones[tone])}>
@@ -168,7 +175,7 @@ export function MoneyInput({
 
   return (
     <div className="relative">
-      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-gray-400">
+      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground">
         $
       </span>
       <Input
@@ -231,7 +238,7 @@ export function NumberInput({
         }}
       />
       {suffix ? (
-        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-gray-400">
+        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground">
           {suffix}
         </span>
       ) : null}
@@ -269,7 +276,7 @@ export function PercentInput({
           onChange(Math.max(0, next) / 100)
         }}
       />
-      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm font-medium text-gray-400">
+      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground">
         %
       </span>
     </div>
@@ -295,7 +302,7 @@ export function PercentSlider({
   return (
     <div className="space-y-3">
       <div className="flex items-baseline gap-3">
-        <span className="font-mono text-2xl font-semibold tabular-nums text-gray-900">
+        <span className="font-mono text-2xl font-semibold tabular-nums text-foreground">
           {percent(value, 1)}
         </span>
       </div>
@@ -307,7 +314,7 @@ export function PercentSlider({
         onValueChange={([next]) => onChange(next)}
       />
       {marks ? (
-        <div className="flex justify-between text-[11px] text-gray-400">
+        <div className="flex justify-between text-[11px] text-muted-foreground">
           {marks.map((m) => (
             <span key={m.at}>{m.label}</span>
           ))}
@@ -351,29 +358,29 @@ export function ChoiceCards<T extends string>({
             className={cn(
               'group relative rounded-xl border p-4 text-left transition-all',
               selected
-                ? 'border-blue-500 bg-blue-50/60 ring-1 ring-blue-500'
-                : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50',
-              disabled && 'cursor-not-allowed opacity-40 hover:border-gray-200 hover:bg-white'
+                ? 'border-brand-500 bg-brand-50/60 ring-1 ring-brand-500'
+                : 'border-border bg-background hover:border-muted-foreground/40 hover:bg-muted/40',
+              disabled && 'cursor-not-allowed opacity-40 hover:border-border hover:bg-background'
             )}
           >
             <div className="flex items-start justify-between gap-2">
               <span
                 className={cn(
                   'text-sm font-semibold',
-                  selected ? 'text-blue-900' : 'text-gray-900'
+                  selected ? 'text-brand-900' : 'text-foreground'
                 )}
               >
                 {option.label}
               </span>
               {selected ? (
-                <Check className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
+                <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
               ) : null}
             </div>
             {option.hint ? (
               <span
                 className={cn(
                   'mt-1 block text-xs leading-relaxed',
-                  selected ? 'text-blue-700/80' : 'text-gray-500'
+                  selected ? 'text-brand-700/80' : 'text-muted-foreground'
                 )}
               >
                 {option.hint}
@@ -397,7 +404,7 @@ export function Segmented<T extends string>({
   onChange: (value: T) => void
 }) {
   return (
-    <div className="inline-flex flex-wrap gap-1 rounded-lg bg-gray-100 p-1">
+    <div className="inline-flex flex-wrap gap-1 rounded-lg bg-muted p-1">
       {options.map((option) => {
         const selected = option.value === value
         return (
@@ -409,8 +416,8 @@ export function Segmented<T extends string>({
             className={cn(
               'rounded-md px-3 py-1.5 text-xs font-semibold transition-all',
               selected
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-500 hover:text-gray-800'
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
             )}
           >
             {option.label}
@@ -438,7 +445,7 @@ export function ConfidenceBadge({
     return (
       <Badge
         variant="outline"
-        className={cn('gap-1 border-emerald-300 bg-emerald-50 text-emerald-800', className)}
+        className={cn('gap-1 border-positive-300 bg-positive-50 text-positive-800', className)}
       >
         <ShieldCheck className="h-3 w-3" />
         Yours
@@ -447,9 +454,9 @@ export function ConfidenceBadge({
   }
 
   const styles: Record<Confidence, string> = {
-    high: 'border-emerald-300 bg-emerald-50 text-emerald-800',
-    medium: 'border-blue-300 bg-blue-50 text-blue-800',
-    low: 'border-amber-300 bg-amber-50 text-amber-800',
+    high: 'border-positive-300 bg-positive-50 text-positive-800',
+    medium: 'border-brand-300 bg-brand-50 text-brand-800',
+    low: 'border-caution-300 bg-caution-50 text-caution-800',
   }
 
   const shortLabel: Record<Confidence, string> = {
@@ -495,8 +502,8 @@ export function TraceSheet({
 
         {traced ? (
           <div className="space-y-6">
-            <div className="rounded-xl border border-gray-200 bg-gray-50/70 p-4">
-              <p className="font-mono text-3xl font-semibold tabular-nums text-gray-900">
+            <div className="rounded-xl border border-border bg-muted/40 p-4">
+              <p className="font-mono text-3xl font-semibold tabular-nums text-foreground">
                 {money(traced.value)}
               </p>
               <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -504,7 +511,7 @@ export function TraceSheet({
                   confidence={traced.confidence}
                   overridden={traced.overridden}
                 />
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-muted-foreground">
                   {traced.overridden
                     ? 'You pinned this value, so it replaces the rate library.'
                     : CONFIDENCE_BLURBS[traced.confidence]}
@@ -514,37 +521,37 @@ export function TraceSheet({
 
             {traced.range ? (
               <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Plausible range
                 </p>
-                <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3 font-mono text-sm tabular-nums">
-                  <span className="text-gray-500">{money(traced.range.low)}</span>
-                  <ChevronRight className="h-3 w-3 text-gray-300" />
-                  <span className="font-semibold text-gray-900">{money(traced.value)}</span>
-                  <ChevronRight className="h-3 w-3 text-gray-300" />
-                  <span className="text-gray-500">{money(traced.range.high)}</span>
+                <div className="flex items-center justify-between rounded-lg border border-border px-4 py-3 font-mono text-sm tabular-nums">
+                  <span className="text-muted-foreground">{money(traced.range.low)}</span>
+                  <ChevronRight className="h-3 w-3 text-muted-foreground/40" />
+                  <span className="font-semibold text-foreground">{money(traced.value)}</span>
+                  <ChevronRight className="h-3 w-3 text-muted-foreground/40" />
+                  <span className="text-muted-foreground">{money(traced.range.high)}</span>
                 </div>
               </div>
             ) : null}
 
             {traced.steps.length > 0 ? (
               <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   How this was built
                 </p>
-                <div className="divide-y divide-gray-100 rounded-lg border border-gray-200">
+                <div className="divide-y divide-border rounded-lg border border-border">
                   {traced.steps.map((step, i) => (
                     <div key={i} className="flex items-start justify-between gap-4 px-4 py-3">
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-gray-800">{step.label}</p>
+                        <p className="text-sm font-medium text-foreground">{step.label}</p>
                         {step.detail ? (
-                          <p className="mt-0.5 text-xs leading-relaxed text-gray-500">
+                          <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
                             {step.detail}
                           </p>
                         ) : null}
                       </div>
                       {step.value !== undefined ? (
-                        <span className="shrink-0 font-mono text-sm tabular-nums text-gray-900">
+                        <span className="shrink-0 font-mono text-sm tabular-nums text-foreground">
                           {formatStep(step)}
                         </span>
                       ) : null}
@@ -562,19 +569,19 @@ export function TraceSheet({
 
             {source ? (
               <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Source
                 </p>
-                <div className="rounded-lg border border-gray-200 p-4">
-                  <p className="text-sm font-semibold text-gray-900">{source.title}</p>
-                  <p className="mt-1 text-xs leading-relaxed text-gray-600">{source.detail}</p>
-                  <p className="mt-2 text-[11px] text-gray-400">As at {source.asAt}</p>
+                <div className="rounded-lg border border-border p-4">
+                  <p className="text-sm font-semibold text-foreground">{source.title}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{source.detail}</p>
+                  <p className="mt-2 text-[11px] text-muted-foreground">As at {source.asAt}</p>
                   {source.url ? (
                     <a
                       href={source.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="mt-2 inline-block text-xs font-medium text-blue-600 hover:underline"
+                      className="mt-2 inline-block text-xs font-medium text-brand-600 hover:underline"
                     >
                       View the source ↗
                     </a>
@@ -608,13 +615,13 @@ export function TracedValue({
         type="button"
         onClick={() => setOpen(true)}
         className={cn(
-          'group inline-flex items-center gap-1.5 font-mono tabular-nums underline decoration-gray-300 decoration-dotted underline-offset-4 transition-colors hover:decoration-blue-500',
+          'group inline-flex items-center gap-1.5 font-mono tabular-nums underline decoration-muted-foreground/40 decoration-dotted underline-offset-4 transition-colors hover:decoration-brand-600 hover:text-brand-700',
           className
         )}
         title="Click to see how this was calculated"
       >
         {format === 'percent' ? percent(traced.value) : money(traced.value)}
-        <Info className="h-3 w-3 text-gray-300 transition-colors group-hover:text-blue-500" />
+        <Info className="h-3 w-3 text-muted-foreground/60 transition-colors group-hover:text-brand-600" />
       </button>
       <TraceSheet open={open} onOpenChange={setOpen} title={title} traced={traced} />
     </>
@@ -639,18 +646,18 @@ export function StatTile({
   className?: string
 }) {
   const tones = {
-    neutral: 'text-gray-900',
-    positive: 'text-emerald-600',
-    negative: 'text-red-600',
-    warning: 'text-amber-600',
+    neutral: 'text-foreground',
+    positive: 'text-positive-600',
+    negative: 'text-critical-600',
+    warning: 'text-caution-600',
   }
   return (
-    <div className={cn('rounded-xl border border-gray-200 bg-white p-4', className)}>
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">{label}</p>
+    <div className={cn('rounded-xl border border-border bg-background p-4', className)}>
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
       <p className={cn('mt-1.5 font-mono text-xl font-semibold tabular-nums', tones[tone])}>
         {value}
       </p>
-      {sub ? <p className="mt-1 text-xs leading-relaxed text-gray-500">{sub}</p> : null}
+      {sub ? <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{sub}</p> : null}
     </div>
   )
 }
@@ -662,7 +669,7 @@ export function RichText({ text }: { text: string }) {
     <>
       {parts.map((part, i) =>
         part.startsWith('**') && part.endsWith('**') ? (
-          <strong key={i} className="font-semibold text-gray-900">
+          <strong key={i} className="font-semibold text-foreground">
             {part.slice(2, -2)}
           </strong>
         ) : (

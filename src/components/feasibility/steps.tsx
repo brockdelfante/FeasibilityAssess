@@ -92,7 +92,7 @@ export function StepIntent() {
       <SectionCard
         title="What are you doing with this property?"
         blurb="This decides which questions we ask and how we judge the result. You can change it at any time."
-        icon={<Compass className="h-4 w-4 text-blue-600" />}
+        icon={<Compass className="h-4 w-4 text-brand-600" />}
       >
         <ChoiceCards
           options={DEAL_MODES}
@@ -119,7 +119,7 @@ export function StepIntent() {
       <SectionCard
         title="Where is it?"
         blurb="Rates, duty and land tax are all state-specific, so the jurisdiction matters."
-        icon={<MapPin className="h-4 w-4 text-blue-600" />}
+        icon={<MapPin className="h-4 w-4 text-brand-600" />}
       >
         <FieldGrid>
           <Field
@@ -227,7 +227,7 @@ export function StepSite() {
         <SectionCard
           title="What would you build?"
           blurb="Everything else is assumed from our rate library — you can drill into any of it later."
-          icon={<Building2 className="h-4 w-4 text-blue-600" />}
+          icon={<Building2 className="h-4 w-4 text-brand-600" />}
         >
           <Field label="Development type">
             <Select
@@ -278,9 +278,9 @@ export function StepSite() {
           </FieldGrid>
 
           {inputs.devType !== 'subdivision' ? (
-            <div className="rounded-lg border border-gray-200 bg-gray-50/70 px-4 py-3 text-xs text-gray-600">
+            <div className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-xs text-muted-foreground">
               That is{' '}
-              <span className="font-mono font-semibold text-gray-900">
+              <span className="font-mono font-semibold text-foreground">
                 {(inputs.yield * inputs.avgDwellingSqm).toLocaleString('en-AU')} m²
               </span>{' '}
               of gross floor area in total.
@@ -296,7 +296,7 @@ export function StepSite() {
             ? 'What the home is worth now, and what the work would make it worth.'
             : 'What you are paying, and what the land gives you to work with.'
         }
-        icon={<Ruler className="h-4 w-4 text-blue-600" />}
+        icon={<Ruler className="h-4 w-4 text-brand-600" />}
       >
         <FieldGrid>
           {buysLand ? (
@@ -513,7 +513,7 @@ export function StepQuality() {
       <SectionCard
         title="How well is it finished?"
         blurb="This picks your build rate out of the library. It is the largest single line in the model, so it is worth getting roughly right."
-        icon={<HardHat className="h-4 w-4 text-blue-600" />}
+        icon={<HardHat className="h-4 w-4 text-brand-600" />}
       >
         <ChoiceCards
           options={QUALITY_TIERS}
@@ -522,15 +522,15 @@ export function StepQuality() {
           columns={3}
         />
 
-        <div className="rounded-lg border border-blue-200 bg-blue-50/60 px-4 py-3">
-          <p className="text-xs text-blue-900">
+        <div className="rounded-lg border border-brand-200 bg-brand-50/60 px-4 py-3">
+          <p className="text-xs text-brand-900">
             At this quality and site difficulty we assume{' '}
             <span className="font-mono font-semibold">{ratePerSqm(rate.point)}</span> of gross
             floor area, within a plausible range of{' '}
             <span className="font-mono font-semibold">{ratePerSqm(rate.low)}</span> to{' '}
             <span className="font-mono font-semibold">{ratePerSqm(rate.high)}</span>.
           </p>
-          <p className="mt-1 text-[11px] text-blue-700/80">
+          <p className="mt-1 text-[11px] text-brand-700/80">
             These are contract-value rates — on a fixed-price contract the builder’s margin is
             already inside them.
           </p>
@@ -540,7 +540,7 @@ export function StepQuality() {
       <SectionCard
         title="How hard is the site?"
         blurb="Slope, rock, access and tree protection all move the build rate."
-        icon={<Compass className="h-4 w-4 text-blue-600" />}
+        icon={<Compass className="h-4 w-4 text-brand-600" />}
       >
         <ChoiceCards
           options={SITE_DIFFICULTIES}
@@ -553,7 +553,7 @@ export function StepQuality() {
       <SectionCard
         title="How is it funded?"
         blurb="Leverage drives your interest cost, your equity requirement and your return on equity."
-        icon={<Banknote className="h-4 w-4 text-blue-600" />}
+        icon={<Banknote className="h-4 w-4 text-brand-600" />}
       >
         <ChoiceCards
           options={FINANCE_PROFILES}
@@ -563,13 +563,13 @@ export function StepQuality() {
         />
 
         {inputs.financeProfile !== 'cash' ? (
-          <div className="rounded-lg border border-gray-200 bg-gray-50/70 px-4 py-3 text-xs text-gray-600">
+          <div className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-xs text-muted-foreground">
             We assume an indicative{' '}
-            <span className="font-mono font-semibold text-gray-900">
+            <span className="font-mono font-semibold text-foreground">
               {percent(band.interestRate)}
             </span>{' '}
             interest rate at{' '}
-            <span className="font-mono font-semibold text-gray-900">
+            <span className="font-mono font-semibold text-foreground">
               {percent(band.loanToCost, 0)}
             </span>{' '}
             loan-to-cost. Replace both with a real lender quote in Pro Mode before you rely on
@@ -581,7 +581,7 @@ export function StepQuality() {
       <SectionCard
         title="How far along is the design?"
         blurb="This sets your contingency. Earlier stages carry more, because more is still unknown."
-        icon={<TrendingUp className="h-4 w-4 text-blue-600" />}
+        icon={<TrendingUp className="h-4 w-4 text-brand-600" />}
       >
         <ChoiceCards
           options={PROJECT_STAGES}
@@ -640,7 +640,7 @@ export function StepMoney() {
         <SectionCard
           title="Builder and agent"
           blurb="How the building contract is structured, and who else takes a cut."
-          icon={<HardHat className="h-4 w-4 text-blue-600" />}
+          icon={<HardHat className="h-4 w-4 text-brand-600" />}
         >
           <Field
             label="Building contract"
@@ -663,7 +663,7 @@ export function StepMoney() {
                 checked={inputs.buyersAgentEngaged}
                 onCheckedChange={(buyersAgentEngaged) => setInputs({ buyersAgentEngaged })}
               />
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-muted-foreground">
                 {inputs.buyersAgentEngaged ? 'Engaged' : 'Not engaged'}
               </span>
             </div>
@@ -674,7 +674,7 @@ export function StepMoney() {
       <SectionCard
         title="Land tax, rates and GST"
         blurb="The lines that get left out of most back-of-the-envelope numbers."
-        icon={<Landmark className="h-4 w-4 text-blue-600" />}
+        icon={<Landmark className="h-4 w-4 text-brand-600" />}
       >
         <DidYouKnow
           title={`${inputs.jurisdiction} land tax — most people do not know this applies to a site sitting idle`}
@@ -736,7 +736,7 @@ export function StepMoney() {
                 checked={inputs.landTaxExempt}
                 onCheckedChange={(landTaxExempt) => setInputs({ landTaxExempt })}
               />
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-muted-foreground">
                 {inputs.landTaxExempt ? 'Exempt' : 'Standard — land tax applies'}
               </span>
             </div>
@@ -746,8 +746,8 @@ export function StepMoney() {
         <div
           className={
             landTax > 0
-              ? 'rounded-lg border border-amber-200 bg-amber-50/70 px-4 py-3 text-xs text-amber-900'
-              : 'rounded-lg border border-gray-200 bg-gray-50/70 px-4 py-3 text-xs text-gray-600'
+              ? 'rounded-lg border border-caution-200 bg-caution-50/70 px-4 py-3 text-xs text-caution-900'
+              : 'rounded-lg border border-border bg-muted/40 px-4 py-3 text-xs text-muted-foreground'
           }
         >
           {landTax > 0 ? (
@@ -798,7 +798,7 @@ export function StepMoney() {
               ? `Class 1a versus Class 2 decides whether the ${inputs.jurisdiction} ${profile.practitioners.name} applies. It is worth ${money(profile.practitioners.costRange.low)}–${money(profile.practitioners.costRange.high)} and several months of program.`
               : 'Class 1a versus Class 2 changes what your builder has to certify, and how the building is insured.'
           }
-          icon={<Building2 className="h-4 w-4 text-blue-600" />}
+          icon={<Building2 className="h-4 w-4 text-brand-600" />}
         >
           <DidYouKnow title="Why title type changes your cost" tone="blue">
             <p>
@@ -875,7 +875,7 @@ export function StepMoney() {
       <SectionCard
         title="Timing and your target"
         blurb="How long you will hold the site, and what return makes this worth doing."
-        icon={<CalendarClock className="h-4 w-4 text-blue-600" />}
+        icon={<CalendarClock className="h-4 w-4 text-brand-600" />}
       >
         <FieldGrid>
           <Field
@@ -950,7 +950,7 @@ export function StepMoney() {
             {inputs.presalesShare > 0 &&
             (inputs.presalesSettleMonth === 0 ||
               inputs.presalesSettleMonth >= inputs.durationMonths) ? (
-              <div className="rounded-lg border border-gray-200 bg-gray-50/70 px-4 py-3 text-xs text-gray-600">
+              <div className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-xs text-muted-foreground">
                 Your presales are set to settle at the end of the program, so they do not reduce
                 peak debt. Set an earlier settlement month to see the benefit.
               </div>
@@ -959,7 +959,7 @@ export function StepMoney() {
         ) : null}
 
         {!sells ? (
-          <div className="rounded-lg border border-gray-200 bg-gray-50/70 px-4 py-3 text-xs text-gray-600">
+          <div className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-xs text-muted-foreground">
             <Target className="mr-1.5 inline h-3 w-3" />
             You are not selling on completion, so your target margin is used as a cost-versus-value
             check. The verdict for this goal comes from its own metrics — serviceability, equity
