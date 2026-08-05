@@ -10,6 +10,12 @@ export default defineConfig({
   use: {
     baseURL: 'http://localhost:3000',
     trace: 'on-first-retry',
+    // Some sandboxes ship a Chromium build that does not match the revision
+    // @playwright/test expects. Point PLAYWRIGHT_CHROMIUM_PATH at the local
+    // binary to use it instead of downloading one.
+    ...(process.env.PLAYWRIGHT_CHROMIUM_PATH
+      ? { launchOptions: { executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH } }
+      : {}),
   },
   projects: [
     {

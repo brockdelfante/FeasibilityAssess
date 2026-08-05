@@ -33,6 +33,10 @@ export default function RootLayout({
                 <LayoutDashboard className="h-5 w-5" />
                 <span>Dashboard</span>
               </Link>
+              <Link href="/feasibility" className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5">
+                <Calculator className="h-5 w-5" />
+                <span>Feasibility</span>
+              </Link>
               <Link href="/deals/new" className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5">
                 <PlusSquare className="h-5 w-5" />
                 <span>New Deal</span>
