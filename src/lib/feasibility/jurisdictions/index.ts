@@ -13,7 +13,13 @@
  */
 
 import type { Jurisdiction } from '../types'
+import { ACT } from './act'
 import { NSW } from './nsw'
+import { QLD } from './qld'
+import { SA } from './sa'
+import { TAS } from './tas'
+import { VIC } from './vic'
+import { WA } from './wa'
 import type { JurisdictionProfile } from './types'
 
 export * from './types'
@@ -24,6 +30,16 @@ export * from './types'
  */
 const PROFILES: Partial<Record<Jurisdiction, JurisdictionProfile>> = {
   NSW,
+  VIC,
+  QLD,
+  SA,
+  WA,
+  TAS,
+  ACT,
+  // NT is deliberately absent. Its first duty band is a quadratic the schedule
+  // type cannot express, and transcribing it as a flat band with a zero rate
+  // silently returns $0 duty on any site up to $525,000 — a realistic price. It
+  // needs a quadratic band kind before it can ship. See _research/README.md.
 }
 
 /** Jurisdictions a client can actually select. */
