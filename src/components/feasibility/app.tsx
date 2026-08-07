@@ -54,6 +54,7 @@ import type { FeasibilityResults, Verdict } from '@/lib/feasibility/types'
 import { StepIntent, StepMoney, StepQuality, StepSite } from '@/components/feasibility/steps'
 import { ResultsView, resultsOutline } from '@/components/feasibility/results'
 import { FundingView } from '@/components/feasibility/funding'
+import { LeadConfirmation, LeadGate, type LeadResult } from '@/components/feasibility/lead-gate'
 import {
   CashflowPanel,
   ScalePanel,
@@ -556,6 +557,12 @@ export function FeasibilityApp() {
     }
   }, [replaceInputs])
 
+  // The gate is the only thing we ask for, and it sits between the funding
+  // stage and the report. Captured details are held for the session so a
+  // visitor who goes back to change a number is never asked twice.
+  const [gateOpen, setGateOpen] = React.useState(false)
+  const [lead, setLead] = React.useState<LeadResult | null>(null)
+
   // Moving between steps should start you at the top of the new step, not
   // halfway down it where the last one happened to be scrolled.
   React.useEffect(() => {
@@ -666,12 +673,21 @@ export function FeasibilityApp() {
 
           <StageNav
             onBack={back}
-            onNext={next}
+            onNext={() => setGateOpen(true)}
             backLabel="Back to the feasibility"
-            nextLabel="Get my report"
+            nextLabel="Generate my report"
           />
         </div>
       ) : null}
+
+      <LeadGate
+        open={gateOpen}
+        onOpenChange={setGateOpen}
+        onCaptured={(result) => {
+          setLead(result)
+          next()
+        }}
+      />
 
       {stepIndex === REPORT_STEP ? (
         <div className="space-y-6">
@@ -679,6 +695,8 @@ export function FeasibilityApp() {
             <h2 className="text-lg font-bold">{step.title}</h2>
             <p className="text-sm text-muted-foreground">{step.blurb}</p>
           </div>
+
+          {lead ? <LeadConfirmation result={lead} /> : null}
 
           <div id="export" className="scroll-mt-32">
             <ExportPanel />

@@ -334,9 +334,42 @@ test('the funding stage prices a second mortgage over the equity gap', async ({ 
   await expect(page.getByText('Profit after it is paid', { exact: true })).toBeVisible()
   await expect(page.getByText(/Establishment fee/).first()).toBeVisible()
 
-  // And it reaches the report at the end of the flow.
-  await page.getByRole('button', { name: /Get my report/i }).click()
-  await expect(page.getByText(/Export & share/i).first()).toBeVisible()
+  // And the forward action is the lead gate, covered by its own test.
+  await expect(page.getByRole('button', { name: /Generate my report/i })).toBeVisible()
+})
+
+test('the report is gated behind name and work email', async ({ page }) => {
+  await page.goto(APP)
+  await acceptDisclaimer(page)
+  await page.getByRole('button', { name: /Skip to full results/i }).click()
+  await page.getByRole('button', { name: /Now, can I fund it\?/i }).click()
+
+  // The report stage must not be reachable by clicking the stepper past it.
+  await expect(page.getByRole('button', { name: /Your report/i })).toBeDisabled()
+
+  await page.getByRole('button', { name: /Generate my report/i }).click()
+  const dialog = page.getByRole('dialog')
+  await expect(dialog.getByText(/Where should we send it/i)).toBeVisible()
+
+  // A first name alone is not a lead worth having.
+  await dialog.getByLabel('Full name').fill('Alex')
+  await dialog.getByLabel('Work email').fill('nope')
+  await dialog.getByRole('button', { name: /Email me the report/i }).click()
+  await expect(dialog.getByText(/first and last name/i)).toBeVisible()
+  await expect(dialog.getByText(/does not look like an email/i)).toBeVisible()
+
+  // Consent is opt-in, never assumed.
+  const consent = dialog.getByRole('checkbox')
+  await expect(consent).not.toBeChecked()
+
+  await dialog.getByLabel('Full name').fill('Alex Nguyen')
+  await dialog.getByLabel('Work email').fill('alex@company.com.au')
+  await dialog.getByRole('button', { name: /Email me the report/i }).click()
+
+  // With no mail provider configured the visitor must still get the report,
+  // never a dead end — that is the whole point of the fallback.
+  await expect(page.getByText(/Your report is ready|On its way to/)).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByRole('button', { name: /Download the PDF/i })).toBeVisible()
 })
 
 test('results keep the verdict and section jumps pinned while scrolling', async ({ page }) => {
@@ -360,7 +393,16 @@ test('the PDF report downloads and is a real PDF', async ({ page }) => {
   await acceptDisclaimer(page)
   await page.getByRole('button', { name: /Skip to full results/i }).click()
   await page.getByRole('button', { name: /Now, can I fund it\?/i }).click()
-  await page.getByRole('button', { name: /Get my report/i }).click()
+
+  // The report now sits behind the lead gate, so the download test walks it.
+  await page.getByRole('button', { name: /Generate my report/i }).click()
+  const gate = page.getByRole('dialog')
+  await gate.getByLabel('Full name').fill('Alex Nguyen')
+  await gate.getByLabel('Work email').fill('alex@company.com.au')
+  await gate.getByRole('button', { name: /Email me the report/i }).click()
+  await expect(page.getByRole('button', { name: /Download the PDF/i })).toBeVisible({
+    timeout: 30_000,
+  })
 
   const [download] = await Promise.all([
     page.waitForEvent('download', { timeout: 60_000 }),

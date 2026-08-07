@@ -42,12 +42,19 @@ import { useFeasibilityStore } from '@/lib/feasibility/store'
 import { buildShareUrl, cashflowCsv, downloadCsv, headlineCsv } from '@/lib/feasibility/share'
 
 import { SectionCard } from './primitives'
+import { downloadReportPdf } from '@/lib/feasibility/report-client'
 
 // ---------------------------------------------------------------------------
 // Export bar
 // ---------------------------------------------------------------------------
 
-export function ExportPanel() {
+export function ExportPanel({
+  /**
+   * The credit-team handoff. Off by default because this panel renders on a
+   * public website, and creating a lender assessment is an internal action.
+   */
+  showLenderHandoff = false,
+}: { showLenderHandoff?: boolean } = {}) {
   const { inputs, results } = useFeasibilityStore()
   const router = useRouter()
   const [copied, setCopied] = React.useState(false)
@@ -58,40 +65,12 @@ export function ExportPanel() {
 
   const slug = (inputs.projectName || 'feasibility').replace(/[^a-z0-9]+/gi, '-').toLowerCase()
 
-  /**
-   * Download the branded PDF. Rendering happens on the server because
-   * @react-pdf/renderer is far too heavy to ship to the browser, but nothing is
-   * stored — the response streams straight to a download.
-   */
+  /** Shared with the lead gate's fallback, so both hand over the same file. */
   const downloadPdf = async () => {
     setPdfBusy(true)
     setPdfError(null)
     try {
-      const res = await fetch('/api/feasibility/report', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          inputs,
-          generatedAt: new Date().toLocaleDateString('en-AU', {
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric',
-          }),
-        }),
-      })
-      if (!res.ok) {
-        const data = await res.json().catch(() => null)
-        throw new Error(data?.error ?? 'Could not generate the PDF')
-      }
-      const blob = await res.blob()
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = `${slug}-feasibility.pdf`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(url)
+      await downloadReportPdf(inputs)
     } catch (err) {
       setPdfError(err instanceof Error ? err.message : 'Something went wrong')
     } finally {
@@ -187,6 +166,7 @@ export function ExportPanel() {
         a browser, but no copy is kept.
       </div>
 
+      {showLenderHandoff ? (
       <div className="rounded-xl border border-brand-200 bg-brand-50/50 p-4">
         <p className="flex items-center gap-2 text-sm font-semibold text-brand-900">
           <Upload className="h-4 w-4" />
@@ -204,6 +184,7 @@ export function ExportPanel() {
         </Button>
         {pushError ? <p className="mt-2 text-xs text-critical-600">{pushError}</p> : null}
       </div>
+      ) : null}
     </SectionCard>
   )
 }
